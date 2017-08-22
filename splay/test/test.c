@@ -6,7 +6,7 @@ int main(void)
 {
     printf("foo\n");
     int size = 7;
-    int* p = (int*) calloc(size, sizeof(int));
+    int* p = (int*) malloc(size * sizeof(int));
 
     for (int i = 0; i < size; ++i) {
         p[i] = 42+i;
@@ -14,12 +14,10 @@ int main(void)
 
     for (int i = 0; i < size; ++i) {
         int* q = malloc(p[i]);
-        free(q);
+        q[0] = 5;
     }
 
-    int* q =realloc(p, size + sizeof(int));
-
-    free(q);
+    /* free(p); */
     printf("bar\n");
     return 0;
 }

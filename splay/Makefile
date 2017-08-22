@@ -4,8 +4,8 @@ TEST_DIR     = test
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11
-SHAREDFLAGS = -shared -fPIC -O2
+CFLAGS  += -Wall -Wextra -std=c11 -O2
+SHAREDFLAGS = -shared -fPIC
 LDFLAGS +=
 
 .PHONY: clean
@@ -24,7 +24,7 @@ ${BUILD_DIR}/splay.so: ${BUILD_DIR}/splay.o ${BUILD_DIR}/tree.o
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CC) -o $@ ${CFLAGS} ${SHAREDFLAGS} $<
+	$(Q)$(CC) -o $@ -c -fPIC ${CFLAGS} $<
 
 
 ${BUILD_DIR}/test: ${TEST_DIR}/test.c

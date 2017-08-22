@@ -8,8 +8,7 @@
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void* p);
 
-int malloc_hook_active = 1;
-int free_hook_active = 1;
+int hooks_active = 1;
 
 Tree memTree;
 
@@ -64,28 +63,28 @@ void __splay_free(void* ptr) {
 }
 
 void* malloc(size_t size) {
-    if (malloc_hook_active) {
-        malloc_hook_active = 0;
+    if (hooks_active) {
+        hooks_active = 0;
 
         void* res = __libc_malloc(size);
 
         __splay_alloc(res, size);
 
-        malloc_hook_active = 1;
+        hooks_active = 1;
         return res;
     }
     return __libc_malloc(size);
 }
 
 void free(void* p) {
-    if (free_hook_active) {
-        free_hook_active = 0;
+    if (hooks_active) {
+        hooks_active = 0;
 
         __splay_free(p);
 
         __libc_free(p);
 
-        free_hook_active = 1;
+        hooks_active = 1;
         return;
     }
     __libc_free(p);
