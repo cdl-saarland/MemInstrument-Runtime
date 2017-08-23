@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -15,8 +16,10 @@ typedef struct Node {
 
 typedef struct Tree {
     Node* root;
+    size_t numNodes;
 } Tree;
 
+void splayInit(Tree *t);
 void splayInsert(Tree* t, uintptr_t base, uintptr_t bound);
 void splayRemove(Tree* t, uintptr_t val);
 Node* splayFind(Tree* t, uintptr_t val);

@@ -2,10 +2,12 @@ BUILD_DIR   = build
 SRC_DIR     = src
 TEST_DIR     = test
 
+CC = clang
+
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11 -O2
-SHAREDFLAGS = -shared -fPIC
+CFLAGS  += -Wall -Wextra -std=c11
+SHAREDFLAGS = -shared -fPIC -ldl -O2
 LDFLAGS +=
 
 .PHONY: clean
