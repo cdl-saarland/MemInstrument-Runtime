@@ -2,6 +2,9 @@
 #include <stdio.h>
 
 
+
+void __splay_check_access(void* witness, void* ptr, size_t sz);
+
 int main(void)
 {
     printf("foo\n");
@@ -10,6 +13,7 @@ int main(void)
 
     for (int i = 0; i < size; ++i) {
         p[i] = 42+i;
+        __splay_check_access(p, p+i, sizeof(int));
     }
 
     for (int i = 0; i < size; ++i) {

@@ -2,12 +2,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <execinfo.h>
+#include <unistd.h>
 
 // for reading symbols from glibc (not portable)
 #define __USE_GNU
 #include <dlfcn.h>
 
 #include "tree.h"
+
+#define MAX_BACKTRACE_LENGTH 10
+#define PRINTBACKTRACE {\
+    void *buf[MAX_BACKTRACE_LENGTH];\
+    int n = backtrace(buf, MAX_BACKTRACE_LENGTH);\
+    backtrace_symbols_fd(buf, n, STDERR_FILENO);\
+}
 
 // from glibc (not portable)
 extern void *__libc_malloc(size_t size);
@@ -28,14 +37,18 @@ static void __splay_fail(void) {
     "         / .'\n"
     "   .---. \\/\n"
     "  (._.' \\()\n"
-    "   ^\"\"\"^\"\n");
+    "   ^\"\"\"^\"\n\nBacktrace:\n");
+    PRINTBACKTRACE;
     exit(73);
 }
 
 void __splay_check_access(void* witness, void* ptr, size_t sz) {
+    /* fprintf(stderr, "splay_check\n"); */
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        __splay_fail();
+        /* __splay_fail(); */
+        /* fprintf(stderr, "Check with non-existing witness!\n"); */
+        return;
     }
     uintptr_t val = (uintptr_t)ptr;
     if (val < n->base || (val + sz) > n->bound) {
@@ -46,7 +59,9 @@ void __splay_check_access(void* witness, void* ptr, size_t sz) {
 uintptr_t __splay_get_lower(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        __splay_fail();
+        /* __splay_fail(); */
+        /* fprintf(stderr, "Check with non-existing witness!\n"); */
+        return 0;
     }
     return n->base;
 }
@@ -54,17 +69,21 @@ uintptr_t __splay_get_lower(void* witness) {
 uintptr_t __splay_get_upper(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        __splay_fail();
+        /* __splay_fail(); */
+        /* fprintf(stderr, "Check with non-existing witness!\n"); */
+        return -1;
     }
     return n->bound;
 }
 
 void __splay_alloc(void* ptr, size_t sz) {
+    /* fprintf(stderr, "splay_alloc\n"); */
     uintptr_t val = (uintptr_t)ptr;
     splayInsert(&memTree, val, val + sz);
 }
 
 void __splay_free(void* ptr) {
+    /* fprintf(stderr, "splay_free\n"); */
     uintptr_t val = (uintptr_t)ptr;
     splayRemove(&memTree, val);
 }

@@ -249,12 +249,12 @@ static void splay(Tree* t, Node* x) {
     DEBUG(assert(validateTree(t)))
     /* DEBUG(dotTree(t)) */
 
-    static unsigned int ctr = 0;
-    if (ctr >= 100) {
-        dotTree(t);
-        ctr = 0;
-    }
-    ctr++;
+    /* static unsigned int ctr = 0; */
+    /* if (ctr >= 1000) { */
+    /*     dotTree(t); */
+    /*     ctr = 0; */
+    /* } */
+    /* ctr++; */
 }
 
 static Node* findMin(Node* n) {
@@ -296,7 +296,7 @@ static Node* find_impl(Tree* t, uintptr_t val) {
 void splayRemove(Tree* t, uintptr_t val) {
     DEBUG(fprintf(stderr, "  call splayRemove(%8lx)\n", val))
     Node* res = find_impl(t, val);
-    if (res == NULL) {
+    if (res == NULL) { //FIXME
         DEBUG(fprintf(stderr, "  early return splayRemove(%8lx)\n", val))
         return;
     }
