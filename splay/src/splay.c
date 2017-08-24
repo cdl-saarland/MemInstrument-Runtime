@@ -32,12 +32,14 @@ void setupSplay(void) {
     splayInit(&memTree);
 }
 
-static void __splay_fail(void) {
+static void __splay_fail(void *faultingPtr) {
     fprintf(stderr, "Memory safety violation!\n"
     "         / .'\n"
     "   .---. \\/\n"
     "  (._.' \\()\n"
-    "   ^\"\"\"^\"\n\nBacktrace:\n");
+    "   ^\"\"\"^\"\n"
+    "Using out-of-bounds pointer %p\n"
+    "\nBacktrace:\n", faultingPtr);
     PRINTBACKTRACE;
     exit(73);
 }
@@ -46,20 +48,20 @@ void __splay_check_access(void* witness, void* ptr, size_t sz) {
     /* fprintf(stderr, "splay_check\n"); */
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        /* __splay_fail(); */
+        /* __splay_fail(ptr); */
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return;
     }
     uintptr_t val = (uintptr_t)ptr;
     if (val < n->base || (val + sz) > n->bound) {
-        __splay_fail();
+        __splay_fail(ptr);
     }
 }
 
 uintptr_t __splay_get_lower(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        /* __splay_fail(); */
+        /* __splay_fail(ptr); */
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return 0;
     }
@@ -69,7 +71,7 @@ uintptr_t __splay_get_lower(void* witness) {
 uintptr_t __splay_get_upper(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        /* __splay_fail(); */
+        /* __splay_fail(ptr); */
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return -1;
     }
