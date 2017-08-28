@@ -335,7 +335,10 @@ Node* splayFind(Tree* t, uintptr_t val) {
     return current;
 }
 
-void splayInsert(Tree* t, uintptr_t base, uintptr_t bound) {
+#define min(x, y) ((x) < (y) ? (x) : (y))
+#define max(x, y) ((x) > (y) ? (x) : (y))
+
+void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, bool extend) {
     DEBUG(fprintf(stderr, "  call splayInsert(%8lx, %8lx)\n", base, bound))
     Node* parent = NULL;
     Node* current = t->root;
@@ -353,11 +356,16 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound) {
         if (bound <= current->base) {
             current = current->leftChild;
             left = true;
-        } else if (base > current->bound) {
+        } else if (base >= current->bound) {
             current = current->rightChild;
             left = false;
         } else {
-            assert(false && "Trying to insert a conflicting element!");
+            if (extend) {
+                current->base = min(current->base, base);
+                current->base = max(current->bound, bound);
+            } else {
+                assert(false && "Trying to insert a conflicting element!");
+            }
         }
     }
 

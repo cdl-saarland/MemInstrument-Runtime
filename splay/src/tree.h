@@ -20,7 +20,7 @@ typedef struct Tree {
 } Tree;
 
 void splayInit(Tree *t);
-void splayInsert(Tree* t, uintptr_t base, uintptr_t bound);
+void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, bool extend);
 void splayRemove(Tree* t, uintptr_t val);
 Node* splayFind(Tree* t, uintptr_t val);
 

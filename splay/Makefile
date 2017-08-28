@@ -6,8 +6,8 @@ CC = clang
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC
-SHAREDFLAGS = -shared -fPIC -ldl -O2 -g
+CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3
+SHAREDFLAGS = -shared -ldl
 LDFLAGS +=
 
 OBJS=${BUILD_DIR}/splay.o ${BUILD_DIR}/tree.o

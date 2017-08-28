@@ -78,10 +78,16 @@ uintptr_t __splay_get_upper(void* witness) {
     return n->bound;
 }
 
+void __splay_alloc_global(void* ptr, size_t sz) {
+    /* fprintf(stderr, "splay_alloc\n"); */
+    uintptr_t val = (uintptr_t)ptr;
+    splayInsert(&memTree, val, val + sz, true);
+}
+
 void __splay_alloc(void* ptr, size_t sz) {
     /* fprintf(stderr, "splay_alloc\n"); */
     uintptr_t val = (uintptr_t)ptr;
-    splayInsert(&memTree, val, val + sz);
+    splayInsert(&memTree, val, val + sz, false);
 }
 
 void __splay_free(void* ptr) {
