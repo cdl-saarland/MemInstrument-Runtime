@@ -2,29 +2,45 @@ BUILD_DIR   = build
 SRC_DIR     = src
 TEST_DIR     = test
 
+LIB_NAME = splay
+DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
+STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
+
 CC = clang
 
 Q ?= @
 
 CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3
-SHAREDFLAGS = -shared -ldl
-LDFLAGS +=
+SHAREDFLAGS = -shared
+LDFLAGS += -ldl
 
 OBJS=${BUILD_DIR}/splay.o ${BUILD_DIR}/tree.o
 
 .PHONY: clean
 
-all: ${BUILD_DIR}/splay.so
+all: static dynamic
 
-test: ${BUILD_DIR}/splay.so ${BUILD_DIR}/test
-	@echo "===> TEST"
-	LD_PRELOAD=${BUILD_DIR}/splay.so ${BUILD_DIR}/test
+test: test-dynamic test-static
 
-static: ${OBJS}
-	@echo "===> AR"
-	$(Q)ar -rcs ${BUILD_DIR}/libsplay.a $+
+test-dynamic: dynamic ${BUILD_DIR}/test_dyn
+	@echo "===> TEST DYNAMIC"
+	LD_LIBRARY_PATH=${BUILD_DIR} ${BUILD_DIR}/test_dyn
+	# LD_LIBRARY_PATH=${BUILD_DIR} LD_PRELOAD=${DYN_LIB} ${BUILD_DIR}/test_dyn
 
-${BUILD_DIR}/splay.so: ${OBJS}
+test-static: ${BUILD_DIR}/test_stat
+	@echo "===> TEST STATIC"
+	${BUILD_DIR}/test_stat
+
+static: ${STAT_LIB}
+
+dynamic: ${DYN_LIB}
+
+${STAT_LIB}: ${OBJS}
+	$(Q)mkdir -p ${BUILD_DIR}
+	@echo "===> AR $@"
+	$(Q)ar -rcs $@ $+
+
+${DYN_LIB}: ${OBJS}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
 	$(Q)$(CC) -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
@@ -35,10 +51,15 @@ ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)$(CC) -o $@ -c ${CFLAGS} $<
 
 
-${BUILD_DIR}/test: ${TEST_DIR}/test.c
+${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -o $@ ${CFLAGS} ${LDFLAGS} $+
+	$(Q)$(CC) -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+
+${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
+	$(Q)mkdir -p ${BUILD_DIR}
+	@echo "===> CC/LD $@"
+	$(Q)$(CC) -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 clean:
 	@echo "===> CLEAN"
