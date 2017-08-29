@@ -11,14 +11,6 @@ extern void __libc_free(void*);
 
 extern char* __progname;
 
-/* #define DBG 1 */
-
-#ifdef DBG
-#define DEBUG(x) do {x;} while (false);
-#else
-#define DEBUG(x) do {} while (false);
-#endif
-
 static bool validateNode(Node* parent, Node* n, size_t *expectedNodes) {
     if (n == NULL) {
         return true;
@@ -247,14 +239,15 @@ static void splay(Tree* t, Node* x) {
     assert(t->root == x);
     assert(x->parent == NULL);
     DEBUG(assert(validateTree(t)))
-    /* DEBUG(dotTree(t)) */
 
-    /* static unsigned int ctr = 0; */
-    /* if (ctr >= 1000) { */
-    /*     dotTree(t); */
-    /*     ctr = 0; */
-    /* } */
-    /* ctr++; */
+#ifdef PRINT_TREE_INTERVAL
+    static unsigned int ctr = 0;
+    if (ctr >= PRINT_TREE_INTERVAL) {
+        dotTree(t);
+        ctr = 0;
+    }
+    ctr++;
+#endif
 }
 
 static Node* findMin(Node* n) {
@@ -293,13 +286,8 @@ static Node* find_impl(Tree* t, uintptr_t val) {
     return current;
 }
 
-void splayRemove(Tree* t, uintptr_t val) {
-    DEBUG(fprintf(stderr, "  call splayRemove(%8lx)\n", val))
-    Node* res = find_impl(t, val);
-    if (res == NULL) { //FIXME
-        DEBUG(fprintf(stderr, "  early return splayRemove(%8lx)\n", val))
-        return;
-    }
+static void removeNode(Tree* t, Node* n) {
+    Node* res = n;
     assert(res != NULL && "Trying to remove non-existing element!");
 
     if (res->leftChild == NULL && res->rightChild == NULL) {
@@ -318,10 +306,19 @@ void splayRemove(Tree* t, uintptr_t val) {
     __libc_free(res);
 
     t->numNodes--;
-    DEBUG(assert(validateTree(t)))
 
+    DEBUG(assert(validateTree(t)))
+}
+
+void splayRemove(Tree* t, uintptr_t val) {
+    DEBUG(fprintf(stderr, "  call splayRemove(%8lx)\n", val))
+    Node* res = find_impl(t, val);
+    if (res == NULL) { //FIXME
+        DEBUG(fprintf(stderr, "  early return splayRemove(%8lx)\n", val))
+        return;
+    }
+    removeNode(t, res);
     DEBUG(fprintf(stderr, "  return splayRemove(%8lx)\n", val))
-    return;
 }
 
 Node* splayFind(Tree* t, uintptr_t val) {
@@ -338,7 +335,7 @@ Node* splayFind(Tree* t, uintptr_t val) {
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
-void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, bool extend) {
+void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     DEBUG(fprintf(stderr, "  call splayInsert(%8lx, %8lx)\n", base, bound))
     Node* parent = NULL;
     Node* current = t->root;
@@ -360,11 +357,22 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, bool extend) {
             current = current->rightChild;
             left = false;
         } else {
-            if (extend) {
+            switch (ib) {
+            case IB_ERROR:
+                assert(false && "Trying to insert a conflicting element!");
+                return;
+            case IB_EXTEND:
                 current->base = min(current->base, base);
                 current->base = max(current->bound, bound);
-            } else {
-                assert(false && "Trying to insert a conflicting element!");
+                splay(t, current);
+                DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- extended\n", base, bound))
+                return;
+            case IB_REPLACE:
+                current->base = base;
+                current->base = bound;
+                splay(t, current);
+                DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- replaced\n", base, bound))
+                return;
             }
         }
     }

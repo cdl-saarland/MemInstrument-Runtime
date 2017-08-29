@@ -45,7 +45,6 @@ static void __splay_fail(void *faultingPtr) {
 }
 
 void __splay_check_access(void* witness, void* ptr, size_t sz) {
-    /* fprintf(stderr, "splay_check\n"); */
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         /* __splay_fail(ptr); */
@@ -79,19 +78,21 @@ uintptr_t __splay_get_upper(void* witness) {
 }
 
 void __splay_alloc_global(void* ptr, size_t sz) {
-    /* fprintf(stderr, "splay_alloc\n"); */
     uintptr_t val = (uintptr_t)ptr;
-    splayInsert(&memTree, val, val + sz, true);
+    splayInsert(&memTree, val, val + sz, IB_EXTEND);
 }
 
 void __splay_alloc(void* ptr, size_t sz) {
-    /* fprintf(stderr, "splay_alloc\n"); */
     uintptr_t val = (uintptr_t)ptr;
-    splayInsert(&memTree, val, val + sz, false);
+    splayInsert(&memTree, val, val + sz, IB_ERROR);
+}
+
+void __splay_alloc_or_replace(void* ptr, size_t sz) {
+    uintptr_t val = (uintptr_t)ptr;
+    splayInsert(&memTree, val, val + sz, IB_REPLACE);
 }
 
 void __splay_free(void* ptr) {
-    /* fprintf(stderr, "splay_free\n"); */
     uintptr_t val = (uintptr_t)ptr;
     splayRemove(&memTree, val);
 }
