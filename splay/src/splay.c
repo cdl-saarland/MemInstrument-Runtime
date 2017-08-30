@@ -51,6 +51,21 @@ void __splay_check_access(void* witness, void* ptr, size_t sz) {
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return;
     }
+    /* fprintf(stderr, "Check with existing witness!\n"); */
+    uintptr_t val = (uintptr_t)ptr;
+    if (val < n->base || (val + sz) > n->bound) {
+        __splay_fail(ptr);
+    }
+}
+
+void __splay_check_access_named(void* witness, void* ptr, size_t sz, char* name) {
+    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    if (n == NULL) {
+        /* __splay_fail(ptr); */
+        fprintf(stderr, "Check with non-existing witness for %p (%s)!\n", ptr, name);
+        return;
+    }
+    fprintf(stderr, "Check with existing witness for %p (%s)!\n", ptr, name);
     uintptr_t val = (uintptr_t)ptr;
     if (val < n->base || (val + sz) > n->bound) {
         __splay_fail(ptr);
