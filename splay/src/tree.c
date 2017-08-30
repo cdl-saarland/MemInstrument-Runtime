@@ -9,7 +9,8 @@
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void*);
 
-extern char* __progname;
+#ifdef DBG
+// Functions for expensive debug checks and printing
 
 static bool validateNode(Node* parent, Node* n, size_t *expectedNodes) {
     if (n == NULL) {
@@ -67,6 +68,10 @@ static bool validateTree(Tree *t) {
     }
     return true;
 }
+#endif
+
+#ifdef PRINT_TREE_INTERVAL
+extern char* __progname;
 
 static void dotNodeLabel(FILE* F, Node* n) {
     if (n == NULL) {
@@ -113,6 +118,8 @@ static void dotTree(Tree* t) {
 
     fclose(F);
 }
+
+#endif
 
 static void replaceInParent(Tree* t, Node* res, Node* new) {
     assert(res != NULL);

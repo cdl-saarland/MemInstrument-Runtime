@@ -6,8 +6,6 @@ LIB_NAME = splay
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
 STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
-CC = clang
-
 Q ?= @
 
 CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3
