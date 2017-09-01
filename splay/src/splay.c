@@ -140,6 +140,9 @@ void __splay_alloc_or_replace(void* ptr, size_t sz) {
 
 void __splay_free(void* ptr) {
     uintptr_t val = (uintptr_t)ptr;
+    if (val == 0) {
+        return;
+    }
     splayRemove(&memTree, val);
 }
 
