@@ -4,7 +4,28 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <execinfo.h>
+#include <unistd.h>
 
+#define MAX_BACKTRACE_LENGTH 10
+
+#define PRINTBACKTRACE {\
+    void *buf[MAX_BACKTRACE_LENGTH];\
+    int n = backtrace(buf, MAX_BACKTRACE_LENGTH);\
+    backtrace_symbols_fd(buf, n, STDERR_FILENO);\
+}
+
+void splayFail(const char* msg, void *faultingPtr) {
+    fprintf(stderr, "Memory safety violation!\n"
+    "         / .'\n"
+    "   .---. \\/\n"
+    "  (._.' \\()\n"
+    "   ^\"\"\"^\"\n"
+    "%s with pointer %p\n"
+    "\nBacktrace:\n", msg, faultingPtr);
+    PRINTBACKTRACE;
+    exit(73);
+}
 
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void*);
@@ -321,7 +342,8 @@ void splayRemove(Tree* t, uintptr_t val) {
     DEBUG(fprintf(stderr, "  call splayRemove(%8lx)\n", val))
     Node* res = find_impl(t, val);
     if (res == NULL) { //FIXME
-        DEBUG(fprintf(stderr, "  early return splayRemove(%8lx)\n", val))
+        /* DEBUG(fprintf(stderr, "  early return splayRemove(%8lx)\n", val)) */
+        splayFail("Double free", (void*)val);
         return;
     }
     removeNode(t, res);

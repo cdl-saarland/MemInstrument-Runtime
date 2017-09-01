@@ -35,6 +35,7 @@ typedef enum {
     IB_ERROR,
 } InsertBehavior;
 
+void splayFail(const char* msg, void *faultingPtr);
 void splayInit(Tree *t);
 void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib);
 void splayRemove(Tree* t, uintptr_t val);
