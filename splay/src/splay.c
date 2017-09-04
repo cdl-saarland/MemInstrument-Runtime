@@ -38,7 +38,7 @@ void __splay_check_inbounds(void* witness, void* ptr) {
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         /* splayFail(ptr); */
-        fprintf(stderr, "Inbounds check with non-existing witness!\n");
+        /* fprintf(stderr, "Inbounds check with non-existing witness!\n"); */
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
@@ -77,7 +77,7 @@ void __splay_check_dereference(void* witness, void* ptr, size_t sz) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         /* splayFail(ptr); */
-        fprintf(stderr, "Access check with non-existing witness!\n");
+        /* fprintf(stderr, "Access check with non-existing witness!\n"); */
         return;
     }
     /* fprintf(stderr, "Access check with existing witness!\n"); */

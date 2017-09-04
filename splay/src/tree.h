@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 // #define DBG 1
-// #define PRINT_TREE_INTERVAL 1000
+// #define PRINT_TREE_INTERVAL 500000
 
 #ifdef DBG
 #define DEBUG(x) do {x;} while (false);
