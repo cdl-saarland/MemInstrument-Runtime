@@ -38,7 +38,7 @@ void __splay_check_inbounds(void* witness, void* ptr) {
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         /* splayFail(ptr); */
-        /* fprintf(stderr, "Inbounds check with non-existing witness!\n"); */
+        fprintf(stderr, "Inbounds check with non-existing witness!\n");
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
@@ -62,7 +62,7 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
         fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name);
         return;
     }
-    fprintf(stderr, "Inbounds check with existing witness for %p (%s)!\n", ptr, name);
+    /* fprintf(stderr, "Inbounds check with existing witness for %p (%s)!\n", ptr, name); */
     if (ptr_val < n->base || ptr_val >= n->bound) {
         splayFail("Outflowing out-of-bounds pointer", ptr);
     }
@@ -77,7 +77,7 @@ void __splay_check_dereference(void* witness, void* ptr, size_t sz) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         /* splayFail(ptr); */
-        /* fprintf(stderr, "Access check with non-existing witness!\n"); */
+        fprintf(stderr, "Access check with non-existing witness!\n");
         return;
     }
     /* fprintf(stderr, "Access check with existing witness!\n"); */
@@ -97,7 +97,7 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
         fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name);
         return;
     }
-    fprintf(stderr, "Access check with existing witness for %p (%s)!\n", ptr, name);
+    /* fprintf(stderr, "Access check with existing witness for %p (%s)!\n", ptr, name); */
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         splayFail("Out-of-bounds dereference", ptr);
     }
@@ -209,6 +209,19 @@ void free(void* p) {
 typedef int (*fcn)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini) (void), void (*rtld_fini)(void), void (*stack_end));
 int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
     setupSplay();
+
+    __splay_alloc(ubp_av, argc * sizeof(char*));
+
+    for (int i = 0; i < argc; ++i) {
+        char *c = ubp_av[i];
+        size_t len = 0;
+        while (*c != '\0') {
+            len++;
+            c++;
+        }
+        __splay_alloc(ubp_av[i], len * sizeof(char));
+    }
+
     fcn start = (fcn)dlsym(RTLD_NEXT, "__libc_start_main");
     return (*start)(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
 }
