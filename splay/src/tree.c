@@ -392,15 +392,17 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                 return;
             case IB_EXTEND:
                 current->base = min(current->base, base);
-                current->base = max(current->bound, bound);
+                current->bound= max(current->bound, bound);
                 splay(t, current);
                 DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- extended\n", base, bound))
+                __libc_free(newNode);
                 return;
             case IB_REPLACE:
                 current->base = base;
-                current->base = bound;
+                current->bound= bound;
                 splay(t, current);
                 DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- replaced\n", base, bound))
+                __libc_free(newNode);
                 return;
             }
         }
