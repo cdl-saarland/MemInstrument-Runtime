@@ -286,15 +286,6 @@ static Node* findMin(Node* n) {
     return current;
 }
 
-static Node* findMax(Node* n) {
-    ASSERTION(assert(n != NULL);)
-    Node* current = n;
-    while (current->rightChild != NULL) {
-        current = current->rightChild;
-    }
-    return current;
-}
-
 static void copyData(Node* to, Node* from) {
     to->base = from->base;
     to->bound = from->bound;

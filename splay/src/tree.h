@@ -37,8 +37,6 @@ typedef struct Tree {
 #ifdef DBG
     size_t numNodes;
 #endif
-    uintptr_t min_val;
-    uintptr_t max_val;
 } Tree;
 
 typedef enum {
