@@ -101,7 +101,7 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
 uintptr_t __splay_get_lower(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        splayFail(ptr);
+        splayFail("Taking bounds of unknown allocation", witness);
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return 0;
     }
@@ -111,7 +111,7 @@ uintptr_t __splay_get_lower(void* witness) {
 uintptr_t __splay_get_upper(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        splayFail(ptr);
+        splayFail("Taking bounds of unknown allocation", witness);
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return -1;
     }
