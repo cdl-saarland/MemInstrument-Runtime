@@ -38,7 +38,6 @@ void __splay_check_inbounds(void* witness, void* ptr) {
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         /* splayFail(ptr); */
-        /* fprintf(stderr, "Inbounds check with non-existing witness!\n"); */
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
@@ -62,7 +61,6 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
         fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name);
         return;
     }
-    /* fprintf(stderr, "Inbounds check with existing witness for %p (%s)!\n", ptr, name); */
     if (ptr_val < n->base || ptr_val >= n->bound) {
         splayFail("Outflowing out-of-bounds pointer", ptr);
     }
@@ -77,10 +75,8 @@ void __splay_check_dereference(void* witness, void* ptr, size_t sz) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         /* splayFail(ptr); */
-        /* fprintf(stderr, "Access check with non-existing witness!\n"); */
         return;
     }
-    /* fprintf(stderr, "Access check with existing witness!\n"); */
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         splayFail("Out-of-bounds dereference", ptr);
     }
@@ -97,7 +93,6 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
         fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name);
         return;
     }
-    /* fprintf(stderr, "Access check with existing witness for %p (%s)!\n", ptr, name); */
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         splayFail("Out-of-bounds dereference", ptr);
     }
@@ -106,7 +101,7 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
 uintptr_t __splay_get_lower(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        /* splayFail(ptr); */
+        splayFail(ptr);
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return 0;
     }
@@ -116,7 +111,7 @@ uintptr_t __splay_get_lower(void* witness) {
 uintptr_t __splay_get_upper(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
-        /* splayFail(ptr); */
+        splayFail(ptr);
         /* fprintf(stderr, "Check with non-existing witness!\n"); */
         return -1;
     }
