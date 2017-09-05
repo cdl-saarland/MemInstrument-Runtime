@@ -109,7 +109,6 @@ static void dotFromNode(FILE* F, Node* n) {
     if (n == NULL) {
         return;
     }
-    /* assert(false); */
     if (n->leftChild != NULL) {
         fprintf(F, "  n%08lx -> n%08lx [label=%s];\n", n->base, n->leftChild->base, "l");
     }
@@ -143,7 +142,7 @@ static void dotTree(Tree* t) {
 #endif
 
 static void replaceInParent(Tree* t, Node* res, Node* new) {
-    assert(res != NULL);
+    ASSERTION(assert(res != NULL);)
     if (new != NULL) {
         new->parent = res->parent;
         new->isLeft = res->isLeft;
@@ -176,9 +175,9 @@ static void replaceInParent(Tree* t, Node* res, Node* new) {
  *      b   c
  */
 static void rotateRight(Tree* t, Node* p) {
-    assert(p != NULL);
+    ASSERTION(assert(p != NULL);)
     Node* x = p->leftChild;
-    assert(x != NULL);
+    ASSERTION(assert(x != NULL);)
     Node* b = x->rightChild;
 
     replaceInParent(t, p, x);
@@ -209,9 +208,9 @@ static void rotateRight(Tree* t, Node* p) {
  *  a   b
  */
 static void rotateLeft(Tree* t, Node* p) {
-    assert(p != NULL);
+    ASSERTION(assert(p != NULL);)
     Node* x = p->rightChild;
-    assert(x != NULL);
+    ASSERTION(assert(x != NULL);)
     Node* b = x->leftChild;
 
     replaceInParent(t, p, x);
@@ -264,8 +263,8 @@ static void splay(Tree* t, Node* x) {
         }
         DEBUG(assert(validateTree(t)))
     }
-    assert(t->root == x);
-    assert(x->parent == NULL);
+    ASSERTION(assert(t->root == x);)
+    ASSERTION(assert(x->parent == NULL);)
     DEBUG(assert(validateTree(t)))
 
 #ifdef PRINT_TREE_INTERVAL
@@ -279,10 +278,19 @@ static void splay(Tree* t, Node* x) {
 }
 
 static Node* findMin(Node* n) {
-    assert(n != NULL);
+    ASSERTION(assert(n != NULL);)
     Node* current = n;
     while (current->leftChild != NULL) {
         current = current->leftChild;
+    }
+    return current;
+}
+
+static Node* findMax(Node* n) {
+    ASSERTION(assert(n != NULL);)
+    Node* current = n;
+    while (current->rightChild != NULL) {
+        current = current->rightChild;
     }
     return current;
 }
@@ -318,7 +326,7 @@ static Node* find_impl(Tree* t, uintptr_t val) {
 
 static void removeNode(Tree* t, Node* n) {
     Node* res = n;
-    assert(res != NULL && "Trying to remove non-existing element!");
+    ASSERTION(assert(res != NULL && "Trying to remove non-existing element!");)
 
     if (res->leftChild == NULL && res->rightChild == NULL) {
         replaceInParent(t, res, NULL);
@@ -393,6 +401,7 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
             switch (ib) {
             case IB_ERROR:
                 assert(false && "Trying to insert a conflicting element!");
+                __libc_free(newNode);
                 return;
             case IB_EXTEND:
                 current->base = min(current->base, base);
