@@ -294,7 +294,9 @@ static void copyData(Node* to, Node* from) {
 
 void splayInit(Tree *t) {
     t->root = NULL;
+#ifdef DBG
     t->numNodes = 0;
+#endif
 }
 
 static Node* find_impl(Tree* t, uintptr_t val) {
@@ -333,7 +335,9 @@ static void removeNode(Tree* t, Node* n) {
 
     __libc_free(res);
 
+#ifdef DBG
     t->numNodes--;
+#endif
 
     DEBUG(assert(validateTree(t)))
 }
@@ -420,7 +424,9 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
             parent->rightChild = newNode;
         }
     }
+#ifdef DBG
     t->numNodes++;
+#endif
     DEBUG(assert(validateTree(t)))
     splay(t, newNode);
     DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx)\n", base, bound))

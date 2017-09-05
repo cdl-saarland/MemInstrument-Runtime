@@ -26,7 +26,9 @@ typedef struct Node {
 
 typedef struct Tree {
     Node* root;
+#ifdef DBG
     size_t numNodes;
+#endif
 } Tree;
 
 typedef enum {
