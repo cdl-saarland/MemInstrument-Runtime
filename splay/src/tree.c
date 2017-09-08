@@ -242,14 +242,15 @@ static void splay(Tree* t, Node* x) {
             DEBUG(assert(validateTree(t)))
             continue;
         }
-        if (x->isLeft == p->isLeft) { // ZIG-ZIG
-            if (x->isLeft) {
-                rotateRight(t, g);
-                rotateRight(t, p);
-            } else {
-                rotateLeft(t, g);
-                rotateLeft(t, p);
-            }
+        if (x->isLeft && p->isLeft) { // ZIG-ZIG (all left)
+            rotateRight(t, g);
+            rotateRight(t, p);
+            DEBUG(assert(validateTree(t)))
+            continue;
+        }
+        if (!(x->isLeft || p->isLeft)) { // ZIG-ZIG (all right)
+            rotateLeft(t, g);
+            rotateLeft(t, p);
             DEBUG(assert(validateTree(t)))
             continue;
         }
