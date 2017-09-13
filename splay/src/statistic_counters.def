@@ -1,0 +1,4 @@
+// vim:set ft=c:
+
+STAT_ACTION(NumDerefFail, "# of failed dereference checks")
+

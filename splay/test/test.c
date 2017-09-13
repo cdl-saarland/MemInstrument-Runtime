@@ -13,7 +13,7 @@ int main(void)
 
     for (int i = 0; i < size; ++i) {
         p[i] = 42+i;
-        __splay_check_access(p, p+i, sizeof(int));
+        /* __splay_check_access(p, p+i, sizeof(int)); */
     }
 
     for (int i = 0; i < size; ++i) {

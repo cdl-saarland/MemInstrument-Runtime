@@ -12,7 +12,8 @@ CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
-OBJS=${BUILD_DIR}/splay.o ${BUILD_DIR}/tree.o
+SRC=$(sort $(wildcard $(SRC_DIR)/*.c))
+OBJ=$(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 .PHONY: clean
 
@@ -33,12 +34,12 @@ static: ${STAT_LIB}
 
 dynamic: ${DYN_LIB}
 
-${STAT_LIB}: ${OBJS}
+${STAT_LIB}: ${OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
-${DYN_LIB}: ${OBJS}
+${DYN_LIB}: ${OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
 	$(Q)$(CC) -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
