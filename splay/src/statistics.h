@@ -1,5 +1,9 @@
 #pragma once
 
+#include "config.h"
+
+#ifdef STATISTICS
+
 #include <stddef.h>
 
 // Declare all statistics counters
@@ -15,3 +19,8 @@
 
 void __print_stats(void);
 
+#else
+
+#define STAT_INC(var) {;}
+
+#endif

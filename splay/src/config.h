@@ -5,8 +5,13 @@
 
 #define MAX_BACKTRACE_LENGTH 10
 
+// Enable collecting and printing statistics at run time
+#define STATISTICS 1
+
+// Disable crashing when a fatal error is discovered
+#define CONTINUE_ON_FATAL 1
+
 // Debugging assertions for splay tree
-// #define STATISTICS 1
 // #define ASSERTS 1
 // #define DBG 1
 // #define PRINT_TREE_INTERVAL 500000

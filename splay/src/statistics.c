@@ -1,3 +1,7 @@
+#include "config.h"
+
+#ifdef STATISTICS
+
 #include "statistics.h"
 
 #include <stdio.h>
@@ -24,15 +28,14 @@ static struct __StatEntry { size_t id; size_t* ptr; const char* text; }
 
 static size_t __NumStatEntries = __COUNTER__;\
 
-
-
 void __print_stats(void) {
     fprintf(stderr, "\n==================================================\n");
     fprintf(stderr, "meminstrument runtime stats:\n");
 
     for (size_t i = 0; i < __NumStatEntries; ++i) {
-        fprintf(stderr, "  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);
+        fprintf(stderr, "STAT  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);
     }
 
     fprintf(stderr, "==================================================\n");
 }
+#endif

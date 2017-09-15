@@ -97,9 +97,11 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
         __splay_alloc(ubp_av[i], len * sizeof(char));
     }
 
+#ifdef STATISTICS
     if (atexit(__print_stats) != 0) {
         fprintf(stderr, "meminstrument: Failed to register statistics printer!\n");
     }
+#endif
 
     fcn start = (fcn)dlsym(RTLD_NEXT, "__libc_start_main");
     return (*start)(main, argc, ubp_av, init, fini, rtld_fini, stack_end);

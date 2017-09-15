@@ -15,9 +15,13 @@ LDFLAGS += -ldl
 SRC=$(sort $(wildcard $(SRC_DIR)/*.c))
 OBJ=$(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-.PHONY: clean
+DEP=$(OBJ:%.o=%.d)
+
+.PHONY: all clean
 
 all: static dynamic
+
+-include $(DEP)
 
 test: test-dynamic test-static
 
@@ -42,23 +46,23 @@ ${STAT_LIB}: ${OBJ}
 ${DYN_LIB}: ${OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
-	$(Q)$(CC) -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CC) -o $@ -c ${CFLAGS} $<
+	$(Q)$(CC) -MMD -o $@ -c ${CFLAGS} $<
 
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
+	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 clean:
 	@echo "===> CLEAN"

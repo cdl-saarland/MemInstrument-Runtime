@@ -1,4 +1,27 @@
 // vim:set ft=c:
 
-STAT_ACTION(NumDerefFail, "# of failed dereference checks")
+STAT_ACTION(NumFatalFails, "# of fatally failed checks")
+
+STAT_ACTION(NumDerefChecks, "# of performed dereference checks")
+STAT_ACTION(NumDerefChecksNoWitness, "# of dereference checks skipped because of non-existing witness")
+STAT_ACTION(NumFailedDerefChecksOOB, "# of failed deref checks because of OOB pointers")
+STAT_ACTION(NumFailedDerefChecksNULL, "# of failed deref checks because of NULL pointers")
+
+STAT_ACTION(NumInboundsChecks, "# of performed inbounds checks")
+STAT_ACTION(NumFailedInboundsChecksOOB, "# of failed inbounds checks because of OOB pointers")
+STAT_ACTION(NumFailedInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
+STAT_ACTION(NumInboundsChecksNoWitness, "# of inbounds checks skipped because of non-existing witness")
+
+STAT_ACTION(NumMergeAllocs, "# of registered global/function allocations")
+STAT_ACTION(NumStrictAllocs, "# of registered malloc (-like) allocations")
+STAT_ACTION(NumReplaceAllocs, "# of registered stack allocations")
+
+STAT_ACTION(NumFrees, "# of registered deallocations")
+STAT_ACTION(NumDoubleFrees, "# of registered double frees")
+
+STAT_ACTION(NumGetLower, "# of queries for lower bounds")
+STAT_ACTION(NumGetLowerNoWitness, "# of queries for lower bounds with non-existing witnesses")
+
+STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
+STAT_ACTION(NumGetUpperNoWitness, "# of queries for upper bounds with non-existing witnesses")
 
