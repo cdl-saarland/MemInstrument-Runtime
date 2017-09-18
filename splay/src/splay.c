@@ -19,14 +19,29 @@ Tree memTree;
 
 void __setup_splay(void) {
     splayInit(&memTree);
+#ifdef STATISTICS
+#ifdef STATS_FILE
+    stats_file = getenv(STATS_FILE);
+#endif
+#endif
 }
 
 void __splay_fail(const char* msg, void *faultingPtr) {
     STAT_INC(NumFatalFails);
+
+#ifdef SILENT
+    // avoid warnings
+    (void)msg;
+    (void)faultingPtr;
+#endif
+
 #ifdef CONTINUE_ON_FATAL
+#ifndef SILENT
     fprintf(stderr, "FATAL: Memory safety violation! "
             "%s with pointer %p\n" , msg, faultingPtr);
+#endif
 #else
+#ifndef SILENT
     fprintf(stderr, "Memory safety violation!\n"
     "         / .'\n"
     "   .---. \\/\n"
@@ -35,6 +50,7 @@ void __splay_fail(const char* msg, void *faultingPtr) {
     "%s with pointer %p\n"
     "\nBacktrace:\n", msg, faultingPtr);
     PRINTBACKTRACE;
+#endif
     exit(73);
 #endif
 }

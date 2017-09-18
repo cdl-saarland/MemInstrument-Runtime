@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 
+const char* stats_file = NULL;
+
 // Define all statistics counters
 #define STAT_ACTION(var, text) \
     size_t __##var = 0;
@@ -29,13 +31,22 @@ static struct __StatEntry { size_t id; size_t* ptr; const char* text; }
 static size_t __NumStatEntries = __COUNTER__;\
 
 void __print_stats(void) {
-    fprintf(stderr, "\n==================================================\n");
-    fprintf(stderr, "meminstrument runtime stats:\n");
+    FILE* dest = stderr;
+    if (stats_file) {
+        dest = fopen(stats_file, "a");
+        if (!dest) {
+            fprintf(stderr, "Failed to open stats_file `%s'", stats_file);
+            return;
+        }
+    }
+    fprintf(dest, "\n==================================================\n");
+    fprintf(dest, "meminstrument runtime stats:\n");
 
     for (size_t i = 0; i < __NumStatEntries; ++i) {
-        fprintf(stderr, "STAT  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);
+        fprintf(dest, "STAT  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);
     }
 
-    fprintf(stderr, "==================================================\n");
+    fprintf(dest, "==================================================\n");
+    fclose(dest);
 }
 #endif

@@ -6,6 +6,8 @@
 
 #include <stddef.h>
 
+extern const char* stats_file;
+
 // Declare all statistics counters
 #define STAT_ACTION(var, text) \
     extern size_t __##var;

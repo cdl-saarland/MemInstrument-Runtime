@@ -6,10 +6,17 @@
 #define MAX_BACKTRACE_LENGTH 10
 
 // Enable collecting and printing statistics at run time
-#define STATISTICS 1
+// #define STATISTICS 1
+
+// If defined, use this key to find a file to print runtime stats to
+#define STATS_FILE "MI_STATS_FILE"
+
 
 // Disable crashing when a fatal error is discovered
-#define CONTINUE_ON_FATAL 1
+// #define CONTINUE_ON_FATAL 1
+
+// Don't print anything (unless stats are enabled)
+#define SILENT 1
 
 // Debugging assertions for splay tree
 // #define ASSERTS 1
