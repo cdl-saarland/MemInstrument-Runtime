@@ -6,7 +6,9 @@
 
 #include <stddef.h>
 
-extern const char* stats_file;
+extern const char* mi_stats_file;
+
+extern const char* mi_prog_name;
 
 // Declare all statistics counters
 #define STAT_ACTION(var, text) \

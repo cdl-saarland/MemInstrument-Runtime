@@ -85,6 +85,10 @@ typedef int (*fcn)(int *(main)(int, char **, char **), int argc, char **ubp_av, 
 int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
     __setup_splay();
 
+#ifdef STATISTICS
+    mi_prog_name = ubp_av[0];
+#endif
+
     __splay_alloc(ubp_av, argc * sizeof(char*));
 
     for (int i = 0; i < argc; ++i) {

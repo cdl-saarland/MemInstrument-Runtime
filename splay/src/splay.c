@@ -21,7 +21,7 @@ void __setup_splay(void) {
     splayInit(&memTree);
 #ifdef STATISTICS
 #ifdef STATS_FILE
-    stats_file = getenv(STATS_FILE);
+    mi_stats_file = getenv(STATS_FILE);
 #endif
 #endif
 }
@@ -30,7 +30,7 @@ void __splay_fail(const char* msg, void *faultingPtr) {
     STAT_INC(NumFatalFails);
 
 #ifdef SILENT
-    // avoid warnings
+    // avoid compiler warnings
     (void)msg;
     (void)faultingPtr;
 #endif

@@ -6,7 +6,9 @@
 
 #include <stdio.h>
 
-const char* stats_file = NULL;
+const char* mi_stats_file = NULL;
+
+const char* mi_prog_name = NULL;
 
 // Define all statistics counters
 #define STAT_ACTION(var, text) \
@@ -32,15 +34,15 @@ static size_t __NumStatEntries = __COUNTER__;\
 
 void __print_stats(void) {
     FILE* dest = stderr;
-    if (stats_file) {
-        dest = fopen(stats_file, "a");
+    if (mi_stats_file) {
+        dest = fopen(mi_stats_file, "a");
         if (!dest) {
-            fprintf(stderr, "Failed to open stats_file `%s'", stats_file);
+            fprintf(stderr, "Failed to open stats file `%s'", mi_stats_file);
             return;
         }
     }
     fprintf(dest, "\n==================================================\n");
-    fprintf(dest, "meminstrument runtime stats:\n");
+    fprintf(dest, "meminstrument runtime stats for `%s':\n", mi_prog_name);
 
     for (size_t i = 0; i < __NumStatEntries; ++i) {
         fprintf(dest, "STAT  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);
