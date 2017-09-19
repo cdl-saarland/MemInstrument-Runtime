@@ -16,7 +16,7 @@
 // #define CONTINUE_ON_FATAL 1
 
 // Don't print anything (unless stats are enabled)
-#define SILENT 1
+// #define SILENT 1
 
 // Debugging assertions for splay tree
 // #define ASSERTS 1

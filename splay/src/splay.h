@@ -4,6 +4,8 @@
 
 void __setup_splay(void);
 
+void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb);
+
 void __splay_fail(const char* msg, void *faultingPtr);
 
 void __splay_check_inbounds(void* witness, void* ptr);

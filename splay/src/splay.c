@@ -26,7 +26,7 @@ void __setup_splay(void) {
 #endif
 }
 
-void __splay_fail(const char* msg, void *faultingPtr) {
+void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) {
     STAT_INC(NumFatalFails);
 
 #ifdef SILENT
@@ -43,16 +43,23 @@ void __splay_fail(const char* msg, void *faultingPtr) {
 #else
 #ifndef SILENT
     fprintf(stderr, "Memory safety violation!\n"
-    "         / .'\n"
-    "   .---. \\/\n"
-    "  (._.' \\()\n"
-    "   ^\"\"\"^\"\n"
-    "%s with pointer %p\n"
-    "\nBacktrace:\n", msg, faultingPtr);
+        "         / .'\n"
+        "   .---. \\/\n"
+        "  (._.' \\()\n"
+        "   ^\"\"\"^\"\n"
+        "%s with pointer %p\n", msg, faultingPtr);
+    if (verb) {
+        fprintf(stderr, "at %s\n", verb);
+    }
+    fprintf(stderr, "\nBacktrace:\n");
     PRINTBACKTRACE;
 #endif
     exit(73);
 #endif
+}
+
+void __splay_fail(const char* msg, void *faultingPtr) {
+    __splay_fail_verbose(msg, faultingPtr, NULL);
 }
 
 void __splay_check_inbounds(void* witness, void* ptr) {
@@ -88,17 +95,17 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
             return;
         }
         STAT_INC(NumFailedInboundsChecksNULL);
-        __splay_fail("Outflowing out-of-bounds pointer", ptr);
+        __splay_fail_verbose("Outflowing out-of-bounds pointer", ptr, name);
     }
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         STAT_INC(NumInboundsChecksNoWitness);
-        fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name);
+        /* fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name); */
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
         STAT_INC(NumFailedInboundsChecksOOB);
-        __splay_fail("Outflowing out-of-bounds pointer", ptr);
+        __splay_fail_verbose("Outflowing out-of-bounds pointer", ptr, name);
     }
 }
 
@@ -126,17 +133,17 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     uintptr_t ptr_val = (uintptr_t) ptr;
     if (ptr_val < NULLPTR_BOUND) {
         STAT_INC(NumFailedDerefChecksNULL);
-        __splay_fail("NULL dereference", ptr);
+        __splay_fail_verbose("NULL dereference", ptr, name);
     }
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumDerefChecksNoWitness);
-        fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name);
+        /* fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name); */
         return;
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
-        __splay_fail("Out-of-bounds dereference", ptr);
+        __splay_fail_verbose("Out-of-bounds dereference", ptr, name);
     }
 }
 

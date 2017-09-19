@@ -3,7 +3,14 @@
 
 
 
-void __splay_check_access(void* witness, void* ptr, size_t sz);
+void __splay_check_dereference(void* witness, void* ptr, size_t sz);
+
+void foo(int*p, int size) {
+    for (int i = 0; i < size+1; ++i) {
+        p[i] = 42+i;
+        __splay_check_dereference(p, p+i, sizeof(int));
+    }
+}
 
 int main(void)
 {
@@ -11,10 +18,7 @@ int main(void)
     int size = 7;
     int* p = (int*) malloc(size * sizeof(int));
 
-    for (int i = 0; i < size; ++i) {
-        p[i] = 42+i;
-        /* __splay_check_access(p, p+i, sizeof(int)); */
-    }
+    foo(p, size);
 
     for (int i = 0; i < size; ++i) {
         int* q = malloc(p[i]);

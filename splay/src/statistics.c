@@ -1,14 +1,14 @@
 #include "config.h"
 
+#include <stdio.h>
+
+const char* mi_prog_name = NULL;
+
 #ifdef STATISTICS
 
 #include "statistics.h"
 
-#include <stdio.h>
-
 const char* mi_stats_file = NULL;
-
-const char* mi_prog_name = NULL;
 
 // Define all statistics counters
 #define STAT_ACTION(var, text) \

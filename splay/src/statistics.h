@@ -2,13 +2,13 @@
 
 #include "config.h"
 
+extern const char* mi_prog_name;
+
 #ifdef STATISTICS
 
 #include <stddef.h>
 
 extern const char* mi_stats_file;
-
-extern const char* mi_prog_name;
 
 // Declare all statistics counters
 #define STAT_ACTION(var, text) \
