@@ -62,6 +62,27 @@ void __splay_fail(const char* msg, void *faultingPtr) {
     __splay_fail_verbose(msg, faultingPtr, NULL);
 }
 
+void __splay_fail_simple(void) {
+    STAT_INC(NumFatalFails);
+
+#ifdef CONTINUE_ON_FATAL
+#ifndef SILENT
+    fprintf(stderr, "FATAL: Memory safety violation!");
+#endif
+#else
+#ifndef SILENT
+    fprintf(stderr, "Memory safety violation!\n"
+        "         / .'\n"
+        "   .---. \\/\n"
+        "  (._.' \\()\n"
+        "   ^\"\"\"^\"\n");
+    fprintf(stderr, "\nBacktrace:\n");
+    PRINTBACKTRACE;
+#endif
+    exit(73);
+#endif
+}
+
 void __splay_check_inbounds(void* witness, void* ptr) {
     STAT_INC(NumInboundsChecks);
     uintptr_t witness_val = (uintptr_t) witness;
