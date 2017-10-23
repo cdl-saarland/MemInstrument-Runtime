@@ -11,42 +11,86 @@
 #define __USE_GNU
 #include <dlfcn.h>
 
-// from glibc (not portable)
-extern void *__libc_malloc(size_t size);
-extern void *__libc_calloc(size_t nmemb, size_t size);
-extern void *__libc_realloc(void *ptr, size_t size);
-extern void __libc_free(void* p);
-
 // TODO make threadsafe
-static int hooks_active = 1;
+static int hooks_active = 0;
 
+typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini) (void), void (*rtld_fini)(void), void (*stack_end));
+static start_main_type start_main_found = NULL;
+
+
+void* __libc_malloc(size_t);
+
+typedef void*(*malloc_type)(size_t);
+static malloc_type malloc_found = __libc_malloc;
+
+typedef void(*free_type)(void*);
+static free_type free_found = NULL;
+
+typedef void*(*calloc_type)(size_t, size_t);
+static calloc_type calloc_found = NULL;
+
+typedef void*(*realloc_type)(void*, size_t);
+static realloc_type realloc_found = NULL;
+
+typedef void*(*aligned_alloc_type)(size_t, size_t);
+static aligned_alloc_type aligned_alloc_found = NULL;
+
+/* typedef int (*posix_memalign_type)(void**, size_t, size_t); */
+/* static posix_memalign_type posix_memalign_found; */
+
+/* typedef int memalign_type(void**, size_t, size_t); */
+/* static memalign_type found_memalign; */
+
+void initDynamicFunctions(void) {
+    const char* libname = "libc.so.6";
+    void* handle = dlopen(libname, RTLD_NOW | RTLD_LOCAL);
+    char* msg = NULL;
+    if ((msg = dlerror())) {
+        fprintf(stderr, "Meminstrument: Error loading libc:\n%s\n", msg);
+        exit(74);
+    }
+
+    start_main_found = (start_main_type)dlsym(handle, "__libc_start_main");
+    malloc_found = (malloc_type)dlsym(handle, "malloc");
+    free_found = (free_type)dlsym(handle, "free");
+    calloc_found = (calloc_type)dlsym(handle, "calloc");
+    realloc_found = (realloc_type)dlsym(handle, "realloc");
+    aligned_alloc_found = (aligned_alloc_type)dlsym(handle, "aligned_alloc");
+    /* posix_memalign_found = (posix_memalign_type)dlsym(handle, "posix_memalign"); */
+    /* memalign_found = (memalign_type)dlsym(handle, "memalign"); */
+
+    if ((msg = dlerror())) {
+        fprintf(stderr, "Meminstrument: Error finding libc symbols:\n%s\n", msg);
+        exit(74);
+    }
+}
 
 void* malloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = __libc_malloc(size);
+        void* res = malloc_found(size);
 
         __splay_alloc(res, size);
 
         hooks_active = 1;
         return res;
     }
-    return __libc_malloc(size);
+    return malloc_found(size);
 }
 
 void* calloc(size_t nmemb, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = __libc_calloc(nmemb, size);
+        void* res = calloc_found(nmemb, size);
 
         __splay_alloc(res, nmemb * size);
 
         hooks_active = 1;
         return res;
     }
-    return __libc_calloc(nmemb, size);
+    return calloc_found(nmemb, size);
 }
 
 void* realloc(void *ptr, size_t size) {
@@ -55,17 +99,53 @@ void* realloc(void *ptr, size_t size) {
 
         __splay_free(ptr);
 
-        void* res = __libc_realloc(ptr, size);
+        void* res = realloc_found(ptr, size);
 
         __splay_alloc(res, size);
 
         hooks_active = 1;
         return res;
     }
-    return __libc_realloc(ptr, size);
+    return realloc_found(ptr, size);
 }
 
-// TODO memalign, sbrk, reallocarray,...
+/* int posix_memalign(void **memptr, size_t alignment, size_t size) { */
+/*     if (hooks_active) { */
+/*         hooks_active = 0; */
+/*  */
+/*         int res = posix_memalign_found(memptr, alignment, size); */
+/*  */
+/*         if (!res) { */
+/*             __splay_alloc(memptr, size); */
+/*         } */
+/*  */
+/*         hooks_active = 1; */
+/*         return res; */
+/*     } */
+/*     return posix_memalign_found(memptr, alignment, size); */
+/* } */
+
+void *aligned_alloc(size_t alignment, size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        void* res = aligned_alloc_found(alignment, size);
+
+        __splay_alloc(res, size);
+
+        hooks_active = 1;
+        return res;
+    }
+    return aligned_alloc_found(alignment, size);
+}
+
+/* void *valloc(size_t size); */
+/*  */
+/* void *memalign(size_t alignment, size_t size); */
+/* void *pvalloc(size_t size); */
+
+
+// TODO sbrk, reallocarray,...
 
 void free(void* p) {
     if (hooks_active) {
@@ -73,16 +153,18 @@ void free(void* p) {
 
         __splay_free(p);
 
-        __libc_free(p);
+        free_found(p);
 
         hooks_active = 1;
         return;
     }
-    __libc_free(p);
+    free_found(p);
 }
 
-typedef int (*fcn)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini) (void), void (*rtld_fini)(void), void (*stack_end));
 int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
+
+    initDynamicFunctions();
+
     __setup_splay();
 
     mi_prog_name = ubp_av[0];
@@ -105,7 +187,8 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
     }
 #endif
 
-    fcn start = (fcn)dlsym(RTLD_NEXT, "__libc_start_main");
-    return (*start)(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
+    hooks_active = 1;
+
+    return (*start_main_found)(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
 }
 

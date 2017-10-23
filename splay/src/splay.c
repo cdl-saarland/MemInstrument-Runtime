@@ -32,6 +32,7 @@ void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) 
 #ifdef SILENT
     // avoid compiler warnings
     (void)msg;
+    (void)verb;
     (void)faultingPtr;
 #endif
 
@@ -121,7 +122,9 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         STAT_INC(NumInboundsChecksNoWitness);
-        /* fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name); */
+#ifndef SILENT
+        fprintf(stderr, "Inbounds check with non-existing witness for %p (%s)!\n", ptr, name);
+#endif
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
@@ -159,7 +162,9 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumDerefChecksNoWitness);
-        /* fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name); */
+#ifndef SILENT
+        fprintf(stderr, "Access check with non-existing witness for %p (%s)!\n", ptr, name);
+#endif
         return;
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {

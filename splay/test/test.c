@@ -1,14 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
-
-
+#include <malloc.h>
 
 void __splay_check_dereference(void* witness, void* ptr, size_t sz);
 
 void foo(int*p, int size) {
-    for (int i = 0; i < size+1; ++i) {
-        p[i] = 42+i;
+    for (int i = 0; i < size; ++i) {
         __splay_check_dereference(p, p+i, sizeof(int));
+        p[i] = 42+i;
     }
 }
 
@@ -21,7 +20,7 @@ int main(void)
     foo(p, size);
 
     for (int i = 0; i < size; ++i) {
-        int* q = malloc(p[i]);
+        int* q = aligned_alloc(16, p[1]);
         q[0] = 5;
     }
 
