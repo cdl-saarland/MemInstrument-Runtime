@@ -49,12 +49,16 @@ void __mi_print_stats(void) {
         }
     }
     fprintf(dest, "\n==================================================\n");
-    fprintf(dest, "meminstrument runtime stats for `%s':\n", mi_prog_name);
 
-    for (size_t i = 0; i < __NumStatEntries; ++i) {
-        fprintf(dest, "STAT  %s : %lu\n", __StatTable[i].text, __StatTable[i].val);
+    if (__StatTable == NULL) {
+        fprintf(dest, "no meminstrument stat table allocated for `%s'!\n", mi_prog_name);
+    } else {
+        fprintf(dest, "meminstrument runtime stats for `%s':\n", mi_prog_name);
+
+        for (size_t i = 0; i < __NumStatEntries; ++i) {
+            fprintf(dest, "STAT  %s : %lu\n", __StatTable[i].text, __StatTable[i].val);
+        }
     }
-
     fprintf(dest, "==================================================\n");
     fclose(dest);
 }
