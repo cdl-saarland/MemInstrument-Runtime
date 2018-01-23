@@ -37,12 +37,12 @@ void __print_stats(void) {
     if (mi_stats_file) {
         dest = fopen(mi_stats_file, "a");
         if (!dest) {
-            fprintf(stderr, "Failed to open stats file `%s'", mi_stats_file);
+            fprintf(stderr, "Failed to open stats file '%s'", mi_stats_file);
             return;
         }
     }
     fprintf(dest, "\n==================================================\n");
-    fprintf(dest, "meminstrument runtime stats for `%s':\n", mi_prog_name);
+    fprintf(dest, "meminstrument runtime stats for '%s':\n", mi_prog_name);
 
     for (size_t i = 0; i < __NumStatEntries; ++i) {
         fprintf(dest, "STAT  %s : %lu\n", __StatRegistry[i].text, *__StatRegistry[i].ptr);

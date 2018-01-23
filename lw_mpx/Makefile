@@ -1,14 +1,13 @@
 BUILD_DIR   = build
 SRC_DIR     = src
-TEST_DIR     = test
 
-LIB_NAME = splay
+LIB_NAME = lw_mpx
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
 STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -g -fPIC -O3
+CFLAGS  += -Wall -Wextra -g -fPIC -O2
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -22,17 +21,6 @@ DEP=$(OBJ:%.o=%.d)
 all: static dynamic
 
 -include $(DEP)
-
-test: test-dynamic test-static
-
-test-dynamic: dynamic ${BUILD_DIR}/test_dyn
-	@echo "===> TEST DYNAMIC"
-	LD_LIBRARY_PATH=${BUILD_DIR} ${BUILD_DIR}/test_dyn
-	# LD_LIBRARY_PATH=${BUILD_DIR} LD_PRELOAD=${DYN_LIB} ${BUILD_DIR}/test_dyn
-
-test-static: ${BUILD_DIR}/test_stat
-	@echo "===> TEST STATIC"
-	${BUILD_DIR}/test_stat
 
 static: ${STAT_LIB}
 
@@ -52,17 +40,6 @@ ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
 	$(Q)$(CC) -MMD -o $@ -c ${CFLAGS} $<
-
-
-${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c
-	$(Q)mkdir -p ${BUILD_DIR}
-	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
-
-${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
-	$(Q)mkdir -p ${BUILD_DIR}
-	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 clean:
 	@echo "===> CLEAN"

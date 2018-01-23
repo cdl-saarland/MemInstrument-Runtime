@@ -161,6 +161,10 @@ void free(void* p) {
     free_found(p);
 }
 
+#if ENABLE_MPX
+void enable_mpx(void);
+#endif
+
 int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
 
     initDynamicFunctions();
@@ -185,6 +189,10 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
     if (atexit(__print_stats) != 0) {
         fprintf(stderr, "meminstrument: Failed to register statistics printer!\n");
     }
+#endif
+
+#if ENABLE_MPX
+    enable_mpx();
 #endif
 
     hooks_active = 1;

@@ -185,6 +185,22 @@ uintptr_t __splay_get_lower(void* witness) {
     return n->base;
 }
 
+void* __splay_get_base(void* witness) {
+    return (void*)__splay_get_lower(witness);
+}
+
+uintptr_t __splay_get_maxbyteoffset(void* witness) {
+    STAT_INC(NumGetLower);
+    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    if (n == NULL) {
+        STAT_INC(NumGetUpperNoWitness);
+        __splay_fail("Taking bounds of unknown allocation", witness);
+        /* fprintf(stderr, "Check with non-existing witness!\n"); */
+        return 0;
+    }
+    return (n->bound - n->base) - 1;
+}
+
 uintptr_t __splay_get_upper(void* witness) {
     STAT_INC(NumGetUpper);
     Node* n = splayFind(&memTree, (uintptr_t)witness);
