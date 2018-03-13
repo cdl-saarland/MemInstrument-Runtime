@@ -26,7 +26,7 @@ void __setup_splay(void) {
 #endif
 }
 
-void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) {
+_Noreturn void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) {
     STAT_INC(NumFatalFails);
 
 #ifdef SILENT
@@ -59,11 +59,11 @@ void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) 
 #endif
 }
 
-void __splay_fail(const char* msg, void *faultingPtr) {
+_Noreturn void __splay_fail(const char* msg, void *faultingPtr) {
     __splay_fail_verbose(msg, faultingPtr, NULL);
 }
 
-void __splay_fail_simple(void) {
+_Noreturn void __splay_fail_simple(void) {
     STAT_INC(NumFatalFails);
 
 #ifdef CONTINUE_ON_FATAL
