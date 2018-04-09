@@ -20,7 +20,11 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
 
 uintptr_t __splay_get_lower(void* witness);
 
+void *__splay_get_lower_as_ptr(void* witness);
+
 uintptr_t __splay_get_upper(void* witness);
+
+void *__splay_get_upper_as_ptr(void* witness);
 
 void __splay_alloc(void* ptr, size_t sz);
 

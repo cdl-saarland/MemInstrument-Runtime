@@ -173,6 +173,10 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     }
 }
 
+void *__splay_get_lower_as_ptr(void* witness) {
+    return (void*)__splay_get_lower_as_ptr(witness);
+}
+
 uintptr_t __splay_get_lower(void* witness) {
     STAT_INC(NumGetLower);
     Node* n = splayFind(&memTree, (uintptr_t)witness);
@@ -199,6 +203,10 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
         return 0;
     }
     return (n->bound - n->base) - 1;
+}
+
+void *__splay_get_upper_as_ptr(void* witness) {
+    return (void*)__splay_get_upper_as_ptr(witness);
 }
 
 uintptr_t __splay_get_upper(void* witness) {
