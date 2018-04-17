@@ -63,8 +63,13 @@ _Noreturn void __splay_fail(const char* msg, void *faultingPtr) {
     __splay_fail_verbose(msg, faultingPtr, NULL);
 }
 
-_Noreturn void __splay_fail_simple(void) {
+_Noreturn void __splay_fail_simple_with_msg(const char* msg) {
     STAT_INC(NumFatalFails);
+
+#ifdef SILENT
+    // avoid compiler warnings
+    (void)msg;
+#endif
 
 #ifdef CONTINUE_ON_FATAL
 #ifndef SILENT
@@ -77,12 +82,20 @@ _Noreturn void __splay_fail_simple(void) {
         "   .---. \\/\n"
         "  (._.' \\()\n"
         "   ^\"\"\"^\"\n");
+    if (msg) {
+        fprintf(stderr, "\n%s\n", msg);
+    }
     fprintf(stderr, "\nBacktrace:\n");
     PRINTBACKTRACE;
 #endif
     exit(73);
 #endif
 }
+
+_Noreturn void __splay_fail_simple(void) {
+    __splay_fail_simple_with_msg(NULL);
+}
+
 
 void __splay_check_inbounds(void* witness, void* ptr) {
     STAT_INC(NumInboundsChecks);
