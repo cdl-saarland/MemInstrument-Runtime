@@ -52,8 +52,9 @@ _Noreturn void __splay_fail_verbose(const char* msg, void *faultingPtr, const ch
     if (verb) {
         fprintf(stderr, "at %s\n", verb);
     }
-    fprintf(stderr, "\nBacktrace:\n");
+    fprintf(stderr, "\n#################### meminstrument --- backtrace start ####################\n");
     PRINTBACKTRACE;
+    fprintf(stderr,   "#################### meminstrument --- backtrace end ######################\n");
 #endif
     exit(73);
 #endif
