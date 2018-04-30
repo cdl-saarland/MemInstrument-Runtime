@@ -2,6 +2,7 @@
 
 import argparse
 import re
+import sys
 from subprocess import Popen, PIPE
 
 exec_pat = re.compile(r"> executable: (.+)")
@@ -10,7 +11,7 @@ addr_pat = re.compile(r"\[(.+)\]")
 blacklist = [
         re.compile(r"^__splay_"),
         re.compile(r"^_start"),
-        re.compile(r"^\?\? \?\?"),
+        # re.compile(r"^\?\? \?\?"),
         ]
 
 parser = argparse.ArgumentParser(description='A small script for crunching backtraces')
@@ -47,38 +48,46 @@ def translate(binname, addr):
 
 
 def main():
-    in_bt = False
+    def crunchFile(infile, inplace = False):
+        in_bt = False
 
-    exec_name = None
+        exec_name = None
 
-    for fname in args.input:
-        with open(fname, "r") as infile:
-            for line in infile.readlines():
-                if "#################### meminstrument --- backtrace start ####################" in line:
-                    assert not in_bt
-                    in_bt = True
+        for line in infile.readlines():
+            if "#################### meminstrument --- backtrace start ####################" in line:
+                assert not in_bt
+                in_bt = True
+                continue
+
+            if "#################### meminstrument --- backtrace end ######################" in line:
+                assert in_bt
+                in_bt = False
+                exec_name = None
+                continue
+
+            if in_bt:
+                exec_match = exec_pat.search(line)
+                if exec_match:
+                    exec_name = exec_match.group(1)
+                    print("Backtrace for executable " + exec_name +":")
                     continue
 
-                if "#################### meminstrument --- backtrace end ######################" in line:
-                    assert in_bt
-                    in_bt = False
-                    exec_name = None
-                    continue
+                addr_match = addr_pat.search(line)
+                if addr_match:
+                    addr_name = addr_match.group(1)
+                    if args.executable:
+                        translate(args.executable, addr_name)
+                    else:
+                        translate(exec_name, addr_name)
+            elif inplace:
+                print(line, end="")
 
-                if in_bt:
-                    exec_match = exec_pat.search(line)
-                    if exec_match:
-                        exec_name = exec_match.group(1)
-                        print("Backtrace for executable " + exec_name +":")
-                        continue
-
-                    addr_match = addr_pat.search(line)
-                    if addr_match:
-                        addr_name = addr_match.group(1)
-                        if args.executable:
-                            translate(args.executable, addr_name)
-                        else:
-                            translate(exec_name, addr_name)
+    if len(args.input) == 0:
+        crunchFile(sys.stdin, inplace=True)
+    else:
+        for fname in args.input:
+            with open(fname, "r") as infile:
+                crunchFile(infile)
 
 
 if __name__ == "__main__":
