@@ -3,7 +3,7 @@
 /// Bound below which pointer values are considered as NULL pointers
 #define NULLPTR_BOUND 4096
 
-#define MAX_BACKTRACE_LENGTH 10
+#define MAX_BACKTRACE_LENGTH 16
 
 // Enable collecting and printing statistics at run time
 // #define STATISTICS 1
