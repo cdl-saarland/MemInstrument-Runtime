@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "statistics.h"
+#include "splay_statistics.h"
 
 #include "tree.h"
 #include "splay.h"
@@ -19,11 +19,6 @@ Tree memTree;
 
 void __setup_splay(void) {
     splayInit(&memTree);
-#ifdef STATISTICS
-#ifdef STATS_FILE
-    mi_stats_file = getenv(STATS_FILE);
-#endif
-#endif
 }
 
 _Noreturn void __splay_fail_verbose(const char* msg, void *faultingPtr, const char* verb) {
@@ -53,7 +48,7 @@ _Noreturn void __splay_fail_verbose(const char* msg, void *faultingPtr, const ch
         fprintf(stderr, "at %s\n", verb);
     }
     fprintf(stderr, "\n#################### meminstrument --- backtrace start ####################\n");
-    fprintf(stderr, "> executable: %s\n", get_prog_name());
+    fprintf(stderr, "> executable: %s\n", __get_prog_name());
     PRINTBACKTRACE;
     fprintf(stderr,   "#################### meminstrument --- backtrace end ######################\n");
 #endif
@@ -88,7 +83,7 @@ _Noreturn void __splay_fail_simple_with_msg(const char* msg) {
         fprintf(stderr, "\n%s\n", msg);
     }
     fprintf(stderr, "\n#################### meminstrument --- backtrace start ####################\n");
-    fprintf(stderr, "> executable: %s\n", get_prog_name());
+    fprintf(stderr, "> executable: %s\n", __get_prog_name());
     PRINTBACKTRACE;
     fprintf(stderr,   "#################### meminstrument --- backtrace end ######################\n");
 #endif

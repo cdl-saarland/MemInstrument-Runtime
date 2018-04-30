@@ -6,9 +6,11 @@ LIB_NAME = splay
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
 STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
+SHARED_INCLUDE_DIR = ../shared/include
+
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -g -O3
+CFLAGS  += -Wall -Wextra -g -O3 -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -38,27 +40,29 @@ static: ${STAT_LIB}
 
 dynamic: ${DYN_LIB}
 
-build_dir:
-	$(Q)mkdir -p ${BUILD_DIR}
-
 ${STAT_LIB}: ${OBJ}
+	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
 ${DYN_LIB}: ${OBJ}
+	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
 	$(Q)$(CC) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
-${BUILD_DIR}/%.o : ${SRC_DIR}/%.c build_dir
+${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
+	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
 	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 
-${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic build_dir
+${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
+	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
 	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
-${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static build_dir
+${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
+	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
 	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 

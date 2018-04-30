@@ -4,7 +4,7 @@
 
 #include "splay.h"
 
-#include "statistics.h"
+#include "splay_statistics.h"
 #include "config.h"
 
 // for reading symbols from glibc (not portable)
@@ -167,14 +167,19 @@ void enable_mpx(void);
 
 int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
 
+    // get original functions from dynamic linker
     initDynamicFunctions();
 
+    // set up statistics counters etc.
+    __setup_statistics(ubp_av[0]);
+
+    // set up splay tree
     __setup_splay();
 
-    set_prog_name(ubp_av[0]);
-
+    // splay register argv array
     __splay_alloc(ubp_av, argc * sizeof(char*));
 
+    // splay register argv content arrays
     for (int i = 0; i < argc; ++i) {
         char *c = ubp_av[i];
         size_t len = 0;
@@ -185,18 +190,15 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
         __splay_alloc(ubp_av[i], len * sizeof(char));
     }
 
-#ifdef STATISTICS
-    if (atexit(__print_stats) != 0) {
-        fprintf(stderr, "meminstrument: Failed to register statistics printer!\n");
-    }
-#endif
-
 #if ENABLE_MPX
+    // call magic code to enable the intel mpx extension
     enable_mpx();
 #endif
 
+    // enable our malloc etc. replacements
     hooks_active = 1;
 
+    // call the actual main function
     return (*start_main_found)(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
 }
 
