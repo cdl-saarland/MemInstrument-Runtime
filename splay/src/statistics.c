@@ -10,11 +10,12 @@ static const char* mi_prog_name = NULL;
 void set_prog_name(const char* n) {
     char actualpath [PATH_MAX+1];
     if (realpath(n, actualpath)) {
-        size_t len = strlen(n);
+        size_t len = strlen(actualpath);
         char *res = malloc(sizeof(char) * (len+1));
-        memcpy(res, n, len + 1);
+        memcpy(res, actualpath, len + 1);
         mi_prog_name = res;
     } else {
+        printf("here!!\n");
         mi_prog_name = n;
     }
 }
