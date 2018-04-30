@@ -8,7 +8,7 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -g -fPIC -O3
+CFLAGS  += -Wall -Wextra -g -O3
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -38,29 +38,27 @@ static: ${STAT_LIB}
 
 dynamic: ${DYN_LIB}
 
-${STAT_LIB}: ${OBJ}
+build_dir:
 	$(Q)mkdir -p ${BUILD_DIR}
+
+${STAT_LIB}: ${OBJ}
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
 ${DYN_LIB}: ${OBJ}
-	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CC) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
-${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
-	$(Q)mkdir -p ${BUILD_DIR}
+${BUILD_DIR}/%.o : ${SRC_DIR}/%.c build_dir
 	@echo "===> CC $@"
-	$(Q)$(CC) -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 
-${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c
-	$(Q)mkdir -p ${BUILD_DIR}
+${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic build_dir
 	@echo "===> CC/LD $@"
 	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
-${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
-	$(Q)mkdir -p ${BUILD_DIR}
+${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static build_dir
 	@echo "===> CC/LD $@"
 	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
