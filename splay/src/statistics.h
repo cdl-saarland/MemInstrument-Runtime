@@ -2,7 +2,8 @@
 
 #include "config.h"
 
-extern const char* mi_prog_name;
+void set_prog_name(const char* n);
+const char* get_prog_name(void);
 
 #ifdef STATISTICS
 

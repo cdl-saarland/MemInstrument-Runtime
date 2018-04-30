@@ -53,7 +53,7 @@ _Noreturn void __splay_fail_verbose(const char* msg, void *faultingPtr, const ch
         fprintf(stderr, "at %s\n", verb);
     }
     fprintf(stderr, "\n#################### meminstrument --- backtrace start ####################\n");
-    fprintf(stderr, "> executable: %s\n", mi_prog_name);
+    fprintf(stderr, "> executable: %s\n", get_prog_name());
     PRINTBACKTRACE;
     fprintf(stderr,   "#################### meminstrument --- backtrace end ######################\n");
 #endif
@@ -88,7 +88,7 @@ _Noreturn void __splay_fail_simple_with_msg(const char* msg) {
         fprintf(stderr, "\n%s\n", msg);
     }
     fprintf(stderr, "\n#################### meminstrument --- backtrace start ####################\n");
-    fprintf(stderr, "> executable: %s\n", mi_prog_name);
+    fprintf(stderr, "> executable: %s\n", get_prog_name());
     PRINTBACKTRACE;
     fprintf(stderr,   "#################### meminstrument --- backtrace end ######################\n");
 #endif

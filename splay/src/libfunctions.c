@@ -171,7 +171,7 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
 
     __setup_splay();
 
-    mi_prog_name = ubp_av[0];
+    set_prog_name(ubp_av[0]);
 
     __splay_alloc(ubp_av, argc * sizeof(char*));
 

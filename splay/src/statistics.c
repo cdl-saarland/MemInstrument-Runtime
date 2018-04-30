@@ -1,8 +1,27 @@
 #include "config.h"
 
+#include <limits.h>
+#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-const char* mi_prog_name = NULL;
+static const char* mi_prog_name = NULL;
+
+void set_prog_name(const char* n) {
+    char actualpath [PATH_MAX+1];
+    if (realpath(n, actualpath)) {
+        size_t len = strlen(n);
+        char *res = malloc(sizeof(char) * (len+1));
+        memcpy(res, n, len + 1);
+        mi_prog_name = res;
+    } else {
+        mi_prog_name = n;
+    }
+}
+
+const char* get_prog_name(void) {
+    return mi_prog_name;
+}
 
 #ifdef STATISTICS
 
