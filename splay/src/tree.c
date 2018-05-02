@@ -8,6 +8,26 @@
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void*);
 
+#ifdef STATISTICS
+#define STATS(x) do {x;} while (false);
+#else
+#define STATS(x) do {} while (false);
+#endif
+
+#ifdef ASSERTS
+#define ASSERTION(x) do {x;} while (false);
+#else
+#define ASSERTION(x) do {} while (false);
+#endif
+
+
+#ifdef DBG
+#define DEBUG(x) do {x;} while (false);
+#else
+#define DEBUG(x) do {} while (false);
+#endif
+
+
 #ifdef DBG
 // Functions for expensive debug checks and printing
 

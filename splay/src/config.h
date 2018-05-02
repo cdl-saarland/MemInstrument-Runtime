@@ -3,10 +3,15 @@
 /// Bound below which pointer values are considered as NULL pointers
 #define NULLPTR_BOUND 4096
 
+/// Fail if a free call without witness is encountered (possible double free)
+#define CHECK_DOUBLE_FREE 1
+
 #define MAX_BACKTRACE_LENGTH 16
 
 // Enable collecting and printing statistics at run time
 // #define STATISTICS 1
+
+#define STATS_COUNTER_DEFS "statistic_counters.def"
 
 // If defined, use this key to find a file to print runtime stats to
 #define STATS_FILE "MI_STATS_FILE"
@@ -24,23 +29,4 @@
 // #define ASSERTS 1
 // #define DBG 1
 // #define PRINT_TREE_INTERVAL 500000
-
-#ifdef STATISTICS
-#define STATS(x) do {x;} while (false);
-#else
-#define STATS(x) do {} while (false);
-#endif
-
-#ifdef ASSERTS
-#define ASSERTION(x) do {x;} while (false);
-#else
-#define ASSERTION(x) do {} while (false);
-#endif
-
-
-#ifdef DBG
-#define DEBUG(x) do {x;} while (false);
-#else
-#define DEBUG(x) do {} while (false);
-#endif
 

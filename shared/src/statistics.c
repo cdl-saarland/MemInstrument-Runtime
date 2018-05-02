@@ -1,23 +1,17 @@
 /**
- * This file contains the generator for a statistics implementation file.
- *
- * It is used as follows for a "foo" instrumentation:
- *
- * Create a foo_statistics.c file somewhere in the foo subfolder.
- * In there, define STAT_COUNTER_FILE to the name of a file that contains
- * entries of the form
- *      STAT_ACTION(CounterName, "Counter description")
- * Furthermore, define the STATISTICS variable if statistics should be produced.
- * You might also consider setting the STATS_FILE variable to a file name to
- * force statistic printing to this file instead of stderr.
- *
- * Make sure to also create a statistics header file!
+ * This file contains the implementation of statistics counters for use in
+ * instrumentation mechanisms.
+ * Consider include/statistics.h for usage information.
  */
 
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "config.h"
+
+#include "statistics.h"
 
 static const char* mi_prog_name = NULL;
 
@@ -29,7 +23,7 @@ static const char* mi_stats_file = NULL;
 #define STAT_ACTION(var, text) \
     size_t __##var = 0;
 
-#include STAT_COUNTER_FILE
+#include STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 
@@ -40,7 +34,7 @@ static struct __StatEntry { size_t id; size_t* ptr; const char* text; }
 #define STAT_ACTION(var, text) \
     (struct __StatEntry){ __COUNTER__, & __##var, text },
 
-#include STAT_COUNTER_FILE
+#include STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 };

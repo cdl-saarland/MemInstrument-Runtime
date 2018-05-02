@@ -1,12 +1,14 @@
 BUILD_DIR   = build
 SRC_DIR     = src
-TEST_DIR     = test
+TEST_DIR    = test
+SHARED_DIR  = ../shared
 
 LIB_NAME = splay
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
 STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
-SHARED_INCLUDE_DIR = ../shared/include
+SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
+SHARED_SRC_DIR = ${SHARED_DIR}/src
 
 Q ?= @
 
@@ -17,7 +19,10 @@ LDFLAGS += -ldl
 SRC=$(sort $(wildcard $(SRC_DIR)/*.c))
 OBJ=$(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-DEP=$(OBJ:%.o=%.d)
+SHARED_SRC=$(sort $(wildcard $(SHARED_SRC_DIR)/*.c))
+SHARED_OBJ=$(SHARED_SRC:$(SHARED_SRC_DIR)/%.c=$(BUILD_DIR)/shared.%.o)
+
+DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
 .PHONY: all clean
 
@@ -40,21 +45,25 @@ static: ${STAT_LIB}
 
 dynamic: ${DYN_LIB}
 
-${STAT_LIB}: ${OBJ}
+${STAT_LIB}: ${OBJ} ${SHARED_OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
-${DYN_LIB}: ${OBJ}
+${DYN_LIB}: ${OBJ} ${SHARED_OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
 	$(Q)$(CC) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+
+${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c
+	$(Q)mkdir -p ${BUILD_DIR}
+	@echo "===> CC $@"
+	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
 	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
-
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
 	$(Q)mkdir -p ${BUILD_DIR}

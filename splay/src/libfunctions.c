@@ -4,7 +4,7 @@
 
 #include "splay.h"
 
-#include "splay_statistics.h"
+#include "statistics.h"
 #include "config.h"
 
 // for reading symbols from glibc (not portable)
