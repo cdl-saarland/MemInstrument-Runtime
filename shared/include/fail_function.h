@@ -16,6 +16,8 @@
  *          CONTINUE_ON_FATAL is defined.
  *      RET_FAIL - The exit code that is produced by the fail functions (73 is
  *          used if this macro is not defined).
+ *      MAX_BACKTRACE_LENGTH - Determines the maximal number of functions from
+ *          the call stack to print in the backtrace on abort.
  */
 
 
