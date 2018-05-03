@@ -12,13 +12,20 @@
 #define RET_FAIL 73
 #endif
 
+#ifndef MAX_BACKTRACE_LENGTH
+#define MAX_BACKTRACE_LENGTH 16
+#endif
+
 #define PRINTBACKTRACE {\
     void *buf[MAX_BACKTRACE_LENGTH];\
     int n = backtrace(buf, MAX_BACKTRACE_LENGTH);\
     backtrace_symbols_fd(buf, n, STDERR_FILENO);\
 }
 
-static _Noreturn void __mi_fail_impl(FILE* dest, const char* fmt, ...) {
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+static void __mi_fail_impl(FILE* dest, const char* fmt, ...) {
 #ifdef FAIL_COUNTER
     STAT_INC(FAIL_COUNTER);
 #endif
@@ -60,19 +67,31 @@ static _Noreturn void __mi_fail_impl(FILE* dest, const char* fmt, ...) {
 }
 
 
-_Noreturn void __mi_fail(void) {
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+void __mi_fail(void) {
     __mi_fail_impl(stderr, NULL);
 }
 
-_Noreturn void __mi_fail_with_msg(const char* msg) {
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+void __mi_fail_with_msg(const char* msg) {
     __mi_fail_impl(stderr, "%s", msg);
 }
 
-_Noreturn void __mi_fail_with_ptr(const char* msg, void *faultingPtr) {
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+void __mi_fail_with_ptr(const char* msg, void *faultingPtr) {
     __mi_fail_impl(stderr, "%s with pointer %p", msg, faultingPtr);
 }
 
-_Noreturn void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* verbMsg) {
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* verbMsg) {
     __mi_fail_impl(stderr, "%s with pointer %p\nat %s", msg, faultingPtr, verbMsg);
 }
 

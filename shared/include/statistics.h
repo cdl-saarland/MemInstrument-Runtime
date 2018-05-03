@@ -21,10 +21,10 @@
  * It is expected that the instrumentation mechanism provides a "config.h"
  * header with #defines that control the behavior of the instrumentation.
  * The following macros are relevant:
- *      STATISTICS - statistics are collected and printed iff this is defined
- *      STATS_FILE - if this is defined (as a string s), statistics will be
+ *      STATISTICS - Statistics are collected and printed iff this is defined.
+ *      STATS_FILE - If this is defined (as a string s), statistics will be
  *          printed (i.e. appended) to a file with the name s.
- *      STATS_COUNTER_DEFS - defines the name of the file in which Counter
+ *      STATS_COUNTER_DEFS - Defines the name of the file in which Counter
  *          definitions are given, should be in the include path.
  *
  * Independently of whether STATISTICS is set, this header declares the
