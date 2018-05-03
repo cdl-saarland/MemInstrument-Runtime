@@ -44,7 +44,9 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     Node* n = splayFind(&memTree, witness_val);
     if (n == NULL) {
         STAT_INC(NumInboundsChecksNoWitness);
-        //FIXME we might want to fail here, too
+#ifdef CRASH_ON_MISSING_WITNESS_INVAR
+        __mi_fail_with_ptr("Invariant check in unknown allocation", ptr);
+#endif
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
@@ -76,7 +78,9 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumDerefChecksNoWitness);
-        //FIXME we might want to fail here
+#ifdef CRASH_ON_MISSING_WITNESS_DEREF
+        __mi_fail_with_ptr("Dereference check in unknown allocation", ptr);
+#endif
         return;
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
@@ -117,7 +121,9 @@ uintptr_t __splay_get_upper(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumGetUpperNoWitness);
+#ifdef CRASH_ON_MISSING_WITNESS_BOUND
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
+#endif
         return -1;
     }
     return n->bound;
@@ -132,7 +138,9 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumGetUpperNoWitness);
+#ifdef CRASH_ON_MISSING_WITNESS_BOUND
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
+#endif
         return 0;
     }
     return (n->bound - n->base) - 1;
