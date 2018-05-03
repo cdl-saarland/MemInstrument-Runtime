@@ -22,34 +22,14 @@
  * header with #defines that control the behavior of the instrumentation.
  * The following macros are relevant:
  *      STATISTICS - statistics are collected and printed iff this is defined
- *      STATS_FILE - if this is defined (as a string), TODO
- *      TODO
+ *      STATS_FILE - if this is defined (as a string s), statistics will be
+ *          printed (i.e. appended) to a file with the name s.
+ *      STATS_COUNTER_DEFS - defines the name of the file in which Counter
+ *          definitions are given, should be in the include path.
  *
- *
- *
- *
- *
- * Independently of whether STATISTICS is set, foo_statistics.h declares the
- * __get_prog_name() function that returns the absolute path of the binary as
- * a string.
- *
- *
- * It is used as follows for a "foo" instrumentation:
- *
- * Create a foo_statistics.h file somewhere in the foo subfolder.
- * In there, define STAT_COUNTER_FILE to the name of a file that contains
- * entries of the form
- *      STAT_ACTION(CounterName, "Counter description")
- * Furthermore, define the STATISTICS variable if statistics should be produced.
- * You might also consider setting the STATS_FILE variable to a file name to
- * force statistic printing to this file instead of stderr.
- *
- *
- * Independently of whether STATISTICS is set, foo_statistics.h declares the
- * __get_prog_name() function that returns the absolute path of the binary as
- * a string.
- *
- * Make sure to also create a statistics implementation file!
+ * Independently of whether STATISTICS is set, this header declares the
+ * __get_prog_name() function that returns the absolute path of the binary as a
+ * string.
  */
 
 #include "config.h"
