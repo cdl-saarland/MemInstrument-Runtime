@@ -102,7 +102,9 @@ uintptr_t __splay_get_lower(void* witness) {
     Node* n = splayFind(&memTree, (uintptr_t)witness);
     if (n == NULL) {
         STAT_INC(NumGetLowerNoWitness);
+#ifdef CRASH_ON_MISSING_WITNESS_BOUND
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
+#endif
         return 0;
     }
     return n->base;
