@@ -17,6 +17,9 @@ static bool isNullPtr(uintptr_t ptr) {
 
 static void checkNullPtr(uintptr_t ptr, const char* errormsg) {
     if (isNullPtr(ptr)) {
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr(errormsg, (void*)ptr);
     }
 }
@@ -35,6 +38,9 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
             return;
         }
         STAT_INC(NumFailedInboundsChecksNULL);
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         if (name) {
             __mi_fail_verbose_with_ptr("Outflowing out-of-bounds pointer", ptr, name);
         } else {
@@ -52,6 +58,9 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     if (ptr_val < n->base || ptr_val >= n->bound) {
         // ignore the potential access size here
         STAT_INC(NumFailedInboundsChecksOOB);
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         if (name) {
             __mi_fail_verbose_with_ptr("Outflowing out-of-bounds pointer", ptr, name);
         } else {
@@ -69,6 +78,9 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     uintptr_t ptr_val = (uintptr_t) ptr;
     if (isNullPtr(ptr_val)) {
         STAT_INC(NumFailedDerefChecksNULL);
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         if (name) {
             __mi_fail_verbose_with_ptr("NULL dereference", ptr, name);
         } else {
@@ -79,12 +91,18 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     if (n == NULL) {
         STAT_INC(NumDerefChecksNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS_DEREF
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr("Dereference check in unknown allocation", ptr);
 #endif
         return;
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         if (name) {
             __mi_fail_verbose_with_ptr("Out-of-bounds dereference", ptr, name);
         } else {
@@ -103,6 +121,9 @@ uintptr_t __splay_get_lower(void* witness) {
     if (n == NULL) {
         STAT_INC(NumGetLowerNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS_BOUND
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
 #endif
         return 0;
@@ -124,6 +145,9 @@ uintptr_t __splay_get_upper(void* witness) {
     if (n == NULL) {
         STAT_INC(NumGetUpperNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS_BOUND
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
 #endif
         return -1;
@@ -141,6 +165,9 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
     if (n == NULL) {
         STAT_INC(NumGetUpperNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS_BOUND
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
 #endif
         return 0;
@@ -181,6 +208,9 @@ void __splay_free(void* ptr) {
     if (!success) {
         STAT_INC(NumDoubleFrees);
 #ifdef CHECK_DOUBLE_FREE
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+        __dumpAllocationMap(stderr, &memTree);
+#endif
         __mi_fail_with_ptr("Double free", (void*)val);
 #endif
     }

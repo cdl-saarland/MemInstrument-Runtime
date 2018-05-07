@@ -20,6 +20,8 @@
 
 #define MAX_BACKTRACE_LENGTH 16
 
+#define DUMP_ALLOCATION_MAP_ON_FAIL 1
+
 // Enable collecting and printing statistics at run time
 // #define STATISTICS 1
 
@@ -41,4 +43,6 @@
 // #define ASSERTS 1
 // #define DBG 1
 // #define PRINT_TREE_INTERVAL 500000
+
+#define TREE_ANNOTATE_NODES 1
 

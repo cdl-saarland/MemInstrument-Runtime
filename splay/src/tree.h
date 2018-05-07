@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #include "config.h"
@@ -15,6 +16,10 @@ typedef struct Node {
 
     uintptr_t base; // including
     uintptr_t bound; // excluding
+
+#ifdef TREE_ANNOTATE_NODES
+    char kind;
+#endif
 } Node;
 
 typedef struct Tree {
@@ -35,4 +40,5 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib);
 bool splayRemove(Tree* t, uintptr_t val);
 Node* splayFind(Tree* t, uintptr_t val);
 
+void __dumpAllocationMap(FILE* F, const Tree *T);
 

@@ -9,6 +9,7 @@ exec_pat = re.compile(r"> executable: (.+)")
 addr_pat = re.compile(r"\[(.+)\]")
 
 blacklist = [
+        re.compile(r"^__mi_"),
         re.compile(r"^__splay_"),
         re.compile(r"^_start"),
         # re.compile(r"^\?\? \?\?"),

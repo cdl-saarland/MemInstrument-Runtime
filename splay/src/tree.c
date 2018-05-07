@@ -376,6 +376,24 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     newNode->base = base;
     newNode->bound = bound;
 
+#ifdef TREE_ANNOTATE_NODES
+    char kind = 'u'; // unknown
+    switch (ib) {
+        case IB_EXTEND:
+            kind = 'g'; // global/function
+            break;
+
+        case IB_ERROR:
+            kind = 'h'; // heap
+            break;
+
+        case IB_REPLACE:
+            kind = 's'; // stack
+            break;
+    }
+    newNode->kind = kind;
+#endif
+
     bool left = false;
 
     while (current != NULL) {
@@ -393,6 +411,9 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                 __libc_free(newNode);
                 return;
             case IB_EXTEND:
+#ifdef TREE_ANNOTATE_NODES
+                assert(current->kind == 'g');
+#endif
                 current->base = min(current->base, base);
                 current->bound= max(current->bound, bound);
                 splay(t, current);
@@ -400,6 +421,9 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                 __libc_free(newNode);
                 return;
             case IB_REPLACE:
+#ifdef TREE_ANNOTATE_NODES
+                assert(current->kind == 's');
+#endif
                 current->base = base;
                 current->bound= bound;
                 splay(t, current);
@@ -429,3 +453,25 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     splay(t, newNode);
     DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx)\n", base, bound))
 }
+
+
+static void dumpAllocationMapForNode(FILE* F, const Node *N) {
+    if (N->leftChild) {
+        dumpAllocationMapForNode(F, N->leftChild);
+    }
+    fprintf(F, "  %p - %p (%luB)", (void*)N->base, (void*)N->bound, N->bound - N->base);
+#ifdef TREE_ANNOTATE_NODES
+    fprintf(F, ": %c", N->kind);
+#endif
+    fprintf(F, "\n");
+    if (N->rightChild) {
+        dumpAllocationMapForNode(F, N->rightChild);
+    }
+}
+
+void __dumpAllocationMap(FILE* F, const Tree *T) {
+    fprintf(F, "splay: dumped allocation map: {{{\n");
+    dumpAllocationMapForNode(F, T->root);
+    fprintf(F, "splay: end of dumped allocation map }}}\n");
+}
+
