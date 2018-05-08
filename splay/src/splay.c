@@ -178,21 +178,21 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
 void __splay_alloc_or_merge(void* ptr, size_t sz) {
     STAT_INC(NumMergeAllocs);
     uintptr_t val = (uintptr_t)ptr;
-    checkNullPtr(val, "Allocation at nullptr (merge)]");
+    checkNullPtr(val, "Allocation at nullptr (merge)");
     splayInsert(&memTree, val, val + sz, IB_EXTEND);
 }
 
 void __splay_alloc(void* ptr, size_t sz) {
     STAT_INC(NumStrictAllocs);
     uintptr_t val = (uintptr_t)ptr;
-    checkNullPtr(val, "Allocation at nullptr (heap)]");
+    checkNullPtr(val, "Allocation at nullptr (heap)");
     splayInsert(&memTree, val, val + sz, IB_ERROR);
 }
 
 void __splay_alloc_or_replace(void* ptr, size_t sz) {
     STAT_INC(NumReplaceAllocs);
     uintptr_t val = (uintptr_t)ptr;
-    checkNullPtr(val, "Allocation at nullptr (replace)]");
+    checkNullPtr(val, "Allocation at nullptr (replace)");
     splayInsert(&memTree, val, val + sz, IB_REPLACE);
 }
 
