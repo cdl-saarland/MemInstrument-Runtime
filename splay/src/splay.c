@@ -17,6 +17,7 @@ static bool isNullPtr(uintptr_t ptr) {
 
 static void checkNullPtr(uintptr_t ptr, const char* errormsg) {
     if (isNullPtr(ptr)) {
+        STAT_INC(NumFatalNullAllocations);
 #ifdef DUMP_ALLOCATION_MAP_ON_FAIL
         __dumpAllocationMap(stderr, &memTree);
 #endif
@@ -178,6 +179,15 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
 void __splay_alloc_or_merge(void* ptr, size_t sz) {
     STAT_INC(NumMergeAllocs);
     uintptr_t val = (uintptr_t)ptr;
+
+    if (val == (uintptr_t)0) {
+        // This means that a global variable is located at a nullptr,
+        // apparently this can happen if no definition for a weak symbol exists.
+        // We just note this in our statistics and do nothing else.
+        STAT_INC(NumGlobalNullAllocations);
+        return;
+    }
+
     checkNullPtr(val, "Allocation at nullptr (merge)");
     splayInsert(&memTree, val, val + sz, IB_EXTEND);
 }

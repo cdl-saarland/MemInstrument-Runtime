@@ -26,3 +26,7 @@ STAT_ACTION(NumGetLowerNoWitness, "# of queries for lower bounds with non-existi
 STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
 STAT_ACTION(NumGetUpperNoWitness, "# of queries for upper bounds with non-existing witnesses")
 
+STAT_ACTION(NumFatalNullAllocations, "# of fatal allocations at addresses in nullptr range")
+
+STAT_ACTION(NumGlobalNullAllocations, "# of global allocations at nullptr (likely because of weak linking)")
+
