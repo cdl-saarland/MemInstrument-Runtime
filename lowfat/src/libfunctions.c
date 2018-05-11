@@ -4,7 +4,7 @@
 #include <sys/mman.h>
 
 // for reading symbols from glibc (not portable)
-#define __USE_GNU
+#define __USE_GNUS
 #include <dlfcn.h>
 #include <stdint.h>
 
@@ -14,12 +14,26 @@
 /*
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
+ 
+uintptr_t _ptr_index(void *ptr);
+
+// represents an element in a free list 
+struct free_list_element {
+    void *addr;
+    struct free_list_element *next;
+};
+typedef struct free_list_element freed_node;
 
 // supported object sizes for region based heap allocation (bigger size use original glibc functions)
+// TODO make this easier to configure
 size_t sizes[NUM_REGIONS] = {16, 32, 64, 128};
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
+
+// free list for every region
+static freed_node *free_lists[NUM_REGIONS];
+
 
 // TODO make threadsafe
 static int hooks_active = 0;
@@ -80,21 +94,36 @@ void* malloc(size_t size) {
         hooks_active = 0;
 
         void* res;
-        if (size > sizes[3])
+        // use glibc malloc for sizes that are too large (-> non low fat pointer)
+        if (size > sizes[NUM_REGIONS - 1])
             res = malloc_found(size);
         else {
             // get size and region index for size (round for non power of 2 sizes) by counting leading zeros
             // this currently only works if sizes[] only contains powers of 2
-            int index = 64 -  __builtin_clzll(size) - 4; // -4 because the smallest size is 16 Bytes
+            // TODO 32/64 depending on system
+            int index = 64 -  __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
             if (index < 0)
                 index = 0;
-            size_t allocation_size = sizes[index];
-            res = regions[index];
-            // allow read/write on allocated memory
-            mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
-            // increase pointer in region for next allocation
-            regions[index] += allocation_size;
+            // first check free list for corresponding region
+            freed_node *current = free_lists[index];
+            if (current != NULL) {
+                res = current->addr;
+                free_lists[index] = current->next;
+            }
+            // otherwise use fresh space
+            else {
+                size_t allocation_size = sizes[index];
+                res = regions[index];
+
+                // increase pointer in region to point to fresh space for next allocation
+                regions[index] += allocation_size;
+
+                // allow read/write on allocated memory (only required for page aligned addresses)
+                // TODO page alignment test only works for 4KB (0xFFF) pages, should be more general
+                if (((uintptr_t) res & 0xFFF) == 0)
+                    mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+            }
         }
 
         hooks_active = 1;
@@ -167,7 +196,19 @@ void free(void* p) {
     if (hooks_active) {
         hooks_active = 0;
 
-        free_found(p);
+        // add freed address to free list for corresponding region (LIFO principle)
+        uintptr_t index = _ptr_index(p);
+        if (index > 0 && index < NUM_REGIONS) {
+            freed_node *new_freed = malloc(sizeof(freed_node));
+            new_freed->addr = p;
+            new_freed->next = NULL;
+
+            freed_node *current = free_lists[index];
+            if (current == NULL)
+                free_lists[index] = new_freed;
+            else
+                current->next = new_freed;
+        }
 
         hooks_active = 1;
         return;
