@@ -3,10 +3,30 @@
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
+#include "config.h"
 #include "check.h"
 
 int main(void)
 {
+    test_basic_free();
+
+    // check if some library (like mmap/mprotect) had errors
+    printf("ERRNO: %s\n", strerror(errno));
+    return 0;
+}
+
+void test_overflow(void) {
+    for (int i = 0; i < 0xFFFFFFF; i++)
+        malloc(16);
+
+    int* p = (int*) malloc(16);
+    int* q = (int*) malloc(16);
+
+    if (q >= 0x100000000 && q <= 0x200000000)
+        printf("unexpected overflow behavior");
+}
+
+void test_basic_free(void) {
     int size = 8;
     int* p = (int*) malloc(size * sizeof(int));
     *p = 5;
@@ -16,9 +36,8 @@ int main(void)
     p = (int*) malloc(size * sizeof(int));
     free(p);
 
-    // check if some library (like mmap/mprotect) had errors
-    printf("%s\n", strerror(errno));
-    return 0;
+    if (p != 0x200000020)
+        printf("unexpected pointer address for malloc after free");
 }
 
 // access on OOB element

@@ -98,18 +98,25 @@ void* malloc(size_t size) {
             // first check free list for corresponding region
             res = free_list_pop(index);
 
-            // otherwise use fresh space
+            // otherwise use fresh space (if available)
             if (res == NULL) {
                 size_t allocation_size = sizes[index];
                 res = regions[index];
 
-                // increase pointer in region to point to fresh space for next allocation
-                regions[index] += allocation_size;
+                // check if we still have fresh space left
+                // TODO nicer way to check this?
+                if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
+                    // increase pointer in region to point to fresh space for next allocation
+                    regions[index] += allocation_size;
 
-                // allow read/write on allocated memory (only required for page aligned addresses)
-                // TODO page alignment test only works for 4KB (0xFFF) pages, should be more general
-                if (((uintptr_t) res & 0xFFF) == 0)
-                    mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+                    // allow read/write on allocated memory (only required for page aligned addresses)
+                    // TODO page alignment test only works for 4KB (0xFFF) pages, should be more general
+                    if (((uintptr_t) res & 0xFFF) == 0)
+                        mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+                }
+                // if free list is empty and no fresh space available, fallback to glibc malloc
+                else
+                    res = malloc_found(size);
             }
         }
 
@@ -185,8 +192,10 @@ void free(void* p) {
 
         // add freed address to free list for corresponding region
         uintptr_t index = _ptr_index(p);
-        if (index > 0 && index < NUM_REGIONS)
+        if (index < NUM_REGIONS)
             free_list_push(index, p);
+        else
+            free_found(p);
 
         hooks_active = 1;
         return;
