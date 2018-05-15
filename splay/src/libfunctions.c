@@ -4,6 +4,8 @@
 
 #include "splay.h"
 
+#include "fail_function.h"
+
 #include "statistics.h"
 #include "config.h"
 
@@ -32,14 +34,20 @@ static calloc_type calloc_found = NULL;
 typedef void*(*realloc_type)(void*, size_t);
 static realloc_type realloc_found = NULL;
 
+typedef int *(*memalign_type)(size_t, size_t);
+static memalign_type memalign_found = NULL;
+
 typedef void*(*aligned_alloc_type)(size_t, size_t);
 static aligned_alloc_type aligned_alloc_found = NULL;
 
-/* typedef int (*posix_memalign_type)(void**, size_t, size_t); */
-/* static posix_memalign_type posix_memalign_found; */
+typedef int (*posix_memalign_type)(void**, size_t, size_t);
+static posix_memalign_type posix_memalign_found = NULL;
 
-/* typedef int memalign_type(void**, size_t, size_t); */
-/* static memalign_type found_memalign; */
+typedef void*(*valloc_type)(size_t);
+static valloc_type valloc_found = NULL;
+
+typedef void*(*pvalloc_type)(size_t);
+static pvalloc_type pvalloc_found = NULL;
 
 void initDynamicFunctions(void) {
     const char* libname = "libc.so.6";
@@ -55,9 +63,11 @@ void initDynamicFunctions(void) {
     free_found = (free_type)dlsym(handle, "free");
     calloc_found = (calloc_type)dlsym(handle, "calloc");
     realloc_found = (realloc_type)dlsym(handle, "realloc");
+    memalign_found = (memalign_type)dlsym(handle, "memalign");
+    posix_memalign_found = (posix_memalign_type)dlsym(handle, "posix_memalign");
     aligned_alloc_found = (aligned_alloc_type)dlsym(handle, "aligned_alloc");
-    /* posix_memalign_found = (posix_memalign_type)dlsym(handle, "posix_memalign"); */
-    /* memalign_found = (memalign_type)dlsym(handle, "memalign"); */
+    valloc_found = (valloc_type)dlsym(handle, "valloc");
+    pvalloc_found = (pvalloc_type)dlsym(handle, "pvalloc");
 
     if ((msg = dlerror())) {
         fprintf(stderr, "Meminstrument: Error finding libc symbols:\n%s\n", msg);
@@ -109,21 +119,35 @@ void* realloc(void *ptr, size_t size) {
     return realloc_found(ptr, size);
 }
 
-/* int posix_memalign(void **memptr, size_t alignment, size_t size) { */
-/*     if (hooks_active) { */
-/*         hooks_active = 0; */
-/*  */
-/*         int res = posix_memalign_found(memptr, alignment, size); */
-/*  */
-/*         if (!res) { */
-/*             __splay_alloc(memptr, size); */
-/*         } */
-/*  */
-/*         hooks_active = 1; */
-/*         return res; */
-/*     } */
-/*     return posix_memalign_found(memptr, alignment, size); */
-/* } */
+void *memalign(size_t alignment, size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        void* res = memalign_found(alignment, size);
+
+        __splay_alloc(res, size);
+
+        hooks_active = 1;
+        return res;
+    }
+    return memalign_found(alignment, size);
+}
+
+int posix_memalign(void **memptr, size_t alignment, size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        int res = posix_memalign_found(memptr, alignment, size);
+
+        if (!res && *memptr) {
+            __splay_alloc(*memptr, size);
+        }
+
+        hooks_active = 1;
+        return res;
+    }
+    return posix_memalign_found(memptr, alignment, size);
+}
 
 void *aligned_alloc(size_t alignment, size_t size) {
     if (hooks_active) {
@@ -139,10 +163,29 @@ void *aligned_alloc(size_t alignment, size_t size) {
     return aligned_alloc_found(alignment, size);
 }
 
-/* void *valloc(size_t size); */
-/*  */
-/* void *memalign(size_t alignment, size_t size); */
-/* void *pvalloc(size_t size); */
+void *valloc(size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        void* res = valloc_found(size);
+
+        __splay_alloc(res, size);
+
+        hooks_active = 1;
+        return res;
+    }
+    return valloc_found(size);
+}
+
+void *pvalloc(size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+        // we do not support this function, since it changes the allocation
+        // size to a multiple of the page size
+        __mi_fail_with_msg("Call to unsupported function \"pvalloc\"");
+    }
+    return valloc_found(size);
+}
 
 
 // TODO sbrk, reallocarray,...
