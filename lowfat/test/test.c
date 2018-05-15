@@ -12,6 +12,7 @@ int main(void)
     *p = 5;
     int* q = (int*) malloc(size * sizeof(int));
     free(p);
+    free(q);
     p = (int*) malloc(size * sizeof(int));
     free(p);
 

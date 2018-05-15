@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <stdint.h>
 
+#include "freelist.h"
 #include "statistics.h"
 #include "config.h"
 
@@ -17,23 +18,12 @@
  
 uintptr_t _ptr_index(void *ptr);
 
-// represents an element in a free list 
-struct free_list_element {
-    void *addr;
-    struct free_list_element *next;
-};
-typedef struct free_list_element freed_node;
-
 // supported object sizes for region based heap allocation (bigger size use original glibc functions)
 // TODO make this easier to configure
 size_t sizes[NUM_REGIONS] = {16, 32, 64, 128};
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
-
-// free list for every region
-static freed_node *free_lists[NUM_REGIONS];
-
 
 // TODO make threadsafe
 static int hooks_active = 0;
@@ -106,13 +96,10 @@ void* malloc(size_t size) {
                 index = 0;
 
             // first check free list for corresponding region
-            freed_node *current = free_lists[index];
-            if (current != NULL) {
-                res = current->addr;
-                free_lists[index] = current->next;
-            }
+            res = free_list_pop(index);
+
             // otherwise use fresh space
-            else {
+            if (res == NULL) {
                 size_t allocation_size = sizes[index];
                 res = regions[index];
 
@@ -196,19 +183,10 @@ void free(void* p) {
     if (hooks_active) {
         hooks_active = 0;
 
-        // add freed address to free list for corresponding region (LIFO principle)
+        // add freed address to free list for corresponding region
         uintptr_t index = _ptr_index(p);
-        if (index > 0 && index < NUM_REGIONS) {
-            freed_node *new_freed = malloc(sizeof(freed_node));
-            new_freed->addr = p;
-            new_freed->next = NULL;
-
-            freed_node *current = free_lists[index];
-            if (current == NULL)
-                free_lists[index] = new_freed;
-            else
-                current->next = new_freed;
-        }
+        if (index > 0 && index < NUM_REGIONS)
+            free_list_push(index, p);
 
         hooks_active = 1;
         return;
