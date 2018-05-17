@@ -15,4 +15,7 @@ void free_list_push(int index, void *addr);
 
 // return current top element of the free list for the region corresponding to index
 // if the free list is empty, returns NULL
-void * free_list_pop(int index);
+void* free_list_pop(int index);
+
+// return 1 is empty, 0 otherwise
+int free_list_is_empty(int index);
