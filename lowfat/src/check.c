@@ -4,9 +4,9 @@
 #include "check.h"
 #include "config.h"
 
-// the metadata table in the paper starts at 1, the arrays used in this implementation start at 0, so shift is 33 instead of 32
+// the metadata table in the paper starts at 1, the arrays used in this implementation start at 0, so subtract 1 after shift
 uintptr_t _ptr_index(void *ptr) {
-    return (uintptr_t) ptr >> 33;
+    return ((uintptr_t) ptr >> 32) - 1;
 }
 
 uintptr_t _ptr_base(void *ptr) {
