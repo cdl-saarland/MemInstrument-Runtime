@@ -1,13 +1,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/mman.h>
 
 // for reading symbols from glibc (not portable)
 #define __USE_GNUS
 #include <dlfcn.h>
-#include <stdint.h>
-#include <string.h>
 
 #include "freelist.h"
 #include "statistics.h"
@@ -18,6 +19,9 @@
  */
  
 uintptr_t _ptr_index(void *ptr);
+
+// simply sysconf(_SC_PAGESIZE) - 1
+long page_size_minus_1;
 
 // supported object sizes for region based heap allocation (bigger size use original glibc functions)
 // TODO make this easier to configure
@@ -135,8 +139,7 @@ void* malloc(size_t size) {
                     regions[index] += allocation_size;
 
                     // allow read/write on allocated memory (only required for page aligned addresses)
-                    // TODO page alignment test only works for 4KB (0xFFF) pages, should be more general
-                    if (((uintptr_t) res & 0xFFF) == 0)
+                    if (((uintptr_t) res & page_size_minus_1) == 0)
                         mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
                 }
                 // if free list is empty and no fresh space available, fallback to glibc malloc
@@ -254,6 +257,8 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
         uintptr_t region_address = (i+1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
     }
+
+    page_size_minus_1 = sysconf(_SC_PAGESIZE) - 1;
 
     // get original functions from dynamic linker
     initDynamicFunctions();
