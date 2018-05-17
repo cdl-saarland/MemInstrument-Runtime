@@ -7,6 +7,7 @@
 #define __USE_GNUS
 #include <dlfcn.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "freelist.h"
 #include "statistics.h"
@@ -79,6 +80,35 @@ void initDynamicFunctions(void) {
     }
 }
 
+/*
+ * if size is contained in sizes, return its index
+ * otherwise, returns index of next bigger size contained in sizes
+ */
+int compute_size_index(size_t size) {
+#ifdef POW_2_SIZES
+    // round up to next higher power of 2 by counting leading zeros
+    // TODO 32/64 depending on system
+    int index = 64 -  __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
+    return index < 0 ? 0 : index;
+#else
+    // binary search over sizes to find next bigger (or equal) size
+    int low = 0, high = NUM_REGIONS - 1;
+    int mid;
+    while (low <= high) {
+        mid = (low + high) / 2;
+        if (size == sizes[mid])
+            return mid;
+        else if (size < sizes[mid])
+            high = mid - 1;
+        else
+            low = mid + 1;
+    }
+    // if low > high, then the size lies between size[low] and size[high] and low = high + 1 at this point
+    // as we want to next higher value, low is the desired index
+    return low;
+#endif
+}
+
 void* malloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
@@ -88,25 +118,20 @@ void* malloc(size_t size) {
         if (size > sizes[NUM_REGIONS - 1])
             res = malloc_found(size);
         else {
-            // get size and region index for size (round for non power of 2 sizes) by counting leading zeros
-            // this currently only works if sizes[] only contains powers of 2
-            // TODO 32/64 depending on system
-            int index = 64 -  __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
-            if (index < 0)
-                index = 0;
+            int index = compute_size_index(size);
 
             // first check free list for corresponding region
-            res = free_list_pop(index);
-
+            if (!free_list_is_empty(index))
+                res = free_list_pop(index);
             // otherwise use fresh space (if available)
-            if (res == NULL) {
+            else {
                 size_t allocation_size = sizes[index];
                 res = regions[index];
 
                 // check if we still have fresh space left
                 // TODO nicer way to check this?
                 if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
-                    // increase pointer in region to point to fresh space for next allocation
+                    // increase region pointer to point to fresh space for next allocation
                     regions[index] += allocation_size;
 
                     // allow read/write on allocated memory (only required for page aligned addresses)
@@ -130,7 +155,15 @@ void* calloc(size_t nmemb, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = calloc_found(nmemb, size);
+        void* res;
+        // TODO check for multiplication overflow
+        size_t total_size = nmemb * size;
+        if (total_size > sizes[NUM_REGIONS - 1])
+            res = calloc_found(nmemb, size);
+        else {
+            res = malloc(total_size);
+            memset(res, 0, total_size);
+        }
 
         hooks_active = 1;
         return res;
@@ -142,7 +175,14 @@ void* realloc(void *ptr, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = realloc_found(ptr, size);
+        void* res;
+
+        if (size > sizes[NUM_REGIONS - 1])
+            res = realloc_found(ptr, size);
+        else {
+            free(ptr);
+            res = malloc(size);
+        }
 
         hooks_active = 1;
         return res;
@@ -211,7 +251,7 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
 
     // create regions for each size
     for (int i = 0; i < NUM_REGIONS; i++) {
-        size_t region_address = (i+1) * REGION_SIZE;
+        uintptr_t region_address = (i+1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
     }
 
