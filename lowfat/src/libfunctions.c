@@ -113,40 +113,51 @@ int compute_size_index(size_t size) {
 #endif
 }
 
+void* internal_allocation(size_t size) {
+    // use glibc malloc for sizes that are too large (-> non low fat pointer)
+    if (size > sizes[NUM_REGIONS - 1])
+        return malloc_found(size);
+
+    int index = compute_size_index(size);
+
+    // first check free list for corresponding region
+    if (!free_list_is_empty(index))
+        return free_list_pop(index);
+
+    // otherwise use fresh space (if available)
+    size_t allocation_size = sizes[index];
+
+    void* res = regions[index];
+    // check if we still have fresh space left, TODO nicer way to check this?
+    if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
+        // increase region pointer to point to fresh space for next allocation
+        regions[index] += allocation_size;
+
+        // allow read/write on allocated memory (only required for page aligned addresses)
+        if (((uintptr_t) res & page_size_minus_1) == 0)
+            mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+
+        return res;
+    }
+
+    // if free list is empty and no fresh space available, fallback to glibc malloc
+    return malloc_found(size);
+}
+
+void internal_free(void* p) {
+    // add freed address to free list for corresponding region
+    uintptr_t index = _ptr_index(p);
+    if (index < NUM_REGIONS)
+        free_list_push(index, p);
+    else
+        free_found(p);
+}
+
 void* malloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res;
-        // use glibc malloc for sizes that are too large (-> non low fat pointer)
-        if (size > sizes[NUM_REGIONS - 1])
-            res = malloc_found(size);
-        else {
-            int index = compute_size_index(size);
-
-            // first check free list for corresponding region
-            if (!free_list_is_empty(index))
-                res = free_list_pop(index);
-            // otherwise use fresh space (if available)
-            else {
-                size_t allocation_size = sizes[index];
-                res = regions[index];
-
-                // check if we still have fresh space left
-                // TODO nicer way to check this?
-                if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
-                    // increase region pointer to point to fresh space for next allocation
-                    regions[index] += allocation_size;
-
-                    // allow read/write on allocated memory (only required for page aligned addresses)
-                    if (((uintptr_t) res & page_size_minus_1) == 0)
-                        mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
-                }
-                // if free list is empty and no fresh space available, fallback to glibc malloc
-                else
-                    res = malloc_found(size);
-            }
-        }
+        void* res = internal_allocation(size);
 
         hooks_active = 1;
         return res;
@@ -164,7 +175,7 @@ void* calloc(size_t nmemb, size_t size) {
         if (total_size > sizes[NUM_REGIONS - 1])
             res = calloc_found(nmemb, size);
         else {
-            res = malloc(total_size);
+            res = internal_allocation(total_size);
             memset(res, 0, total_size);
         }
 
@@ -183,8 +194,8 @@ void* realloc(void *ptr, size_t size) {
         if (size > sizes[NUM_REGIONS - 1])
             res = realloc_found(ptr, size);
         else {
-            free(ptr);
-            res = malloc(size);
+            internal_free(ptr);
+            res = internal_allocation(size);
         }
 
         hooks_active = 1;
@@ -233,12 +244,7 @@ void free(void* p) {
     if (hooks_active) {
         hooks_active = 0;
 
-        // add freed address to free list for corresponding region
-        uintptr_t index = _ptr_index(p);
-        if (index < NUM_REGIONS)
-            free_list_push(index, p);
-        else
-            free_found(p);
+        internal_free(p);
 
         hooks_active = 1;
         return;
@@ -256,6 +262,10 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
     for (int i = 0; i < NUM_REGIONS; i++) {
         uintptr_t region_address = (i+1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+
+        // check that mmap mapped the desired address (otherwise we might get false positive later for the safety checks)
+        if ((uintptr_t ) regions[i] % REGION_SIZE != 0)
+            exit(99); // TODO more info than just exotic return code
     }
 
     page_size_minus_1 = sysconf(_SC_PAGESIZE) - 1;

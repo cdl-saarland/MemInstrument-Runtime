@@ -3,16 +3,22 @@
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
-#include "config.h"
 #include "check.h"
 
 int main(void)
 {
-    test_basic_free();
+    test_basic_realloc();
 
     // check if some library (like mmap/mprotect) had errors
     printf("ERRNO: %s\n", strerror(errno));
     return 0;
+}
+
+void test_basic_realloc(void) {
+    int* p = (int*) malloc(8);
+    p = (int*) realloc(p, 32);
+    if (p != 0x200000000)
+        printf("unexpected realloc behavior");
 }
 
 void test_overflow(void) {
