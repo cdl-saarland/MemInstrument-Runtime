@@ -205,13 +205,21 @@ void* realloc(void *ptr, size_t size) {
                 res = internal_allocation(size); // case 1
             else
                 res = malloc_found(size); // case 2
-            memcpy(res, ptr, size);
-            internal_free(ptr);
+
+            if (ptr != NULL) {
+                memcpy(res, ptr, size);
+                internal_free(ptr);
+            }
+
         } else {
             if (size <= sizes[NUM_REGIONS - 1]) {
                 res = internal_allocation(size); // case 3
-                memcpy(res, ptr, size);
-                free_found(ptr);
+
+                if (ptr != NULL) {
+                    memcpy(res, ptr, size);
+                    free_found(ptr);
+                }
+
             } else
                 res = realloc_found(ptr, size); // case 4
         }
