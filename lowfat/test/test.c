@@ -7,17 +7,22 @@
 
 int main(void)
 {
-    test_basic_realloc();
+    test_realloc();
 
     // check if some library (like mmap/mprotect) had errors
     printf("ERRNO: %s\n", strerror(errno));
     return 0;
 }
 
-void test_basic_realloc(void) {
-    int* p = (int*) malloc(8);
-    p = (int*) realloc(p, 32);
-    if (p != 0x200000000)
+void test_realloc(void) {
+    int* p = malloc(16);
+    *p = 5;
+    p = realloc(p, 16);
+    p = realloc(p, 32);
+    p = realloc(p, 2000);
+    p = realloc(p, 16);
+
+    if (*p != 5 || p != 0x100000000)
         printf("unexpected realloc behavior");
 }
 

@@ -191,11 +191,29 @@ void* realloc(void *ptr, size_t size) {
 
         void* res;
 
-        if (size > sizes[NUM_REGIONS - 1])
-            res = realloc_found(ptr, size);
-        else {
+        // we have 4 cases:
+        // 1. ptr is low fat and the new one will be low fat as well
+        // 2. ptr is low fat but the new one is not (size too big)
+        // 3. ptr is not low fat but the new one will be
+        // 4. ptr is not low fat and the new one won't be either
+        // case 1 and 2 require new allocation with our/glibc malloc, copy and our free
+        // case 3 is like case 1 but uses glibc free
+        // case 4 can simply use glibc realloc
+
+        if (_ptr_index(ptr) < NUM_REGIONS) {
+            if (size <= sizes[NUM_REGIONS - 1])
+                res = internal_allocation(size); // case 1
+            else
+                res = malloc_found(size); // case 2
+            memcpy(res, ptr, size);
             internal_free(ptr);
-            res = internal_allocation(size);
+        } else {
+            if (size <= sizes[NUM_REGIONS - 1]) {
+                res = internal_allocation(size); // case 3
+                memcpy(res, ptr, size);
+                free_found(ptr);
+            } else
+                res = realloc_found(ptr, size); // case 4
         }
 
         hooks_active = 1;
