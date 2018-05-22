@@ -9,7 +9,19 @@
 #include "tree.h"
 #include "splay.h"
 
-Tree memTree;
+Tree __memTree;
+
+_Noreturn
+static void __mi_fail_wrapper(const char* msg, void* ptr, char* vmsg) {
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+    __dumpAllocationMap(stderr, &__memTree);
+#endif
+    if (vmsg) {
+        __mi_fail_verbose_with_ptr(msg, ptr, vmsg);
+    } else {
+        __mi_fail_with_ptr(msg, ptr);
+    }
+}
 
 static bool isNullPtr(uintptr_t ptr) {
     return ptr < NULLPTR_BOUND;
@@ -18,15 +30,24 @@ static bool isNullPtr(uintptr_t ptr) {
 static void checkNullPtr(uintptr_t ptr, const char* errormsg) {
     if (isNullPtr(ptr)) {
         STAT_INC(NumFatalNullAllocations);
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr(errormsg, (void*)ptr);
+        __mi_fail_wrapper(errormsg, (void*)ptr, NULL);
     }
 }
 
+static Node* getNode(uintptr_t witness_val, const char *str) {
+    Node* n = splayFind(&__memTree, witness_val);
+    if (n == NULL) {
+        STAT_INC(NumNoWitness);
+#ifdef CRASH_ON_MISSING_WITNESS
+        __mi_fail_wrapper(str, (void*)witness_val, NULL);
+#endif
+        return NULL;
+    }
+    return n;
+}
+
 void __setup_splay(void) {
-    splayInit(&memTree);
+    splayInit(&__memTree);
 }
 
 void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
@@ -39,34 +60,16 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
             return;
         }
         STAT_INC(NumFailedInboundsChecksNULL);
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        if (name) {
-            __mi_fail_verbose_with_ptr("Outflowing out-of-bounds pointer", ptr, name);
-        } else {
-            __mi_fail_with_ptr("Outflowing out-of-bounds pointer", ptr);
-        }
+        __mi_fail_wrapper("Outflowing out-of-bounds pointer", (void*)ptr, name);
     }
-    Node* n = splayFind(&memTree, witness_val);
+    Node* n = getNode(witness_val, "Invariant check in unknown allocation");
     if (n == NULL) {
-        STAT_INC(NumInboundsChecksNoWitness);
-#ifdef CRASH_ON_MISSING_WITNESS_INVAR
-        __mi_fail_with_ptr("Invariant check in unknown allocation", ptr);
-#endif
         return;
     }
     if (ptr_val < n->base || ptr_val >= n->bound) {
         // ignore the potential access size here
         STAT_INC(NumFailedInboundsChecksOOB);
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        if (name) {
-            __mi_fail_verbose_with_ptr("Outflowing out-of-bounds pointer", ptr, name);
-        } else {
-            __mi_fail_with_ptr("Outflowing out-of-bounds pointer", ptr);
-        }
+        __mi_fail_wrapper("Outflowing out-of-bounds pointer", (void*)ptr, name);
     }
 }
 
@@ -79,36 +82,15 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     uintptr_t ptr_val = (uintptr_t) ptr;
     if (isNullPtr(ptr_val)) {
         STAT_INC(NumFailedDerefChecksNULL);
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        if (name) {
-            __mi_fail_verbose_with_ptr("NULL dereference", ptr, name);
-        } else {
-            __mi_fail_with_ptr("NULL dereference", ptr);
-        }
+        __mi_fail_wrapper("NULL dereference", (void*)ptr, name);
     }
-    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    Node* n = getNode((uintptr_t)witness, "Dereference check in unknown allocation");
     if (n == NULL) {
-        STAT_INC(NumDerefChecksNoWitness);
-#ifdef CRASH_ON_MISSING_WITNESS_DEREF
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr("Dereference check in unknown allocation", ptr);
-#endif
         return;
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        if (name) {
-            __mi_fail_verbose_with_ptr("Out-of-bounds dereference", ptr, name);
-        } else {
-            __mi_fail_with_ptr("Out-of-bounds dereference", ptr);
-        }
+        __mi_fail_wrapper("Out-of-bounds dereference", (void*)ptr, name);
     }
 }
 
@@ -118,15 +100,8 @@ void __splay_check_dereference(void* witness, void* ptr, size_t sz) {
 
 uintptr_t __splay_get_lower(void* witness) {
     STAT_INC(NumGetLower);
-    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    Node* n = getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        STAT_INC(NumGetLowerNoWitness);
-#ifdef CRASH_ON_MISSING_WITNESS_BOUND
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
-#endif
         return 0;
     }
     return n->base;
@@ -142,16 +117,9 @@ void* __splay_get_base(void* witness) {
 
 uintptr_t __splay_get_upper(void* witness) {
     STAT_INC(NumGetUpper);
-    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    Node* n = getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        STAT_INC(NumGetUpperNoWitness);
-#ifdef CRASH_ON_MISSING_WITNESS_BOUND
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
-#endif
-        return -1;
+        return (uintptr_t)-1;
     }
     return n->bound;
 }
@@ -162,16 +130,9 @@ void *__splay_get_upper_as_ptr(void* witness) {
 
 uintptr_t __splay_get_maxbyteoffset(void* witness) {
     STAT_INC(NumGetUpper);
-    Node* n = splayFind(&memTree, (uintptr_t)witness);
+    Node* n = getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        STAT_INC(NumGetUpperNoWitness);
-#ifdef CRASH_ON_MISSING_WITNESS_BOUND
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr("Taking bounds of unknown allocation", witness);
-#endif
-        return 0;
+        return (uintptr_t)-1;
     }
     return (n->bound - n->base) - 1;
 }
@@ -189,21 +150,21 @@ void __splay_alloc_or_merge(void* ptr, size_t sz) {
     }
 
     checkNullPtr(val, "Allocation at nullptr (merge)");
-    splayInsert(&memTree, val, val + sz, IB_EXTEND);
+    splayInsert(&__memTree, val, val + sz, IB_EXTEND);
 }
 
 void __splay_alloc(void* ptr, size_t sz) {
     STAT_INC(NumStrictAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (heap)");
-    splayInsert(&memTree, val, val + sz, IB_ERROR);
+    splayInsert(&__memTree, val, val + sz, IB_ERROR);
 }
 
 void __splay_alloc_or_replace(void* ptr, size_t sz) {
     STAT_INC(NumReplaceAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (replace)");
-    splayInsert(&memTree, val, val + sz, IB_REPLACE);
+    splayInsert(&__memTree, val, val + sz, IB_REPLACE);
 }
 
 void __splay_free(void* ptr) {
@@ -213,15 +174,12 @@ void __splay_free(void* ptr) {
         return;
     }
 
-    bool success = splayRemove(&memTree, val);
+    bool success = splayRemove(&__memTree, val);
 
     if (!success) {
         STAT_INC(NumDoubleFrees);
 #ifdef CHECK_DOUBLE_FREE
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &memTree);
-#endif
-        __mi_fail_with_ptr("Double free", (void*)val);
+        __mi_fail_wrapper("Double free", (void*)val, NULL);
 #endif
     }
 }

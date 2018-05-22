@@ -6,17 +6,9 @@
 /// Fail if a free call without witness is encountered (possible double free)
 #define CHECK_DOUBLE_FREE 1
 
-/// Fail if a dereference check without witness is encountered.
-/// Do nothing otherwise
-#define CRASH_ON_MISSING_WITNESS_DEREF 1
-
-/// Fail if an invariant check without witness is encountered.
-/// Do nothing otherwise
-#define CRASH_ON_MISSING_WITNESS_INVAR 1
-
-/// Fail if a requirement for bounds without witness is encountered.
-/// Return wide bounds otherwise
-#define CRASH_ON_MISSING_WITNESS_BOUND 1
+/// Fail if a witness check fails.
+/// Ensure non-crashing results otherwise.
+#define CRASH_ON_MISSING_WITNESS 1
 
 #define MAX_BACKTRACE_LENGTH 16
 
