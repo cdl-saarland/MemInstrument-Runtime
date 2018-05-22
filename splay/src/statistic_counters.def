@@ -26,4 +26,7 @@ STAT_ACTION(NumFatalNullAllocations, "# of fatal allocations at addresses in nul
 
 STAT_ACTION(NumGlobalNullAllocations, "# of global allocations at nullptr (likely because of weak linking)")
 
+STAT_ACTION(NumMemMap, "# of witness lookups that were attempted to be handled by accessing the memory map")
+STAT_ACTION(NumMemMapSucc, "# of witness lookups that were successfully handled by accessing the memory map")
+
 STAT_ACTION(NumNoWitness, "# of failed witness lookups")
