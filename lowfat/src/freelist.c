@@ -20,7 +20,9 @@ void* free_list_pop(int index) {
 
     if (current_top != NULL) {
         free_list_tops[index] = current_top->prev;
-        return current_top->addr;
+        void* addr = current_top->addr;
+        free(current_top);
+        return addr;
     }
 
     return NULL;
