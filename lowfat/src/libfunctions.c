@@ -21,9 +21,8 @@
 
 uintptr_t _ptr_index(void *ptr);
 
-// supported object sizes for region based heap allocation (bigger size use original glibc functions)
-// TODO make this easier to configure
-size_t sizes[NUM_REGIONS] = {16, 32, 64, 128};
+// supported object sizes for region based heap allocation (bigger sizes use original glibc functions)
+size_t sizes[] = {16, 32, 64, 128};
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
@@ -32,8 +31,7 @@ static void *regions[NUM_REGIONS];
 // this flag ensures that behavior
 static int hooks_active = 0;
 
-typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void),
-                               void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
+typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
 
 static start_main_type start_main_found = NULL;
 
@@ -232,9 +230,11 @@ void *calloc(size_t nmemb, size_t size) {
         hooks_active = 0;
 
         void *res;
-        // TODO check for multiplication overflow
+
         size_t total_size = nmemb * size;
-        if (total_size > sizes[NUM_REGIONS - 1])
+
+        int overflow = size != 0 && total_size / size != nmemb;
+        if (overflow || total_size > sizes[NUM_REGIONS - 1])
             res = calloc_found(nmemb, size);
         else {
             res = internal_allocation(total_size);
