@@ -9,6 +9,7 @@
 // for reading symbols from glibc (not portable)
 #define __USE_GNUS
 #include <dlfcn.h>
+#include <asm/errno.h>
 
 #include "freelist.h"
 #include "statistics.h"
@@ -17,7 +18,7 @@
 /*
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
- 
+
 uintptr_t _ptr_index(void *ptr);
 
 // simply sysconf(_SC_PAGESIZE) - 1
@@ -30,53 +31,54 @@ size_t sizes[NUM_REGIONS] = {16, 32, 64, 128};
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
 
-// TODO make threadsafe
+// internal structures (i.e free list) use the glibc functions for allocating and freeing, as they don't need runtime checks
+// this flag ensures that behavior
 static int hooks_active = 0;
 
-typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini) (void), void (*rtld_fini)(void), void (*stack_end));
+typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
 static start_main_type start_main_found = NULL;
 
 
-void* __libc_malloc(size_t);
+void *__libc_malloc(size_t);
 
-typedef void*(*malloc_type)(size_t);
+typedef void *(*malloc_type)(size_t);
 static malloc_type malloc_found = __libc_malloc;
 
-typedef void(*free_type)(void*);
+typedef void(*free_type)(void *);
 static free_type free_found = NULL;
 
-typedef void*(*calloc_type)(size_t, size_t);
+typedef void *(*calloc_type)(size_t, size_t);
 static calloc_type calloc_found = NULL;
 
-typedef void*(*realloc_type)(void*, size_t);
+typedef void *(*realloc_type)(void *, size_t);
 static realloc_type realloc_found = NULL;
 
-typedef void*(*aligned_alloc_type)(size_t, size_t);
+typedef void *(*aligned_alloc_type)(size_t, size_t);
 static aligned_alloc_type aligned_alloc_found = NULL;
 
-/* typedef int (*posix_memalign_type)(void**, size_t, size_t); */
-/* static posix_memalign_type posix_memalign_found; */
+typedef int (*posix_memalign_type)(void **, size_t, size_t);
+static posix_memalign_type posix_memalign_found;
 
-/* typedef int memalign_type(void**, size_t, size_t); */
-/* static memalign_type found_memalign; */
+typedef int (*memalign_type)(void **, size_t, size_t);
+static memalign_type memalign_found;
 
 void initDynamicFunctions(void) {
-    const char* libname = "libc.so.6";
-    void* handle = dlopen(libname, RTLD_NOW | RTLD_LOCAL);
-    char* msg = NULL;
+    const char *libname = "libc.so.6";
+    void *handle = dlopen(libname, RTLD_NOW | RTLD_LOCAL);
+    char *msg = NULL;
     if ((msg = dlerror())) {
         fprintf(stderr, "Meminstrument: Error loading libc:\n%s\n", msg);
         exit(74);
     }
 
-    start_main_found = (start_main_type)dlsym(handle, "__libc_start_main");
-    malloc_found = (malloc_type)dlsym(handle, "malloc");
-    free_found = (free_type)dlsym(handle, "free");
-    calloc_found = (calloc_type)dlsym(handle, "calloc");
-    realloc_found = (realloc_type)dlsym(handle, "realloc");
-    aligned_alloc_found = (aligned_alloc_type)dlsym(handle, "aligned_alloc");
-    /* posix_memalign_found = (posix_memalign_type)dlsym(handle, "posix_memalign"); */
-    /* memalign_found = (memalign_type)dlsym(handle, "memalign"); */
+    start_main_found = (start_main_type) dlsym(handle, "__libc_start_main");
+    malloc_found = (malloc_type) dlsym(handle, "malloc");
+    free_found = (free_type) dlsym(handle, "free");
+    calloc_found = (calloc_type) dlsym(handle, "calloc");
+    realloc_found = (realloc_type) dlsym(handle, "realloc");
+    aligned_alloc_found = (aligned_alloc_type) dlsym(handle, "aligned_alloc");
+    posix_memalign_found = (posix_memalign_type) dlsym(handle, "posix_memalign");
+    memalign_found = (memalign_type) dlsym(handle, "memalign");
 
     if ((msg = dlerror())) {
         fprintf(stderr, "Meminstrument: Error finding libc symbols:\n%s\n", msg);
@@ -92,8 +94,8 @@ int compute_size_index(size_t size) {
 #ifdef POW_2_SIZES
     // round up to next higher power of 2 by counting leading zeros
     // TODO 32/64 depending on system
-    int index = 64 -  __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
-    return index < 0 ? 0 : index;
+    int index = 64 - __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
+    return index < 0 ? 0 : index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 #else
     // binary search over sizes to find next bigger (or equal) size
     int low = 0, high = NUM_REGIONS - 1;
@@ -113,21 +115,22 @@ int compute_size_index(size_t size) {
 #endif
 }
 
-void* internal_allocation(size_t size) {
+// if alignment is 0, //TODO finish
+void *internal_allocation(size_t size) {
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
         return malloc_found(size);
 
     int index = compute_size_index(size);
 
-    // first check free list for corresponding region
+    // if alignment isn't required, first check free list for corresponding region
     if (!free_list_is_empty(index))
         return free_list_pop(index);
 
     // otherwise use fresh space (if available)
     size_t allocation_size = sizes[index];
 
-    void* res = regions[index];
+    void *res = regions[index];
     // check if we still have fresh space left, TODO nicer way to check this?
     if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
         // increase region pointer to point to fresh space for next allocation
@@ -144,7 +147,7 @@ void* internal_allocation(size_t size) {
     return malloc_found(size);
 }
 
-void internal_free(void* p) {
+void internal_free(void *p) {
     // add freed address to free list for corresponding region
     uintptr_t index = _ptr_index(p);
     if (index < NUM_REGIONS)
@@ -153,11 +156,11 @@ void internal_free(void* p) {
         free_found(p);
 }
 
-void* malloc(size_t size) {
+void *malloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = internal_allocation(size);
+        void *res = internal_allocation(size);
 
         hooks_active = 1;
         return res;
@@ -165,11 +168,11 @@ void* malloc(size_t size) {
     return malloc_found(size);
 }
 
-void* calloc(size_t nmemb, size_t size) {
+void *calloc(size_t nmemb, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res;
+        void *res;
         // TODO check for multiplication overflow
         size_t total_size = nmemb * size;
         if (total_size > sizes[NUM_REGIONS - 1])
@@ -185,11 +188,11 @@ void* calloc(size_t nmemb, size_t size) {
     return calloc_found(nmemb, size);
 }
 
-void* realloc(void *ptr, size_t size) {
+void *realloc(void *ptr, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res;
+        void *res;
 
         // we have 4 cases:
         // 1. ptr is low fat and the new one will be low fat as well
@@ -230,27 +233,34 @@ void* realloc(void *ptr, size_t size) {
     return realloc_found(ptr, size);
 }
 
-/* int posix_memalign(void **memptr, size_t alignment, size_t size) { */
-/*     if (hooks_active) { */
-/*         hooks_active = 0; */
-/*  */
-/*         int res = posix_memalign_found(memptr, alignment, size); */
-/*  */
-/*         if (!res) { */
-/*             __splay_alloc(memptr, size); */
-/*         } */
-/*  */
-/*         hooks_active = 1; */
-/*         return res; */
-/*     } */
-/*     return posix_memalign_found(memptr, alignment, size); */
-/* } */
+int posix_memalign(void **memptr, size_t alignment, size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        // check if alignment is power of 2
+        if ((alignment == 0) || (alignment & (alignment - 1) != 0))
+            return EINVAL;
+
+        if (size > sizes[NUM_REGIONS - 1])
+            return posix_memalign(memptr, alignment, size);
+
+        *memptr = internal_allocation(size);
+
+        // internal_allocation should only return NULL if there is not enough memory left
+        if (*memptr == NULL)
+            return ENOMEM;
+
+        hooks_active = 1;
+        return 0;
+    }
+    return posix_memalign_found(memptr, alignment, size);
+}
 
 void *aligned_alloc(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void* res = aligned_alloc_found(alignment, size);
+        void *res = aligned_alloc_found(alignment, size);
 
         hooks_active = 1;
         return res;
@@ -266,7 +276,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
 
 // TODO sbrk, reallocarray,...
 
-void free(void* p) {
+void free(void *p) {
     if (hooks_active) {
         hooks_active = 0;
 
@@ -282,15 +292,16 @@ void free(void* p) {
 void enable_mpx(void);
 #endif
 
-int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (* stack_end)) {
+int
+__libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
 
     // create regions for each size
     for (int i = 0; i < NUM_REGIONS; i++) {
-        uintptr_t region_address = (i+1) * REGION_SIZE;
+        uintptr_t region_address = (i + 1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
 
         // check that mmap mapped the desired address (otherwise we might get false positive later for the safety checks)
-        if ((uintptr_t ) regions[i] % REGION_SIZE != 0)
+        if ((uintptr_t) regions[i] % REGION_SIZE != 0)
             exit(99); // TODO more info than just exotic return code
     }
 
