@@ -14,6 +14,14 @@
 
 #define DUMP_ALLOCATION_MAP_ON_FAIL 1
 
+// Enable potentially expensive and unsound lookups in the process memory
+// map on missing witness
+#define USE_MEMORY_MAP 1
+
+// Consider only those regions that are backed by files (e.g. libraries,
+// mmapped files, ...)
+#define USE_MEMORY_MAP_FILEBACKED_ONLY 1
+
 // Enable collecting and printing statistics at run time
 // #define STATISTICS 1
 

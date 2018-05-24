@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <assert.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "config.h"
 #include "statistics.h"
 
@@ -34,9 +38,60 @@ static void checkNullPtr(uintptr_t ptr, const char* errormsg) {
     }
 }
 
+static bool accessMemoryMap(uintptr_t witness_val) {
+#ifdef USE_MEMORY_MAP
+    STAT_INC(NumMemMap);
+    char buf[32];
+    pid_t pid = getpid();
+    snprintf(buf, 32, "/proc/%d/maps", pid);
+    FILE *F = fopen(buf, "r");
+
+    char* line;
+    size_t sz = 0;
+
+    uintptr_t lower, upper;
+    bool success = false;
+
+    for (; getline(&line, &sz, F) != -1; free(line), sz = 0) {
+        /* fprintf(stderr, "%s", line); */
+        uint64_t inode;
+
+    // format: [lower]-[upper] [permissions] [offset] [device] [inode] [filename]
+        if (sscanf(line, "%lx-%lx %*s %*s %*s %lu", &lower, &upper, &inode) != 3) {
+            continue;
+        }
+
+#ifdef USE_MEMORY_MAP_FILEBACKED_ONLY
+        if (inode == 0) {
+            continue;
+        }
+#endif
+
+        if (lower <= witness_val && witness_val < upper) {
+            /* fprintf(stderr, "Found range [%lx - %lx] for %lx\n", lower, upper, witness_val); */
+            STAT_INC(NumMemMapSucc);
+            splayInsert(&__memTree, lower, upper, IB_ERROR);
+            success = true;
+            break;
+        }
+    }
+    free(line);
+    fclose(F);
+    return success;
+#else
+    (void)witness_val;
+    return false;
+#endif
+}
+
 static Node* getNode(uintptr_t witness_val, const char *str) {
     Node* n = splayFind(&__memTree, witness_val);
     if (n == NULL) {
+        if (accessMemoryMap(witness_val)) {
+            n = splayFind(&__memTree, witness_val);
+            assert(n);
+            return n;
+        }
         STAT_INC(NumNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS
         __mi_fail_wrapper(str, (void*)witness_val, NULL);
