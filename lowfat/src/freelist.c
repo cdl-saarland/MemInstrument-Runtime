@@ -5,10 +5,10 @@
 // current top elements for every free list
 Element* free_list_tops[NUM_REGIONS];
 
-void free_list_push(int index, void *addr) {
+void free_list_push(int index, void* addr) {
     Element* current_top = free_list_tops[index];
 
-    Element *new_top = malloc(sizeof(Element));
+    Element* new_top = malloc(sizeof(Element));
     new_top->addr = addr;
     new_top->prev = current_top;
 
