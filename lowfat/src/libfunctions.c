@@ -9,7 +9,7 @@
 // for reading symbols from glibc (not portable)
 #define __USE_GNUS
 #include <dlfcn.h>
-#include <asm/errno.h>
+#include <errno.h>
 
 #include "freelist.h"
 #include "statistics.h"
@@ -20,9 +20,6 @@
  */
 
 uintptr_t _ptr_index(void *ptr);
-
-// simply sysconf(_SC_PAGESIZE) - 1
-long page_size_minus_1;
 
 // supported object sizes for region based heap allocation (bigger size use original glibc functions)
 // TODO make this easier to configure
@@ -35,7 +32,9 @@ static void *regions[NUM_REGIONS];
 // this flag ensures that behavior
 static int hooks_active = 0;
 
-typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
+typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void),
+                               void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
+
 static start_main_type start_main_found = NULL;
 
 
@@ -57,10 +56,16 @@ typedef void *(*aligned_alloc_type)(size_t, size_t);
 static aligned_alloc_type aligned_alloc_found = NULL;
 
 typedef int (*posix_memalign_type)(void **, size_t, size_t);
-static posix_memalign_type posix_memalign_found;
+static posix_memalign_type posix_memalign_found = NULL;
 
-typedef int (*memalign_type)(void **, size_t, size_t);
-static memalign_type memalign_found;
+typedef void *(*memalign_type)(size_t, size_t);
+static memalign_type memalign_found = NULL;
+
+typedef void*(*valloc_type)(size_t);
+static valloc_type valloc_found = NULL;
+
+typedef void*(*pvalloc_type)(size_t);
+static pvalloc_type pvalloc_found = NULL;
 
 void initDynamicFunctions(void) {
     const char *libname = "libc.so.6";
@@ -79,11 +84,27 @@ void initDynamicFunctions(void) {
     aligned_alloc_found = (aligned_alloc_type) dlsym(handle, "aligned_alloc");
     posix_memalign_found = (posix_memalign_type) dlsym(handle, "posix_memalign");
     memalign_found = (memalign_type) dlsym(handle, "memalign");
+    valloc_found = (valloc_type) dlsym(handle, "valloc");
+    pvalloc_found = (pvalloc_type) dlsym(handle, "pvalloc");
 
     if ((msg = dlerror())) {
         fprintf(stderr, "Meminstrument: Error finding libc symbols:\n%s\n", msg);
         exit(74);
     }
+}
+
+/* alignment must be a power of 2
+ * returns 1 if value is a multiple of alignment, otherwise 0
+ */
+int is_aligned(unsigned long value, unsigned long alignment) {
+    return (value & (alignment - 1)) == 0;
+}
+
+/*
+ * returns 1 if value is a power of 2, otherwise 0
+ */
+int is_power_of_2(size_t value) {
+    return value != 0 && (value & (value - 1)) == 0;
 }
 
 /*
@@ -93,7 +114,7 @@ void initDynamicFunctions(void) {
 int compute_size_index(size_t size) {
 #ifdef POW_2_SIZES
     // round up to next higher power of 2 by counting leading zeros
-    // TODO 32/64 depending on system
+    // TODO this only works, if there are no powers of 2 skipped in sizes!
     int index = 64 - __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
     return index < 0 ? 0 : index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 #else
@@ -115,7 +136,6 @@ int compute_size_index(size_t size) {
 #endif
 }
 
-// if alignment is 0, //TODO finish
 void *internal_allocation(size_t size) {
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
@@ -123,7 +143,7 @@ void *internal_allocation(size_t size) {
 
     int index = compute_size_index(size);
 
-    // if alignment isn't required, first check free list for corresponding region
+    // first check free list for corresponding region
     if (!free_list_is_empty(index))
         return free_list_pop(index);
 
@@ -131,20 +151,59 @@ void *internal_allocation(size_t size) {
     size_t allocation_size = sizes[index];
 
     void *res = regions[index];
-    // check if we still have fresh space left, TODO nicer way to check this?
-    if ((uintptr_t) res < (index + 2) * REGION_SIZE) {
-        // increase region pointer to point to fresh space for next allocation
-        regions[index] += allocation_size;
 
-        // allow read/write on allocated memory (only required for page aligned addresses)
-        if (((uintptr_t) res & page_size_minus_1) == 0)
-            mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+    // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
+    if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
+        return malloc(size);
 
-        return res;
+    // increase region pointer to point to fresh space for next allocation
+    regions[index] += allocation_size;
+
+    // allow read/write on allocated memory (only required for page aligned addresses)
+    if (is_aligned((uintptr_t) res, sysconf(_SC_PAGESIZE)))
+        mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+
+    return res;
+
+}
+
+/* difference to internal_allocation:
+ - doesn't check free list, as searching an aligned element might iterate over the whole list
+ - increases fresh space pointer until space with correct alignment is found, all space until then is added to free list
+ */
+void *internal_aligned_allocation(size_t size, size_t alignment) {
+    // use glibc malloc for sizes that are too large (-> non low fat pointer)
+    if (size > sizes[NUM_REGIONS - 1])
+        return malloc_found(size);
+
+    int index = compute_size_index(size);
+
+    // otherwise use fresh space (if available)
+    size_t allocation_size = sizes[index];
+
+    void *res = regions[index];
+
+    while (1) {
+
+        // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
+        if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
+            return malloc(size);
+
+        if (is_aligned(res, alignment)) {
+            // allow read/write on allocated memory (only required for page aligned addresses)
+            if ((is_aligned(res, sysconf(_SC_PAGESIZE))))
+                mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+
+            regions[index] = res;
+            return res;
+        }
+
+        // space is not aligned, add it to the free list
+        free_list_push(index, res);
+
+        // check next fresh space slot
+        res += allocation_size;
     }
-
-    // if free list is empty and no fresh space available, fallback to glibc malloc
-    return malloc_found(size);
 }
 
 void internal_free(void *p) {
@@ -233,20 +292,40 @@ void *realloc(void *ptr, size_t size) {
     return realloc_found(ptr, size);
 }
 
+void *aligned_alloc(size_t alignment, size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
+            errno = EINVAL;
+            return NULL;
+        }
+
+        if (size > sizes[NUM_REGIONS - 1])
+            return aligned_alloc_found(alignment, size);
+
+        // since size must be a multiple of alignment here, we can simply use the normal allocation routine
+        void *res = internal_allocation(size);
+
+        hooks_active = 1;
+        return res;
+    }
+    return aligned_alloc_found(alignment, size);
+}
+
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        // check if alignment is power of 2
-        if ((alignment == 0) || (alignment & (alignment - 1) != 0))
+        // check valid parameters
+        if (!is_power_of_2(alignment) || !is_aligned(size, sizeof(void *)))
             return EINVAL;
 
         if (size > sizes[NUM_REGIONS - 1])
             return posix_memalign(memptr, alignment, size);
 
-        *memptr = internal_allocation(size);
+        *memptr = internal_aligned_allocation(size, alignment);
 
-        // internal_allocation should only return NULL if there is not enough memory left
         if (*memptr == NULL)
             return ENOMEM;
 
@@ -256,25 +335,58 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     return posix_memalign_found(memptr, alignment, size);
 }
 
-void *aligned_alloc(size_t alignment, size_t size) {
+void *memalign(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = aligned_alloc_found(alignment, size);
+        if (!is_power_of_2(alignment)) {
+            errno = EINVAL;
+            return NULL;
+        }
+
+        if (size > sizes[NUM_REGIONS - 1])
+            return memalign_found(alignment, size);
+
+        void *res = internal_aligned_allocation(size, alignment);
 
         hooks_active = 1;
         return res;
     }
-    return aligned_alloc_found(alignment, size);
+    return memalign_found(alignment, size);
 }
 
-/* void *valloc(size_t size); */
-/*  */
-/* void *memalign(size_t alignment, size_t size); */
-/* void *pvalloc(size_t size); */
+void *valloc(size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
 
+        if (size > sizes[NUM_REGIONS - 1])
+            return valloc_found(size);
 
-// TODO sbrk, reallocarray,...
+        void *res = internal_aligned_allocation(size, sysconf(_SC_PAGESIZE));
+
+        hooks_active = 1;
+        return res;
+    }
+    return valloc_found(size);
+}
+
+void *pvalloc(size_t size) {
+    if (hooks_active) {
+        hooks_active = 0;
+
+        if (size > sizes[NUM_REGIONS - 1])
+            return pvalloc_found(size);
+
+        long page_size = sysconf(_SC_PAGESIZE);
+        // round size to next greater multiple of page size;
+        long rounded_size = (size + page_size-1) & ~(page_size-1);
+        void *res = internal_allocation(rounded_size);
+
+        hooks_active = 1;
+        return res;
+    }
+    return pvalloc_found(size);
+}
 
 void free(void *p) {
     if (hooks_active) {
@@ -304,8 +416,6 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
         if ((uintptr_t) regions[i] % REGION_SIZE != 0)
             exit(99); // TODO more info than just exotic return code
     }
-
-    page_size_minus_1 = sysconf(_SC_PAGESIZE) - 1;
 
     // get original functions from dynamic linker
     initDynamicFunctions();
