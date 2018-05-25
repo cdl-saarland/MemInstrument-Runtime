@@ -296,16 +296,17 @@ void *aligned_alloc(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
+        void *res;
+
         if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
             errno = EINVAL;
-            return NULL;
+            res = NULL;
         }
-
-        if (size > sizes[NUM_REGIONS - 1])
-            return aligned_alloc_found(alignment, size);
-
-        // since size must be a multiple of alignment here, we can simply use the normal allocation routine
-        void *res = internal_allocation(size);
+        else if (size > sizes[NUM_REGIONS - 1])
+            res = aligned_alloc_found(alignment, size);
+        else
+            // since size must be a multiple of alignment here, we can simply use the normal allocation routine
+            res = internal_allocation(size);
 
         hooks_active = 1;
         return res;
@@ -317,20 +318,21 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
+        int err_status = 0; // 0 for Success
+
         // check valid parameters
         if (!is_power_of_2(alignment) || !is_aligned(size, sizeof(void *)))
-            return EINVAL;
-
-        if (size > sizes[NUM_REGIONS - 1])
-            return posix_memalign(memptr, alignment, size);
-
-        *memptr = internal_aligned_allocation(size, alignment);
+            err_status = EINVAL;
+        else if (size > sizes[NUM_REGIONS - 1])
+            err_status = posix_memalign(memptr, alignment, size);
+        else
+            *memptr = internal_aligned_allocation(size, alignment);
 
         if (*memptr == NULL)
-            return ENOMEM;
+            err_status = ENOMEM;
 
         hooks_active = 1;
-        return 0;
+        return err_status;
     }
     return posix_memalign_found(memptr, alignment, size);
 }
@@ -339,15 +341,16 @@ void *memalign(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
+        void *res;
+
         if (!is_power_of_2(alignment)) {
             errno = EINVAL;
-            return NULL;
+            res = NULL;
         }
-
-        if (size > sizes[NUM_REGIONS - 1])
-            return memalign_found(alignment, size);
-
-        void *res = internal_aligned_allocation(size, alignment);
+        else if (size > sizes[NUM_REGIONS - 1])
+            res = memalign_found(alignment, size);
+        else
+            res = internal_aligned_allocation(size, alignment);
 
         hooks_active = 1;
         return res;
@@ -359,10 +362,12 @@ void *valloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        if (size > sizes[NUM_REGIONS - 1])
-            return valloc_found(size);
+        void *res;
 
-        void *res = internal_aligned_allocation(size, sysconf(_SC_PAGESIZE));
+        if (size > sizes[NUM_REGIONS - 1])
+            res = valloc_found(size);
+        else
+            res = internal_aligned_allocation(size, sysconf(_SC_PAGESIZE));
 
         hooks_active = 1;
         return res;
@@ -374,13 +379,16 @@ void *pvalloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        if (size > sizes[NUM_REGIONS - 1])
-            return pvalloc_found(size);
+        void *res;
 
-        long page_size = sysconf(_SC_PAGESIZE);
-        // round size to next greater multiple of page size;
-        long rounded_size = (size + page_size-1) & ~(page_size-1);
-        void *res = internal_allocation(rounded_size);
+        if (size > sizes[NUM_REGIONS - 1])
+            res = pvalloc_found(size);
+        else {
+            long page_size = sysconf(_SC_PAGESIZE);
+            // round size to next greater multiple of page size;
+            long rounded_size = (size + page_size - 1) & ~(page_size - 1);
+            res = internal_allocation(rounded_size);
+        }
 
         hooks_active = 1;
         return res;
