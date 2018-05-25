@@ -319,17 +319,21 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
         hooks_active = 0;
 
         int err_status = 0; // 0 for Success
+        void *res = NULL;
 
         // check valid parameters
-        if (!is_power_of_2(alignment) || !is_aligned(size, sizeof(void *)))
+        if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
             err_status = EINVAL;
         else if (size > sizes[NUM_REGIONS - 1])
             err_status = posix_memalign(memptr, alignment, size);
-        else
-            *memptr = internal_aligned_allocation(size, alignment);
+        else {
+            res = internal_aligned_allocation(size, alignment);
 
-        if (*memptr == NULL)
-            err_status = ENOMEM;
+            if (res == NULL)
+                err_status = ENOMEM;
+            else
+                *memptr = res;
+        }
 
         hooks_active = 1;
         return err_status;
