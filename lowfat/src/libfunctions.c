@@ -135,6 +135,10 @@ int compute_size_index(size_t size) {
 }
 
 void *internal_allocation(size_t size) {
+
+    if (size == 0)
+        return NULL;
+
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
         return malloc_found(size);
@@ -170,6 +174,10 @@ void *internal_allocation(size_t size) {
  - increases fresh space pointer until space with correct alignment is found, all space until then is added to free list
  */
 void *internal_aligned_allocation(size_t size, size_t alignment) {
+
+    if (size == 0)
+        return NULL;
+
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
         return malloc_found(size);
@@ -404,7 +412,8 @@ void free(void *p) {
     if (hooks_active) {
         hooks_active = 0;
 
-        internal_free(p);
+        if (p != NULL)
+            internal_free(p);
 
         hooks_active = 1;
         return;
