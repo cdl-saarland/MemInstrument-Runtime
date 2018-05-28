@@ -267,6 +267,7 @@ void *realloc(void *ptr, size_t size) {
         // 2. ptr is low fat but the new one is not (size too big)   -> glibc malloc, copy, our free
         // 3. ptr is not low fat but the new one will be             -> our malloc, copy, glibc free
         // 4. ptr is not low fat and the new one won't be either     -> glibc realloc
+        // Note: copy and free are only done if the allocation succeeded (i.e. errno is 0)
 
         if (ptr == NULL)
             res = malloc(size);
@@ -275,14 +276,20 @@ void *realloc(void *ptr, size_t size) {
                 res = internal_allocation(size); // case 1
             else
                 res = malloc_found(size); // case 2
-            memcpy(res, ptr, size);
-            internal_free(ptr);
+
+            if (errno == 0) {
+                memcpy(res, ptr, size);
+                internal_free(ptr);
+            }
         }
         else {
             if (size <= sizes[NUM_REGIONS - 1]) {
                 res = internal_allocation(size); // case 3
-                memcpy(res, ptr, size);
-                free_found(ptr);
+
+                if (errno == 0) {
+                    memcpy(res, ptr, size);
+                    free_found(ptr);
+                }
             }
             else
                 res = realloc_found(ptr, size); // case 4
