@@ -261,36 +261,30 @@ void *realloc(void *ptr, size_t size) {
 
         void *res;
 
-        // we have 4 cases:
-        // 1. ptr is low fat and the new one will be low fat as well
-        // 2. ptr is low fat but the new one is not (size too big)
-        // 3. ptr is not low fat but the new one will be
-        // 4. ptr is not low fat and the new one won't be either
-        // case 1 and 2 require new allocation with our/glibc malloc, copy and our free
-        // case 3 is like case 1 but uses glibc free
-        // case 4 can simply use glibc realloc
+        // if ptr is NULL, simply use malloc
+        // otherwise we have 4 cases:
+        // 1. ptr is low fat and the new one will be low fat as well -> our malloc, copy, our free
+        // 2. ptr is low fat but the new one is not (size too big)   -> glibc malloc, copy, our free
+        // 3. ptr is not low fat but the new one will be             -> our malloc, copy, glibc free
+        // 4. ptr is not low fat and the new one won't be either     -> glibc realloc
 
-        if (_ptr_index(ptr) < NUM_REGIONS) {
+        if (ptr == NULL)
+            res = malloc(size);
+        else if (_ptr_index(ptr) < NUM_REGIONS) {
             if (size <= sizes[NUM_REGIONS - 1])
                 res = internal_allocation(size); // case 1
             else
                 res = malloc_found(size); // case 2
-
-            if (ptr != NULL) {
-                memcpy(res, ptr, size);
-                internal_free(ptr);
-            }
-
-        } else {
+            memcpy(res, ptr, size);
+            internal_free(ptr);
+        }
+        else {
             if (size <= sizes[NUM_REGIONS - 1]) {
                 res = internal_allocation(size); // case 3
-
-                if (ptr != NULL) {
-                    memcpy(res, ptr, size);
-                    free_found(ptr);
-                }
-
-            } else
+                memcpy(res, ptr, size);
+                free_found(ptr);
+            }
+            else
                 res = realloc_found(ptr, size); // case 4
         }
 
