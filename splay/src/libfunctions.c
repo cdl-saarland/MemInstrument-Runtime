@@ -49,6 +49,12 @@ static valloc_type valloc_found = NULL;
 typedef void*(*pvalloc_type)(size_t);
 static pvalloc_type pvalloc_found = NULL;
 
+typedef void*(*mmap_type)(void*, size_t, int, int, int, off_t);
+static mmap_type mmap_found = NULL;
+
+typedef int(*munmap_type)(void*, size_t);
+static munmap_type munmap_found = NULL;
+
 void initDynamicFunctions(void) {
     const char* libname = "libc.so.6";
     void* handle = dlopen(libname, RTLD_NOW | RTLD_LOCAL);
@@ -68,6 +74,9 @@ void initDynamicFunctions(void) {
     aligned_alloc_found = (aligned_alloc_type)dlsym(handle, "aligned_alloc");
     valloc_found = (valloc_type)dlsym(handle, "valloc");
     pvalloc_found = (pvalloc_type)dlsym(handle, "pvalloc");
+
+    mmap_found = (mmap_type)dlsym(handle, "mmap");
+    munmap_found = (munmap_type)dlsym(handle, "munmap");
 
     if ((msg = dlerror())) {
         fprintf(stderr, "Meminstrument: Error finding libc symbols:\n%s\n", msg);
@@ -202,6 +211,38 @@ void free(void* p) {
         return;
     }
     free_found(p);
+}
+
+void* mmap(void* addr, size_t size, int prot, int flags, int fildes, off_t off) {
+#ifdef ENABLE_MMAP_HOOK
+    if (hooks_active) {
+        hooks_active = 0;
+
+        void* res = mmap_found(addr, size, prot, flags, fildes, off);
+
+        __splay_alloc_or_replace(res, size);
+        // enable replacing since munmap does not remove mappings from the tree.
+
+        hooks_active = 1;
+        return res;
+    }
+#endif
+    return mmap_found(addr, size, prot, flags, fildes, off);
+}
+
+int munmap(void* addr, size_t size) {
+    // TODO the semantics of munmap is weirder than that...
+    /* if (hooks_active) { */
+    /*     hooks_active = 0; */
+    /*  */
+    /*     __splay_free(addr); */
+    /*  */
+    /*     int res = munmap_found(addr, size); */
+    /*  */
+    /*     hooks_active = 1; */
+    /*     return res; */
+    /* } */
+    return munmap_found(addr, size);
 }
 
 #if ENABLE_MPX

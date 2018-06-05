@@ -95,6 +95,8 @@ static Node* getNode(uintptr_t witness_val, const char *str) {
         STAT_INC(NumNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS
         __mi_fail_wrapper(str, (void*)witness_val, NULL);
+#else
+        (void)str;
 #endif
         return NULL;
     }

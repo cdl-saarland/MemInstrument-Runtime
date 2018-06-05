@@ -22,6 +22,11 @@
 // mmapped files, ...)
 #define USE_MEMORY_MAP_FILEBACKED_ONLY 1
 
+// Enable inserting mmapped allocations into splay tree, this might be
+// problematic since munmap does not remove these allocations (which can lead to
+// spurious violations).
+// #define ENABLE_MMAP_HOOK 1
+
 // Enable collecting and printing statistics at run time
 // #define STATISTICS 1
 
