@@ -25,7 +25,7 @@
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-static void __mi_fail_impl(FILE* dest, const char* fmt, ...) {
+void __mi_fail_fmt(FILE* dest, const char* fmt, ...) {
 #ifdef FAIL_COUNTER
     STAT_INC(FAIL_COUNTER);
 #endif
@@ -71,27 +71,27 @@ static void __mi_fail_impl(FILE* dest, const char* fmt, ...) {
 _Noreturn
 #endif
 void __mi_fail(void) {
-    __mi_fail_impl(stderr, NULL);
+    __mi_fail_fmt(stderr, NULL);
 }
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
 void __mi_fail_with_msg(const char* msg) {
-    __mi_fail_impl(stderr, "%s", msg);
+    __mi_fail_fmt(stderr, "%s", msg);
 }
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
 void __mi_fail_with_ptr(const char* msg, void *faultingPtr) {
-    __mi_fail_impl(stderr, "%s with pointer %p", msg, faultingPtr);
+    __mi_fail_fmt(stderr, "%s with pointer %p", msg, faultingPtr);
 }
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
 void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* verbMsg) {
-    __mi_fail_impl(stderr, "%s with pointer %p\nat %s", msg, faultingPtr, verbMsg);
+    __mi_fail_fmt(stderr, "%s with pointer %p\nat %s", msg, faultingPtr, verbMsg);
 }
 

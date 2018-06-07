@@ -20,6 +20,10 @@
  *          the call stack to print in the backtrace on abort.
  */
 
+#ifndef CONTINUE_ON_FATAL
+_Noreturn
+#endif
+void __mi_fail_fmt(FILE* dest, const char* fmt, ...);
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
