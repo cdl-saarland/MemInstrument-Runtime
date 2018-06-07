@@ -15,7 +15,10 @@
 
 Tree __memTree;
 
+
+#ifndef CONTINUE_ON_FATAL
 _Noreturn
+#endif
 static void __mi_fail_wrapper(const char* msg, void* ptr, char* vmsg) {
 #ifdef DUMP_ALLOCATION_MAP_ON_FAIL
     __dumpAllocationMap(stderr, &__memTree);
@@ -107,6 +110,17 @@ void __setup_splay(void) {
     splayInit(&__memTree);
 }
 
+#ifdef TREE_ANNOTATE_NODES
+static const char *stringForKind(char c) {
+    switch (c) {
+        case 'g': return "global";
+        case 'h': return "heap";
+        case 's': return "stack";
+        default:  return "strange";
+    }
+}
+#endif
+
 void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     STAT_INC(NumInboundsChecks);
     uintptr_t witness_val = (uintptr_t) witness;
@@ -126,7 +140,22 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     if (ptr_val < n->base || ptr_val >= n->bound) {
         // ignore the potential access size here
         STAT_INC(NumFailedInboundsChecksOOB);
-        __mi_fail_wrapper("Outflowing out-of-bounds pointer", (void*)ptr, name);
+        if (name) {
+            __mi_fail_wrapper("Outflowing out-of-bounds pointer", (void*)ptr, name);
+        } else {
+            size_t off = ptr_val - n->base;
+            size_t obj_size = n->bound - n->base;
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+            __dumpAllocationMap(stderr, &__memTree);
+#endif
+#ifdef TREE_ANNOTATE_NODES
+            __mi_fail_fmt(stderr, "Outflowing out-of-bounds pointer %p with offset %#x, associated to a %s object of size %dB at [%p-%p)",
+                    ptr, off, stringForKind(n->kind), obj_size, n->base, n->bound);
+#else
+            __mi_fail_fmt(stderr, "Outflowing out-of-bounds pointer %p with offset %#x, associated to an object of size %dB at [%p-%p)",
+                    ptr, off, obj_size, n->base, n->bound);
+#endif
+        }
     }
 }
 
@@ -147,7 +176,23 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
-        __mi_fail_wrapper("Out-of-bounds dereference", (void*)ptr, name);
+        if (name) {
+            __mi_fail_wrapper("Out-of-bounds dereference", (void*)ptr, name);
+        } else {
+            size_t off = ptr_val - n->base;
+            size_t obj_size = n->bound - n->base;
+
+#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
+            __dumpAllocationMap(stderr, &__memTree);
+#endif
+#ifdef TREE_ANNOTATE_NODES
+            __mi_fail_fmt(stderr, "Out-of-bounds dereference of pointer %p with access size %dB to offset %#x, associated to a %s object of size %dB at [%p-%p)",
+                    ptr, sz, off, stringForKind(n->kind), obj_size, n->base, n->bound);
+#else
+            __mi_fail_fmt(stderr, "Out-of-bounds dereference of pointer %p with access size %dB to offset %#x, associated to an object of size %dB at [%p-%p)",
+                    ptr, sz, off, obj_size, n->base, n->bound);
+#endif
+        }
     }
 }
 

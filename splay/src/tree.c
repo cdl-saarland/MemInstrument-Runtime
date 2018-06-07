@@ -49,8 +49,8 @@ static bool validateNode(Node* parent, Node* n, size_t *expectedNodes) {
                 fprintf(stderr, "Node with wrong left information found!\n");
                 return false;
             }
-            if (parent->base <= n->bound) {
-                fprintf(stderr, "Left node with wrong order found!\n");
+            if (parent->base < n->bound) {
+                fprintf(stderr, "Left node [%p, %p) with wrong order w.r.t parent node [%p, %p) found!\n", (void*)n->base, (void*)n->bound, (void*)parent->base, (void*)parent->bound);
                 return false;
             }
         }
@@ -59,8 +59,8 @@ static bool validateNode(Node* parent, Node* n, size_t *expectedNodes) {
                 fprintf(stderr, "Node with wrong right information found!\n");
                 return false;
             }
-            if (parent->base >= n->base) {
-                fprintf(stderr, "Right node with wrong order found!\n");
+            if (parent->bound > n->base) {
+                fprintf(stderr, "Right node [%p, %p) with wrong order w.r.t parent node [%p, %p) found!\n", (void*)n->base, (void*)n->bound, (void*)parent->base, (void*)parent->bound);
                 return false;
             }
         }
@@ -297,8 +297,8 @@ void splayInit(Tree *t) {
 #endif
 }
 
-static Node* find_impl(Tree* t, uintptr_t val) {
-    Node* current = t->root;
+static Node* find_from_node(Node* n, uintptr_t val) {
+    Node* current = n;
 
     while (current != NULL) {
         if (val < current->base) {
@@ -310,9 +310,14 @@ static Node* find_impl(Tree* t, uintptr_t val) {
         }
     }
 
-    DEBUG(assert(validateTree(t)))
     return current;
 }
+
+static Node* find_impl(Tree* t, uintptr_t val) {
+    DEBUG(assert(validateTree(t)))
+    return find_from_node(t->root, val);
+}
+
 
 static void removeNode(Tree* t, Node* n) {
     Node* res = n;
@@ -349,6 +354,42 @@ bool splayRemove(Tree* t, uintptr_t val) {
     removeNode(t, res);
     DEBUG(fprintf(stderr, "  return splayRemove(%8lx)\n", val))
     return true;
+}
+
+size_t splayRemoveInterval_from_node(Tree* t, Node* n, uintptr_t low, uintptr_t high) {
+    DEBUG(assert(validateTree(t)))
+    if (n == NULL) {
+        return 0;
+    }
+    if (low >= n->base && n->bound >= high) {
+        // the interval is fully contained in this node, therefore we do not
+        // need to consider its children
+        removeNode(t, n);
+        return 1;
+    }
+
+    size_t res = 0;
+    res += splayRemoveInterval_from_node(t, n->leftChild, low, high);
+    res += splayRemoveInterval_from_node(t, n->rightChild, low, high);
+
+    if ((low <= n->base && n->bound <= high) ||
+            // the node is fully contained in the interval
+        (n->base <= low && n->bound > low) ||
+            // the node partially intersects with the lower part of the interval
+        (n->base < high && n->bound >= high)) {
+            // the node partially intersects with the upper part of the interval
+        removeNode(t, n);
+        ++res;
+    }
+    DEBUG(assert(validateTree(t)))
+    return res;
+}
+
+/**
+ * Removes all nodes in t that intersect with [low, high)
+ */
+size_t splayRemoveInterval(Tree* t, uintptr_t low, uintptr_t high) {
+    return splayRemoveInterval_from_node(t, t->root, low, high);
 }
 
 Node* splayFind(Tree* t, uintptr_t val) {
@@ -410,26 +451,44 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                 assert(false && "Trying to insert a conflicting element!");
                 __libc_free(newNode);
                 return;
-            case IB_EXTEND:
+            case IB_EXTEND: {
+
 #ifdef TREE_ANNOTATE_NODES
                 assert(current->kind == 'g');
 #endif
+                bool fullyContained = current->base <= base && current->bound >= bound;
+                if (!fullyContained) {
+                    splayRemoveInterval_from_node(t, current->leftChild, base, bound);
+                    splayRemoveInterval_from_node(t, current->rightChild, base, bound);
+                }
+
                 current->base = min(current->base, base);
-                current->bound= max(current->bound, bound);
+                current->bound = max(current->bound, bound);
+
+
                 splay(t, current);
                 DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- extended\n", base, bound))
                 __libc_free(newNode);
                 return;
-            case IB_REPLACE:
+            }
+            case IB_REPLACE: {
 #ifdef TREE_ANNOTATE_NODES
                 assert(current->kind == 's');
 #endif
+                bool fullyContained = current->base <= base && current->bound >= bound;
+                if (!fullyContained) {
+                    splayRemoveInterval_from_node(t, current->leftChild, base, bound);
+                    splayRemoveInterval_from_node(t, current->rightChild, base, bound);
+                }
+
                 current->base = base;
-                current->bound= bound;
+                current->bound = bound;
+
                 splay(t, current);
                 DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx) -- replaced\n", base, bound))
                 __libc_free(newNode);
                 return;
+            }
             }
         }
     }
