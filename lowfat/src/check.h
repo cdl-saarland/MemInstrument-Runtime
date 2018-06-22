@@ -1,8 +1,11 @@
 #pragma once
 
-extern size_t sizes[];
+#include "config.h"
 
-uintptr_t _ptr_index(void *ptr);
-uintptr_t _ptr_base(void *ptr);
-uintptr_t _ptr_size(void *ptr);
-void __check_deref(void *ptr, uintptr_t base, uintptr_t size);
+extern size_t sizes[];
+extern uint64_t inv_sizes[];
+
+uint64_t __ptr_index(void *ptr);
+uint64_t __lowfat_ptr_base(void *ptr);
+uint64_t __lowfat_ptr_size(void *ptr);
+void __lowfat_check_oob(void *ptr, uint64_t base, uint64_t size);

@@ -19,10 +19,11 @@
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
 
-uintptr_t _ptr_index(void *ptr);
+uint64_t __ptr_index(void *ptr);
 
-// supported object sizes for region based heap allocation (bigger sizes use original glibc functions)
-size_t sizes[] = {16, 32, 64, 128};
+extern size_t sizes[];
+
+static uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
@@ -94,7 +95,7 @@ void initDynamicFunctions(void) {
 /* alignment must be a power of 2
  * returns 1 if value is a multiple of alignment, otherwise 0
  */
-int is_aligned(unsigned long value, unsigned long alignment) {
+int is_aligned(uint64_t value, uint64_t alignment) {
     return (value & (alignment - 1)) == 0;
 }
 
@@ -113,7 +114,7 @@ int compute_size_index(size_t size) {
 #ifdef POW_2_SIZES
     // round up to next higher power of 2 by counting leading zeros
     // TODO this only works, if there are no powers of 2 skipped in sizes!
-    int index = 64 - __builtin_clzll(size) - 5; // -5 because the smallest size is 16 Bytes
+    int index = 64 - __builtin_clzll(size) - 4; // -4 because the smallest size is 16 Bytes
     return index < 0 ? 0 : index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 #else
     // binary search over sizes to find next bigger (or equal) size
@@ -162,7 +163,7 @@ void *internal_allocation(size_t size) {
     regions[index] += allocation_size;
 
     // allow read/write on allocated memory (only required for page aligned addresses)
-    if (is_aligned((uintptr_t) res, sysconf(_SC_PAGESIZE)))
+    if (is_aligned((uintptr_t) res, page_size))
         mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
     return res;
@@ -195,9 +196,9 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
         if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
             return malloc(size);
 
-        if (is_aligned(res, alignment)) {
+        if (is_aligned((uintptr_t ) res, alignment)) {
             // allow read/write on allocated memory (only required for page aligned addresses)
-            if ((is_aligned(res, sysconf(_SC_PAGESIZE))))
+            if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
             regions[index] = res;
@@ -214,7 +215,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
 void internal_free(void *p) {
     // add freed address to free list for corresponding region
-    uintptr_t index = _ptr_index(p);
+    uintptr_t index = __ptr_index(p);
     if (index < NUM_REGIONS)
         free_list_push(index, p);
     else
@@ -271,7 +272,7 @@ void *realloc(void *ptr, size_t size) {
 
         if (ptr == NULL)
             res = malloc(size);
-        else if (_ptr_index(ptr) < NUM_REGIONS) {
+        else if (__ptr_index(ptr) < NUM_REGIONS) {
             if (size <= sizes[NUM_REGIONS - 1])
                 res = internal_allocation(size); // case 1
             else
@@ -380,7 +381,7 @@ void *valloc(size_t size) {
         if (size > sizes[NUM_REGIONS - 1])
             res = valloc_found(size);
         else
-            res = internal_aligned_allocation(size, sysconf(_SC_PAGESIZE));
+            res = internal_aligned_allocation(size, page_size);
 
         hooks_active = 1;
         return res;
@@ -397,9 +398,7 @@ void *pvalloc(size_t size) {
         if (size > sizes[NUM_REGIONS - 1])
             res = pvalloc_found(size);
         else {
-            long page_size = sysconf(_SC_PAGESIZE);
-            // round size to next greater multiple of page size;
-            long rounded_size = (size + page_size - 1) & ~(page_size - 1);
+            uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
             res = internal_allocation(rounded_size);
         }
 
@@ -426,6 +425,10 @@ void free(void *p) {
 void enable_mpx(void);
 #endif
 
+#if defined(FAST_DIV) && !defined(POW_2_SIZES)
+void init_inv_sizes(void);
+#endif
+
 int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
 
@@ -438,9 +441,15 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
         if ((uintptr_t) regions[i] % REGION_SIZE != 0)
             exit(99); // TODO more info than just exotic return code
     }
-
+    
     // get original functions from dynamic linker
     initDynamicFunctions();
+
+    page_size = sysconf(_SC_PAGESIZE);
+
+#if defined(FAST_DIV) && !defined(POW_2_SIZES)
+    init_inv_sizes(void);
+#endif
 
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
