@@ -19,7 +19,7 @@
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
 
-uint64_t __ptr_index(void *ptr);
+uint64_t __lowfat_ptr_index(void *ptr);
 
 extern size_t sizes[];
 
@@ -196,7 +196,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
         if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
             return malloc(size);
 
-        if (is_aligned((uintptr_t ) res, alignment)) {
+        if (is_aligned((uintptr_t) res, alignment)) {
             // allow read/write on allocated memory (only required for page aligned addresses)
             if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
@@ -215,7 +215,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
 void internal_free(void *p) {
     // add freed address to free list for corresponding region
-    uintptr_t index = __ptr_index(p);
+    uintptr_t index = __lowfat_ptr_index(p);
     if (index < NUM_REGIONS)
         free_list_push(index, p);
     else
@@ -272,7 +272,7 @@ void *realloc(void *ptr, size_t size) {
 
         if (ptr == NULL)
             res = malloc(size);
-        else if (__ptr_index(ptr) < NUM_REGIONS) {
+        else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
             if (size <= sizes[NUM_REGIONS - 1])
                 res = internal_allocation(size); // case 1
             else
