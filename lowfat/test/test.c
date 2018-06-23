@@ -52,9 +52,7 @@ void test_basic_check(void) {
     free(p);
     p = (int*) malloc(size * sizeof(int));
 
-    uintptr_t p_size = __lowfat_ptr_size(p);
-    uintptr_t p_base = __lowfat_ptr_base(p);
-    __lowfat_check_oob(p + 8, p_size, p_base);
+    __lowfat_check_oob(p, p + 8);
 
     printf("OOB detection failed");
 }
@@ -86,7 +84,7 @@ void mmap_metadata(void) {
 
 int main(void)
 {
-    int* p=malloc(1);
+    test_basic_check();
     // check if some library (like mmap/mprotect) had errors
     printf("ERRNO: %s\n", strerror(errno));
     return 0;
