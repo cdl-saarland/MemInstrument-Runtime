@@ -95,3 +95,6 @@ void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* 
     __mi_fail_fmt(stderr, "%s with pointer %p\nat %s", msg, faultingPtr, verbMsg);
 }
 
+void __mi_warning(const char* msg) {
+    fprintf(stderr, "\nMI-WARNING: %s\n", msg);
+}

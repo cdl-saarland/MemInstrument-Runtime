@@ -45,3 +45,4 @@ _Noreturn
 #endif
 void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* verbMsg);
 
+void __mi_warning(const char* msg);
