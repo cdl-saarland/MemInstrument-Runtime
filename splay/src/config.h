@@ -4,7 +4,7 @@
 #define NULLPTR_BOUND 4096
 
 /// Fail if a free call without witness is encountered (possible double free)
-#define CHECK_DOUBLE_FREE 1
+// #define CHECK_DOUBLE_FREE 1
 
 /// Fail if a witness check fails.
 /// Ensure non-crashing results otherwise.
