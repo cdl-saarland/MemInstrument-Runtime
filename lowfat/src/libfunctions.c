@@ -288,7 +288,8 @@ void *realloc(void *ptr, size_t size) {
                 res = malloc_found(size); // case 2 (or internal_allocation wasn't successful
 
             if (errno == 0) {
-                memcpy(res, ptr, size);
+                size_t previous_size = sizes[__lowfat_ptr_index(ptr)];
+                memcpy(res, ptr, previous_size);
                 internal_free(ptr);
             }
         }
@@ -300,7 +301,8 @@ void *realloc(void *ptr, size_t size) {
                     res = malloc_found(size);
 
                 if (errno == 0) {
-                    memcpy(res, ptr, size);
+                    size_t previous_size = sizes[__lowfat_ptr_index(ptr)];
+                    memcpy(res, ptr, previous_size);
                     free_found(ptr);
                 }
             }
