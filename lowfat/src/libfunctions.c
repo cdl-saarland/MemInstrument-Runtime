@@ -112,9 +112,11 @@ int is_power_of_2(size_t value) {
  */
 int compute_size_index(size_t size) {
 #ifdef POW_2_SIZES
-    // round up to next higher power of 2 by counting leading zeros
+    // get the index of the next higher power of 2 by counting leading zeros
     // TODO this only works, if there are no powers of 2 skipped in sizes!
-    int index = 64 - __builtin_clzll(size) - 4; // -4 because the smallest size is 16 Bytes
+    int index = 64 - __builtin_clzll(size) - 4; // offset of 4  because the smallest size is 16 Bytes
+    if (is_power_of_2(size))
+        index--; // corner case if size is already a power 2
     return index < 0 ? 0 : index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 #else
     // binary search over sizes to find next bigger (or equal) size
