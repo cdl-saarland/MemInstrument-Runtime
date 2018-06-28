@@ -137,6 +137,7 @@ int compute_size_index(size_t size) {
 #endif
 }
 
+// returns NULL if size is not supported (too big) or if no space is left for the corresponding region
 void *internal_allocation(size_t size) {
 
     if (size == 0)
@@ -144,7 +145,7 @@ void *internal_allocation(size_t size) {
 
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
-        return malloc_found(size);
+        return NULL;
 
     int index = compute_size_index(size);
 
@@ -159,7 +160,7 @@ void *internal_allocation(size_t size) {
 
     // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
     if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
-        return malloc(size);
+        return NULL;
 
     // increase region pointer to point to fresh space for next allocation
     regions[index] += allocation_size;
@@ -183,7 +184,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
     // use glibc malloc for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
-        return malloc_found(size);
+        return NULL;
 
     int index = compute_size_index(size);
 
@@ -196,7 +197,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
         // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
         if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
-            return malloc(size);
+            return NULL;
 
         if (is_aligned((uintptr_t) res, alignment)) {
             // allow read/write on allocated memory (only required for page aligned addresses)
@@ -229,6 +230,8 @@ void *malloc(size_t size) {
         hooks_active = 0;
 
         void *res = internal_allocation(size);
+        if (res == NULL)
+            res = malloc_found(size);
 
         hooks_active = 1;
         return res;
@@ -249,7 +252,10 @@ void *calloc(size_t nmemb, size_t size) {
             res = calloc_found(nmemb, size);
         else {
             res = internal_allocation(total_size);
-            memset(res, 0, total_size);
+            if (res != NULL)
+                memset(res, 0, total_size);
+            else
+                res = calloc_found(nmemb, size);
         }
 
         hooks_active = 1;
@@ -262,7 +268,7 @@ void *realloc(void *ptr, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res;
+        void *res = NULL;
 
         // if ptr is NULL, simply use malloc
         // otherwise we have 4 cases:
@@ -277,8 +283,9 @@ void *realloc(void *ptr, size_t size) {
         else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
             if (size <= sizes[NUM_REGIONS - 1])
                 res = internal_allocation(size); // case 1
-            else
-                res = malloc_found(size); // case 2
+
+            if (res == NULL)
+                res = malloc_found(size); // case 2 (or internal_allocation wasn't successful
 
             if (errno == 0) {
                 memcpy(res, ptr, size);
@@ -288,6 +295,9 @@ void *realloc(void *ptr, size_t size) {
         else {
             if (size <= sizes[NUM_REGIONS - 1]) {
                 res = internal_allocation(size); // case 3
+
+                if (res == NULL)
+                    res = malloc_found(size);
 
                 if (errno == 0) {
                     memcpy(res, ptr, size);
@@ -316,9 +326,12 @@ void *aligned_alloc(size_t alignment, size_t size) {
         }
         else if (size > sizes[NUM_REGIONS - 1])
             res = aligned_alloc_found(alignment, size);
-        else
+        else {
             // since size must be a multiple of alignment here, we can simply use the normal allocation routine
             res = internal_allocation(size);
+            if (res == NULL)
+                res = aligned_alloc_found(alignment, size);
+        }
 
         hooks_active = 1;
         return res;
@@ -342,7 +355,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
             res = internal_aligned_allocation(size, alignment);
 
             if (res == NULL)
-                err_status = ENOMEM;
+                err_status = posix_memalign(memptr, alignment, size);
             else
                 *memptr = res;
         }
@@ -365,8 +378,11 @@ void *memalign(size_t alignment, size_t size) {
         }
         else if (size > sizes[NUM_REGIONS - 1])
             res = memalign_found(alignment, size);
-        else
+        else {
             res = internal_aligned_allocation(size, alignment);
+            if (res == NULL)
+                res = memalign_found(alignment, size);
+        }
 
         hooks_active = 1;
         return res;
@@ -382,8 +398,11 @@ void *valloc(size_t size) {
 
         if (size > sizes[NUM_REGIONS - 1])
             res = valloc_found(size);
-        else
+        else {
             res = internal_aligned_allocation(size, page_size);
+            if (res == NULL)
+                res = valloc_found(size);
+        }
 
         hooks_active = 1;
         return res;
@@ -402,6 +421,8 @@ void *pvalloc(size_t size) {
         else {
             uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
             res = internal_allocation(rounded_size);
+            if (res == NULL)
+                res = pvalloc_found(size);
         }
 
         hooks_active = 1;
