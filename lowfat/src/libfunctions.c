@@ -143,7 +143,7 @@ void *internal_allocation(size_t size) {
     if (size == 0)
         return NULL;
 
-    // use glibc malloc for sizes that are too large (-> non low fat pointer)
+    // use fallback allocator for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
         return NULL;
 
@@ -158,7 +158,7 @@ void *internal_allocation(size_t size) {
 
     void *res = regions[index];
 
-    // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
+    // if no more fresh space left, use fallback allocator TODO nicer way to check this?
     if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
         return NULL;
 
@@ -182,7 +182,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
     if (size == 0)
         return NULL;
 
-    // use glibc malloc for sizes that are too large (-> non low fat pointer)
+    // use fallback allocator for sizes that are too large (-> non low fat pointer)
     if (size > sizes[NUM_REGIONS - 1])
         return NULL;
 
@@ -195,7 +195,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
     while (1) {
 
-        // if no more fresh space left, fallback to glibc malloc TODO nicer way to check this?
+        // if no more fresh space left, use fallback allocator TODO nicer way to check this?
         if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
             return NULL;
 
@@ -204,7 +204,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
             if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
-            regions[index] = res;
+            regions[index] = res + allocation_size;
             return res;
         }
 
