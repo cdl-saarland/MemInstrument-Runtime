@@ -369,8 +369,15 @@ size_t splayRemoveInterval_from_node(Tree* t, Node* n, uintptr_t low, uintptr_t 
     }
 
     size_t res = 0;
-    res += splayRemoveInterval_from_node(t, n->leftChild, low, high);
-    res += splayRemoveInterval_from_node(t, n->rightChild, low, high);
+
+    if (!(n->base <= low)) {
+        // no node on the left of n can intersect with the interval otherwise
+        res += splayRemoveInterval_from_node(t, n->leftChild, low, high);
+    }
+    if (!(n->bound >= high)) {
+        // no node on the right of n can intersect with the interval otherwise
+        res += splayRemoveInterval_from_node(t, n->rightChild, low, high);
+    }
 
     if ((low <= n->base && n->bound <= high) ||
             // the node is fully contained in the interval
