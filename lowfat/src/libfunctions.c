@@ -38,6 +38,7 @@ static start_main_type start_main_found = NULL;
 
 
 void *__libc_malloc(size_t);
+void *__libc_calloc(size_t, size_t);
 
 typedef void *(*malloc_type)(size_t);
 static malloc_type malloc_found = __libc_malloc;
@@ -46,7 +47,7 @@ typedef void(*free_type)(void *);
 static free_type free_found = NULL;
 
 typedef void *(*calloc_type)(size_t, size_t);
-static calloc_type calloc_found = NULL;
+static calloc_type calloc_found = __libc_calloc;
 
 typedef void *(*realloc_type)(void *, size_t);
 static realloc_type realloc_found = NULL;
