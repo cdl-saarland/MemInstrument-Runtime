@@ -144,11 +144,14 @@ void *internal_allocation(size_t size) {
     if (size == 0)
         return NULL;
 
+    // a pointer may point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
+    size_t padded_size = size + 1;
+
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
-    if (size > sizes[NUM_REGIONS - 1])
+    if (padded_size > sizes[NUM_REGIONS - 1])
         return NULL;
 
-    int index = compute_size_index(size);
+    int index = compute_size_index(padded_size);
 
     // first check free list for corresponding region
     if (!free_list_is_empty(index))
@@ -183,11 +186,14 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
     if (size == 0)
         return NULL;
 
+    // a pointer may point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
+    size_t padded_size = size + 1;
+
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
-    if (size > sizes[NUM_REGIONS - 1])
+    if (padded_size > sizes[NUM_REGIONS - 1])
         return NULL;
 
-    int index = compute_size_index(size);
+    int index = compute_size_index(padded_size);
 
     // otherwise use fresh space (if available)
     size_t allocation_size = sizes[index];
@@ -451,7 +457,7 @@ void free(void *p) {
 void enable_mpx(void);
 #endif
 
-#if defined(FAST_DIV) && !defined(POW_2_SIZES)
+#if defined(FAST_BASE) && !defined(POW_2_SIZES)
 void init_inv_sizes(void);
 #endif
 
@@ -473,8 +479,8 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
 
     page_size = sysconf(_SC_PAGESIZE);
 
-#if defined(FAST_DIV) && !defined(POW_2_SIZES)
-    init_inv_sizes(void);
+#if defined(FAST_BASE) && !defined(POW_2_SIZES)
+    init_inv_sizes();
 #endif
 
     // set up statistics counters etc.
