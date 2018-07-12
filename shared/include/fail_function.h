@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 /**
  * This file contains declarations for different fail functions that abort
  * program execution and print a nice message.
