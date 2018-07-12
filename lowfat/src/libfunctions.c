@@ -297,7 +297,7 @@ void *realloc(void *ptr, size_t size) {
             if (res == NULL)
                 res = malloc_found(size); // case 2 (or internal_allocation wasn't successful
 
-            if (errno == 0) {
+            if (res != NULL) {
                 size_t old_size = sizes[__lowfat_ptr_index(ptr)];
                 size_t copy_size = old_size < size ? old_size : size;
                 memcpy(res, ptr, copy_size);
@@ -455,8 +455,7 @@ int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
 
     // create regions for each size
-    int i;
-    for (i = 0; i < NUM_REGIONS; i++) {
+    for (unsigned i = 0; i < NUM_REGIONS; i++) {
         uintptr_t region_address = (i + 1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
 
