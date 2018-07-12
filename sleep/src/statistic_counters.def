@@ -1,0 +1,15 @@
+// vim:set ft=c:
+
+STAT_ACTION(NumDerefChecks, "# of performed dereference checks")
+
+STAT_ACTION(NumInboundsChecks, "# of performed inbounds checks")
+
+STAT_ACTION(NumMergeAllocs, "# of registered global/function allocations")
+STAT_ACTION(NumStrictAllocs, "# of registered malloc (-like) allocations")
+STAT_ACTION(NumReplaceAllocs, "# of registered stack allocations")
+
+STAT_ACTION(NumFrees, "# of registered deallocations")
+
+STAT_ACTION(NumGetLower, "# of queries for lower bounds")
+
+STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
