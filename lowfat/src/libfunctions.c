@@ -23,6 +23,7 @@ uint64_t __lowfat_ptr_index(void *ptr);
 
 extern size_t sizes[];
 
+// system-dependent, but usually 4KB
 static uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
@@ -133,7 +134,7 @@ int compute_size_index(size_t size) {
             low = mid + 1;
     }
     // if low > high, then the size lies between size[low] and size[high] and low = high + 1 at this point
-    // as we want to next higher value, low is the desired index
+    // as we want the next bigger size, low is the desired index
     return low;
 #endif
 }
@@ -145,7 +146,16 @@ void *internal_allocation(size_t size) {
         return NULL;
 
     // a pointer may point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
+    // though, if FAST_BASE is enabled, allocations > 2MB are padded anyway, so the 1 byte padding is unnecessary then
+#ifdef FAST_BASE
+    size_t padded_size;
+    if (size > FAST_BASE_NO_PAD_LIMIT)
+        padded_size = size + page_size;
+    else
+        padded_size = size + 1;
+#else
     size_t padded_size = size + 1;
+#endif
 
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
     if (padded_size > sizes[NUM_REGIONS - 1])
@@ -169,9 +179,21 @@ void *internal_allocation(size_t size) {
     // increase region pointer to point to fresh space for next allocation
     regions[index] += allocation_size;
 
-    // allow read/write on allocated memory (only required for page aligned addresses)
+    // allow read/write on allocated memory (can only be done for page aligned addresses)
     if (is_aligned((uintptr_t) res, page_size))
         mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+
+#ifdef FAST_BASE
+    else {
+        // if the allocation_size is not a divisor or multiple of page_size the allocation might overlap into a new page (i.e it uses 2 pages partly)
+        // so the memory protection must be adjusted for that page as well in that case
+        uint64_t next_bigger_page_addr = ((uintptr_t) res + page_size - 1) & ~(page_size - 1);
+        if ((uintptr_t) res + allocation_size - 1 >= next_bigger_page_addr) {
+            size_t overlap = (uintptr_t) res + allocation_size - next_bigger_page_addr;
+            mprotect((void *) next_bigger_page_addr, overlap, PROT_READ | PROT_WRITE);
+        }
+    }
+#endif
 
     return res;
 
@@ -187,7 +209,16 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
         return NULL;
 
     // a pointer may point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
+    // though, if FAST_BASE is enabled, allocations > 2MB are padded anyway, so the 1 byte padding is unnecessary then
+#ifdef FAST_BASE
+    size_t padded_size;
+    if (size > FAST_BASE_NO_PAD_LIMIT)
+        padded_size = size + page_size;
+    else
+        padded_size = size + 1;
+#else
     size_t padded_size = size + 1;
+#endif
 
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
     if (padded_size > sizes[NUM_REGIONS - 1])
@@ -210,6 +241,17 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
             // allow read/write on allocated memory (only required for page aligned addresses)
             if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
+
+#ifdef FAST_BASE
+            else {
+                // for some sizes, due to alignment requirements res can be located in a new page (with PROT_NONE)
+                // so the PROT needs to be adjusted for that page
+                // additionally, if the allocation overlaps into more pages, those are covered as well
+                uint64_t next_smaller_page_addr = ((uintptr_t) res & ~(page_size - 1)); //fast round down bithack
+                size_t prot_change_size = allocation_size + (uintptr_t) res - next_smaller_page_addr;
+                mprotect((void *) next_smaller_page_addr, prot_change_size, PROT_READ | PROT_WRITE);
+            }
+#endif
 
             regions[index] = res + allocation_size;
             return res;

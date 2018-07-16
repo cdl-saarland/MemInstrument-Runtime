@@ -5,6 +5,7 @@
 
 // multiply with (pre calculated) inverse of size
 #define FAST_BASE
+#define FAST_BASE_NO_PAD_LIMIT 2097152 // 2MB in paper
 
 // faster size index computation if sizes only contains powers of 2
 //#define POW_2_SIZES
