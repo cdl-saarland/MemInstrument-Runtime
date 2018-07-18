@@ -1,8 +1,6 @@
 #include <stdlib.h>
 
 #include <unistd.h>
-#include <time.h>
-#include <errno.h>
 
 #include "config.h"
 #include "statistics.h"
@@ -45,29 +43,12 @@ void __mi_config(uint64_t i, uint64_t x) {
     }
 }
 
-static void sleepFun(uint64_t nsecs) {
-    if (nsecs == 0) {
-        return;
-    }
-    struct timespec tspec0;
-    struct timespec tspec1;
-    tspec0.tv_sec  = nsecs / 1000000000l;
-    tspec0.tv_nsec = nsecs % 1000000000l;
+volatile uint64_t storeval = 0;
 
-    struct timespec *treq = &tspec0;
-    struct timespec *trem = &tspec1;
-
-    while (nanosleep(treq, trem) != 0) {
-        if (errno != EINTR) {
-            __mi_fail_with_msg("Failed to sleep!");
-        }
-        // nanosleep might be interrupted, in which case it returns -1 and sets
-        // errno to EINTR, then the remaining time is stored in treq.
-        struct timespec *tmp = treq;
-        treq = trem;
-        trem = tmp;
+static void sleepFun(uint64_t num_its) {
+    for (uint64_t i = 0; i < num_its; ++i) {
+        storeval = 42;
     }
-    fprintf(stderr, "finished sleeping!\n");
 }
 
 void __setup_splay(void) { }
