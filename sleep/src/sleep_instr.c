@@ -9,13 +9,13 @@
 
 #include "sleep_instr.h"
 
-uint64_t inbounds_check_delay = 10000;
-uint64_t deref_check_delay = 10000;
-uint64_t get_bound_delay = 10000;
-uint64_t stack_alloc_delay = 10000;
-uint64_t heap_alloc_delay = 10000;
-uint64_t global_alloc_delay = 10000;
-uint64_t free_delay = 10000;
+uint64_t inbounds_check_delay = 10;
+uint64_t deref_check_delay = 10;
+uint64_t get_bound_delay = 10;
+uint64_t stack_alloc_delay = 10;
+uint64_t heap_alloc_delay = 10;
+uint64_t global_alloc_delay = 10;
+uint64_t free_delay = 10;
 
 void __mi_config(uint64_t i, uint64_t x) {
     switch (i) {
