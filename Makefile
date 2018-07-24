@@ -1,4 +1,4 @@
-.PHONY: all clean splay rt_stat
+.PHONY: all clean splay sleep rt_stat
 
 all: splay sleep rt_stat
 

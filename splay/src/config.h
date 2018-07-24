@@ -12,7 +12,7 @@
 
 #define MAX_BACKTRACE_LENGTH 16
 
-// #define DUMP_ALLOCATION_MAP_ON_FAIL 1
+#define DUMP_ALLOCATION_MAP_ON_FAIL 1
 
 // Enable potentially expensive and unsound lookups in the process memory
 // map on missing witness
@@ -49,5 +49,7 @@
 // #define DBG 1
 // #define PRINT_TREE_INTERVAL 500000
 
-// #define TREE_ANNOTATE_NODES 1
+#define TREE_ANNOTATE_NODES 1
 
+// #define TRACER_FILE "mi-splay.trace"
+// #define ENABLE_TRACER 1

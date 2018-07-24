@@ -5,6 +5,10 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef ENABLE_TRACER
+#include "tracer.h"
+#endif
+
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void*);
 
@@ -323,6 +327,10 @@ static void removeNode(Tree* t, Node* n) {
     Node* res = n;
     ASSERTION(assert(res != NULL && "Trying to remove non-existing element!");)
 
+#ifdef ENABLE_TRACER
+    tracerRegisterDelete(n->base, n->bound);
+#endif
+
     if (res->leftChild == NULL && res->rightChild == NULL) {
         replaceInParent(t, res, NULL);
     } else if (res->leftChild == NULL) {
@@ -429,17 +437,30 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     switch (ib) {
         case IB_EXTEND:
             kind = 'g'; // global/function
+#ifdef ENABLE_TRACER
+            tracerRegisterInsert(base, bound, "global");
+#endif
             break;
 
         case IB_ERROR:
             kind = 'h'; // heap
+#ifdef ENABLE_TRACER
+            tracerRegisterInsert(base, bound, "heap");
+#endif
             break;
 
         case IB_REPLACE:
             kind = 's'; // stack
+#ifdef ENABLE_TRACER
+            tracerRegisterInsert(base, bound, "stack");
+#endif
             break;
     }
     newNode->kind = kind;
+#else
+#ifdef ENABLE_TRACER
+            tracerRegisterInsert(base, bound, "unknown");
+#endif
 #endif
 
     bool left = false;
