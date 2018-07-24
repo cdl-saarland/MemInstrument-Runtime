@@ -13,6 +13,10 @@
 #include "tree.h"
 #include "splay.h"
 
+#ifdef ENABLE_TRACER
+#include "tracer.h"
+#endif
+
 Tree __memTree;
 
 
@@ -176,15 +180,21 @@ void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* 
     }
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
-        if (name) {
-            __mi_fail_wrapper("Out-of-bounds dereference", (void*)ptr, name);
-        } else {
-            size_t off = ptr_val - n->base;
-            size_t obj_size = n->bound - n->base;
+        size_t off = ptr_val - n->base;
+        size_t obj_size = n->bound - n->base;
 
 #ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-            __dumpAllocationMap(stderr, &__memTree);
+        __dumpAllocationMap(stderr, &__memTree);
 #endif
+        if (name) {
+#ifdef TREE_ANNOTATE_NODES
+            __mi_fail_fmt(stderr, "Out-of-bounds dereference of pointer %p with access size %dB to offset %#x, associated to a %s object of size %dB at [%p-%p):\n'%s'",
+                    ptr, sz, off, stringForKind(n->kind), obj_size, n->base, n->bound, name);
+#else
+            __mi_fail_fmt(stderr, "Out-of-bounds dereference of pointer %p with access size %dB to offset %#x, associated to an object of size %dB at [%p-%p)\n'%s'",
+                    ptr, sz, off, obj_size, n->base, n->bound, name);
+#endif
+        } else {
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(stderr, "Out-of-bounds dereference of pointer %p with access size %dB to offset %#x, associated to a %s object of size %dB at [%p-%p)",
                     ptr, sz, off, stringForKind(n->kind), obj_size, n->base, n->bound);
@@ -239,10 +249,13 @@ uintptr_t __splay_get_maxbyteoffset(void* witness) {
     return (n->bound - n->base) - 1;
 }
 
-void __splay_alloc_or_merge(void* ptr, size_t sz) {
+void __splay_alloc_or_merge_with_msg(void* ptr, size_t sz, const char* msg) {
     STAT_INC(NumMergeAllocs);
     uintptr_t val = (uintptr_t)ptr;
 
+#ifdef ENABLE_TRACER
+    tracerStartOp();
+#endif
     if (val == (uintptr_t)0) {
         // This means that a global variable is located at a nullptr,
         // apparently this can happen if no definition for a weak symbol exists.
@@ -253,23 +266,67 @@ void __splay_alloc_or_merge(void* ptr, size_t sz) {
 
     checkNullPtr(val, "Allocation at nullptr (merge)");
     splayInsert(&__memTree, val, val + sz, IB_EXTEND);
+#ifdef ENABLE_TRACER
+    tracerSetData("global allocation");
+    if (msg) {
+        tracerSetData(msg);
+    }
+    tracerEndOp();
+#else
+    (void)msg;
+#endif
 }
 
-void __splay_alloc(void* ptr, size_t sz) {
+void __splay_alloc_or_merge(void* ptr, size_t sz) {
+    __splay_alloc_or_merge_with_msg(ptr, sz, NULL);
+}
+
+void __splay_alloc_with_msg(void* ptr, size_t sz, const char* msg) {
+#ifdef ENABLE_TRACER
+    tracerStartOp();
+#endif
     STAT_INC(NumStrictAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (heap)");
     splayInsert(&__memTree, val, val + sz, IB_ERROR);
+#ifdef ENABLE_TRACER
+    tracerSetData("heap allocation");
+    if (msg) {
+        tracerSetData(msg);
+    }
+    tracerEndOp();
+#endif
 }
 
-void __splay_alloc_or_replace(void* ptr, size_t sz) {
+void __splay_alloc(void* ptr, size_t sz) {
+    __splay_alloc_with_msg(ptr, sz, NULL);
+}
+
+void __splay_alloc_or_replace_with_msg(void* ptr, size_t sz, const char* msg) {
+#ifdef ENABLE_TRACER
+    tracerStartOp();
+#endif
     STAT_INC(NumReplaceAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (replace)");
     splayInsert(&__memTree, val, val + sz, IB_REPLACE);
+#ifdef ENABLE_TRACER
+    tracerSetData("stack allocation");
+    if (msg) {
+        tracerSetData(msg);
+    }
+    tracerEndOp();
+#endif
 }
 
-void __splay_free(void* ptr) {
+void __splay_alloc_or_replace(void* ptr, size_t sz) {
+    __splay_alloc_or_replace_with_msg(ptr, sz, NULL);
+}
+
+void __splay_free_with_msg(void* ptr, const char* msg) {
+#ifdef ENABLE_TRACER
+    tracerStartOp();
+#endif
     STAT_INC(NumFrees);
     uintptr_t val = (uintptr_t)ptr;
     if (val == 0) {
@@ -278,10 +335,22 @@ void __splay_free(void* ptr) {
 
     bool success = splayRemove(&__memTree, val);
 
+#ifdef ENABLE_TRACER
+    tracerSetData("heap free");
+    if (msg) {
+        tracerSetData(msg);
+    }
+    tracerEndOp();
+#endif
+
     if (!success) {
         STAT_INC(NumDoubleFrees);
 #ifdef CHECK_DOUBLE_FREE
         __mi_fail_wrapper("Double free", (void*)val, NULL);
 #endif
     }
+}
+
+void __splay_free(void* ptr) {
+    __splay_free_with_msg(ptr, NULL);
 }
