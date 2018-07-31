@@ -301,6 +301,8 @@ void __splay_alloc_with_msg(void* ptr, size_t sz, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 }
 
@@ -322,6 +324,8 @@ void __splay_alloc_or_replace_with_msg(void* ptr, size_t sz, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 }
 
@@ -347,6 +351,8 @@ void __splay_free_with_msg(void* ptr, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 
     if (!success) {
