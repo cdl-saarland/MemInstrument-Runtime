@@ -62,6 +62,9 @@ def main():
 
         lines = list(infile.readlines())
 
+        if len(lines) == 0:
+            return
+
         if lines[0].startswith("TRACE "):
             exec_name = lines[0][6:-1]
 
