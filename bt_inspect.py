@@ -55,7 +55,10 @@ def translate(binname, addr):
 
 
 def main():
+    found_backtrace = False
+
     def crunchFile(infile, inplace = False):
+        nonlocal found_backtrace
         in_bt = False
 
         exec_name = None
@@ -72,6 +75,7 @@ def main():
             if "#################### meminstrument --- backtrace start ####################" in line or line.startswith("  BACKTRACE("):
                 assert not in_bt
                 in_bt = True
+                found_backtrace = True
                 print("Start of backtrace:")
                 continue
 
@@ -104,6 +108,12 @@ def main():
         for fname in args.input:
             with open(fname, "r") as infile:
                 crunchFile(infile)
+
+    if not found_backtrace:
+        print("Backtrace inspector called on input without backtraces!")
+        print("Most likely, you intended to pipe things from stderr here.")
+        print("You can do so by first redirecting stderr to stdout:")
+        print("    <command that produces a backtrace> 2>&1 | {}".format(__file__))
 
 
 if __name__ == "__main__":
