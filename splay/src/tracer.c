@@ -44,3 +44,21 @@ void tracerEndOp(void) {
     ++running_index;
 }
 
+void tracerRegisterCheck(uint64_t lb, uint64_t ub, const char* data) {
+    fprintf(OutFile, "BEGINCHECK(%lu)\n", running_index);
+    fprintf(OutFile, "  LOWER(%lu) %#lx\n", running_index, lb);
+    fprintf(OutFile, "  UPPER(%lu) %#lx\n", running_index, ub);
+    if (data) {
+        fprintf(OutFile, "  DATA(%lu)  %s\n", running_index, data);
+    }
+    int btlen = 10;
+    fprintf(OutFile, "  BACKTRACE(%lu)\n", running_index);
+    fflush(OutFile);
+    void *buf[btlen];
+    int n = backtrace(buf, btlen);
+    backtrace_symbols_fd(buf, n, fileno(OutFile));
+    fprintf(OutFile, "  ENDBACKTRACE(%lu)\n", running_index);
+
+    fprintf(OutFile, "ENDCHECK(%lu)\n\n", running_index);
+    ++running_index;
+}

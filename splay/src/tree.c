@@ -489,7 +489,9 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                     splayRemoveInterval_from_node(t, current->leftChild, base, bound);
                     splayRemoveInterval_from_node(t, current->rightChild, base, bound);
                 }
-
+#ifdef ENABLE_TRACER
+                tracerRegisterDelete(current->base, current->bound);
+#endif
                 current->base = min(current->base, base);
                 current->bound = max(current->bound, bound);
 
@@ -508,6 +510,9 @@ void splayInsert(Tree* t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                     splayRemoveInterval_from_node(t, current->leftChild, base, bound);
                     splayRemoveInterval_from_node(t, current->rightChild, base, bound);
                 }
+#ifdef ENABLE_TRACER
+                tracerRegisterDelete(current->base, current->bound);
+#endif
 
                 current->base = base;
                 current->bound = bound;

@@ -129,6 +129,9 @@ void __splay_check_inbounds_named(void* witness, void* ptr, char* name) {
     STAT_INC(NumInboundsChecks);
     uintptr_t witness_val = (uintptr_t) witness;
     uintptr_t ptr_val = (uintptr_t) ptr;
+#ifdef ENABLE_TRACER
+    tracerRegisterCheck(ptr_val, ptr_val + 1, name);
+#endif
     if (isNullPtr(ptr_val)) {
         if (isNullPtr(witness_val)) {
             STAT_INC(NumSuccessfulInboundsChecksNULL);
@@ -170,6 +173,9 @@ void __splay_check_inbounds(void* witness, void* ptr) {
 void __splay_check_dereference_named(void* witness, void* ptr, size_t sz, char* name) {
     STAT_INC(NumDerefChecks);
     uintptr_t ptr_val = (uintptr_t) ptr;
+#ifdef ENABLE_TRACER
+    tracerRegisterCheck(ptr_val, ptr_val + sz, name);
+#endif
     if (isNullPtr(ptr_val)) {
         STAT_INC(NumFailedDerefChecksNULL);
         __mi_fail_wrapper("NULL dereference", (void*)ptr, name);
@@ -295,6 +301,8 @@ void __splay_alloc_with_msg(void* ptr, size_t sz, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 }
 
@@ -316,6 +324,8 @@ void __splay_alloc_or_replace_with_msg(void* ptr, size_t sz, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 }
 
@@ -341,6 +351,8 @@ void __splay_free_with_msg(void* ptr, const char* msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
+#else
+    (void)msg;
 #endif
 
     if (!success) {

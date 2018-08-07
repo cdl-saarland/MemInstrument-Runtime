@@ -14,3 +14,6 @@ void tracerSetData(const char* data);
 
 void tracerEndOp(void);
 
+
+void tracerRegisterCheck(uint64_t lb, uint64_t ub, const char* data);
+

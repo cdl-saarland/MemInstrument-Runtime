@@ -20,6 +20,8 @@ parser.add_argument('--executable', metavar='<binary file>',
                     help='the executable that produced the backtrace', default=None)
 parser.add_argument('--full', action='store_true',
                     help='show full backtrace without filtering')
+parser.add_argument('--nodemangle', action='store_true',
+                    help='do not demangle C++ identifier names')
 parser.add_argument('input', nargs='*')
 args = parser.parse_args()
 
@@ -36,7 +38,11 @@ def shouldBePrinted(s):
 
 n = 0
 def translate(binname, addr):
-    process = Popen(['addr2line', '-e' , binname, '-f', '-C', '-i', '-p', addr], stdout=PIPE, stderr=PIPE)
+    if not args.nodemangle:
+        cmd = ['addr2line', '-e' , binname, '-f', '-C', '-i', '-p', addr]
+    else:
+        cmd = ['addr2line', '-e' , binname, '-f', '-i', '-p', addr]
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     out = stdout.decode("utf-8")
     if not shouldBePrinted(out):
@@ -49,21 +55,34 @@ def translate(binname, addr):
 
 
 def main():
+    found_backtrace = False
+
     def crunchFile(infile, inplace = False):
+        nonlocal found_backtrace
         in_bt = False
 
         exec_name = None
 
-        for line in infile.readlines():
-            if "#################### meminstrument --- backtrace start ####################" in line:
+        lines = list(infile.readlines())
+
+        if len(lines) == 0:
+            return
+
+        if lines[0].startswith("TRACE "):
+            exec_name = lines[0][6:-1]
+
+        for line in lines:
+            if "#################### meminstrument --- backtrace start ####################" in line or line.startswith("  BACKTRACE("):
                 assert not in_bt
                 in_bt = True
+                found_backtrace = True
+                print("Start of backtrace:")
                 continue
 
-            if "#################### meminstrument --- backtrace end ######################" in line:
+            if "#################### meminstrument --- backtrace end ######################" in line or line.startswith("  ENDBACKTRACE("):
                 assert in_bt
                 in_bt = False
-                exec_name = None
+                print("End of backtrace.")
                 continue
 
             if in_bt:
@@ -84,11 +103,17 @@ def main():
                 print(line, end="")
 
     if len(args.input) == 0:
-        crunchFile(sys.stdin, inplace=True)
+        crunchFile(sys.stdin, inplace=True, )
     else:
         for fname in args.input:
             with open(fname, "r") as infile:
                 crunchFile(infile)
+
+    if not found_backtrace:
+        print("Backtrace inspector called on input without backtraces!")
+        print("Most likely, you intended to pipe things from stderr here.")
+        print("You can do so by first redirecting stderr to stdout:")
+        print("    <command that produces a backtrace> 2>&1 | {}".format(__file__))
 
 
 if __name__ == "__main__":
