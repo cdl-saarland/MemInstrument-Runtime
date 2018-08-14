@@ -274,7 +274,7 @@ int __libc_start_main(int *(main) (int, char **, char **), int argc, char **ubp_
     // splay register argv content arrays
     for (int i = 0; i < argc; ++i) {
         char *c = ubp_av[i];
-        size_t len = 0;
+        size_t len = 1; // include the NULL byte
         while (*c != '\0') {
             len++;
             c++;
