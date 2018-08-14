@@ -40,7 +40,12 @@ void *__lowfat_get_upper_bound(void *ptr) {
     return (void*) (__lowfat_ptr_base(ptr) + __lowfat_ptr_size(ptr));
 }
 
+void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
+    if ((uint64_t) ptr - __lowfat_ptr_base(witness) + size > __lowfat_ptr_size(witness))
+        __mi_fail_with_ptr("OOB dereference!", ptr);
+}
+
 void __lowfat_check_oob(void *witness, void *ptr) {
     if ((uint64_t) ptr - __lowfat_ptr_base(witness) >= __lowfat_ptr_size(witness))
-        __mi_fail_with_ptr("OOB dereference!", ptr);
+        __mi_fail_with_ptr("Pointer not inbounds!", ptr);
 }
