@@ -142,6 +142,8 @@ int compute_size_index(size_t size) {
 // returns NULL if size is not supported (too big) or if no space is left for the corresponding region
 void *internal_allocation(size_t size) {
 
+    STAT_INC(NumLowFatAllocs);
+
     if (size == 0)
         return NULL;
 
@@ -204,6 +206,8 @@ void *internal_allocation(size_t size) {
  - increases fresh space pointer until space with correct alignment is found, all space until then is added to free list
  */
 void *internal_aligned_allocation(size_t size, size_t alignment) {
+
+    STAT_INC(NumLowFatAllocs);
 
     if (size == 0)
         return NULL;
@@ -268,13 +272,16 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 void internal_free(void *p) {
     // add freed address to free list for corresponding region
     uintptr_t index = __lowfat_ptr_index(p);
-    if (index < NUM_REGIONS)
+    if (index < NUM_REGIONS) {
+        STAT_INC(NumLowFatFrees);
         free_list_push(index, p);
+    }
     else
         free_found(p);
 }
 
 void *malloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -289,6 +296,7 @@ void *malloc(size_t size) {
 }
 
 void *calloc(size_t nmemb, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -314,6 +322,7 @@ void *calloc(size_t nmemb, size_t size) {
 }
 
 void *realloc(void *ptr, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -356,6 +365,7 @@ void *realloc(void *ptr, size_t size) {
 }
 
 void *aligned_alloc(size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -381,6 +391,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
 }
 
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -408,6 +419,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
 }
 
 void *memalign(size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -432,6 +444,7 @@ void *memalign(size_t alignment, size_t size) {
 }
 
 void *valloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -452,6 +465,7 @@ void *valloc(size_t size) {
 }
 
 void *pvalloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
         hooks_active = 0;
 
@@ -473,6 +487,7 @@ void *pvalloc(size_t size) {
 }
 
 void free(void *p) {
+    STAT_INC(NumFrees);
     if (hooks_active) {
         hooks_active = 0;
 
