@@ -27,7 +27,7 @@ uint64_t __lowfat_ptr_index(void *ptr);
 extern size_t sizes[];
 
 // system-dependent, but usually 4KB
-static uint64_t page_size;
+uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
