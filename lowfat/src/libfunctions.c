@@ -147,7 +147,7 @@ int compute_size_index(size_t size) {
  *
  * @param size the size of the allocation
  * @param alignment alignment requirement for the allocation, must be power of 2 (or 0 if there is no requirement)
- * @return lowfat pointer if possible, NULL if not
+ * @return lowfat pointer if possible, NULL if not (e.g. because no space left)
  */
 void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
@@ -179,6 +179,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     // first check free list for corresponding region
     // if alignment is required this step is omitted as searching the whole free list for a suitable address might be expensive
     if (!alignment && !free_list_is_empty(index)) {
+        STAT_INC(NumFreeListPops);
         void* free_res = free_list_pop(index);
         pthread_mutex_unlock(&mutex);
         return free_res;
@@ -190,8 +191,9 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     // for unaligned allocations this loop finishes in the first iteration
     while (1) {
 
-        // if no more fresh space left, use fallback allocator TODO nicer way to check this?
+        // check if there is still fresh space left in this region
         if ((uintptr_t) res >= (index + 2) * REGION_SIZE) {
+            STAT_INC(NumFullRegionNonFatAllocs);
             pthread_mutex_unlock(&mutex);
             return NULL;
         }
@@ -222,6 +224,8 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
         // check next fresh space slot
         res += allocation_size;
+
+        STAT_INC(NumNonAlignedFreeListAdds);
     }
 }
 

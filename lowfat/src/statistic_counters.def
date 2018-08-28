@@ -16,5 +16,9 @@ STAT_ACTION(NumLowFatAllocs, "# of registered malloc (-like) allocations with lo
 STAT_ACTION(NumFrees, "# of registered deallocations")
 STAT_ACTION(NumLowFatFrees, "# of registered low fat deallocations")
 
+STAT_ACTION(NumFullRegionNonFatAllocs, "# of non fat pointers created because of fully used low fat regions")
+STAT_ACTION(NumNonAlignedFreeListAdds, "# of fresh space addresses added to free list because of alignment requirements")
+STAT_ACTION(NumFreeListPops, "# of reused low fat addresses")
+
 STAT_ACTION(NumGetLower, "# of queries for lower bounds")
 STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
