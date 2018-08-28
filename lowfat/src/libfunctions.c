@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 // for reading symbols from glibc (not portable)
@@ -15,10 +16,12 @@
 #include "statistics.h"
 #include "config.h"
 
+// mutex for locking
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
-
 uint64_t __lowfat_ptr_index(void *ptr);
 
 extern size_t sizes[];
@@ -42,13 +45,13 @@ void *__libc_malloc(size_t);
 void *__libc_calloc(size_t, size_t);
 
 typedef void *(*malloc_type)(size_t);
-static malloc_type malloc_found = __libc_malloc;
+static malloc_type malloc_found = __libc_malloc; // malloc is necessary for dlopen
 
 typedef void(*free_type)(void *);
 static free_type free_found = NULL;
 
 typedef void *(*calloc_type)(size_t, size_t);
-static calloc_type calloc_found = __libc_calloc;
+static calloc_type calloc_found = __libc_calloc; // calloc is necessary for dlopen if pthread is included
 
 typedef void *(*realloc_type)(void *, size_t);
 static realloc_type realloc_found = NULL;
@@ -165,9 +168,14 @@ void *internal_allocation(size_t size) {
 
     int index = compute_size_index(padded_size);
 
+    pthread_mutex_lock(&mutex);
+
     // first check free list for corresponding region
-    if (!free_list_is_empty(index))
-        return free_list_pop(index);
+    if (!free_list_is_empty(index)) {
+        void* res = free_list_pop(index);
+        pthread_mutex_unlock(&mutex);
+        return res;
+    }
 
     // otherwise use fresh space (if available)
     size_t allocation_size = sizes[index];
@@ -175,8 +183,10 @@ void *internal_allocation(size_t size) {
     void *res = regions[index];
 
     // if no more fresh space left, use fallback allocator TODO nicer way to check this?
-    if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
+    if ((uintptr_t) res >= (index + 2) * REGION_SIZE) {
+        pthread_mutex_unlock(&mutex);
         return NULL;
+    }
 
     // increase region pointer to point to fresh space for next allocation
     regions[index] += allocation_size;
@@ -196,6 +206,8 @@ void *internal_allocation(size_t size) {
         }
     }
 #endif
+
+    pthread_mutex_unlock(&mutex);
 
     return res;
 
@@ -233,13 +245,17 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
     // otherwise use fresh space (if available)
     size_t allocation_size = sizes[index];
 
+    pthread_mutex_lock(&mutex);
+
     void *res = regions[index];
 
     while (1) {
 
         // if no more fresh space left, use fallback allocator TODO nicer way to check this?
-        if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
+        if ((uintptr_t) res >= (index + 2) * REGION_SIZE) {
+            pthread_mutex_unlock(&mutex);
             return NULL;
+        }
 
         if (is_aligned((uintptr_t) res, alignment)) {
             // allow read/write on allocated memory (only required for page aligned addresses)
@@ -258,6 +274,7 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 #endif
 
             regions[index] = res + allocation_size;
+            pthread_mutex_unlock(&mutex);
             return res;
         }
 
@@ -274,7 +291,9 @@ void internal_free(void *p) {
     uintptr_t index = __lowfat_ptr_index(p);
     if (index < NUM_REGIONS) {
         STAT_INC(NumLowFatFrees);
+        pthread_mutex_lock(&mutex);
         free_list_push(index, p);
+        pthread_mutex_unlock(&mutex);
     }
     else
         free_found(p);
@@ -283,13 +302,11 @@ void internal_free(void *p) {
 void *malloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
 
         void *res = internal_allocation(size);
         if (res == NULL)
             res = malloc_found(size);
 
-        hooks_active = 1;
         return res;
     }
     return malloc_found(size);
@@ -298,8 +315,6 @@ void *malloc(size_t size) {
 void *calloc(size_t nmemb, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         size_t total_size = nmemb * size;
@@ -315,7 +330,6 @@ void *calloc(size_t nmemb, size_t size) {
                 res = calloc_found(nmemb, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return calloc_found(nmemb, size);
@@ -324,8 +338,6 @@ void *calloc(size_t nmemb, size_t size) {
 void *realloc(void *ptr, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res = NULL;
 
         // if ptr is NULL, simply use malloc
@@ -358,7 +370,6 @@ void *realloc(void *ptr, size_t size) {
         else
             res = realloc_found(ptr, size); // case 3
 
-        hooks_active = 1;
         return res;
     }
     return realloc_found(ptr, size);
@@ -367,8 +378,6 @@ void *realloc(void *ptr, size_t size) {
 void *aligned_alloc(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
@@ -384,7 +393,6 @@ void *aligned_alloc(size_t alignment, size_t size) {
                 res = aligned_alloc_found(alignment, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return aligned_alloc_found(alignment, size);
@@ -393,8 +401,6 @@ void *aligned_alloc(size_t alignment, size_t size) {
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         int err_status = 0; // 0 for Success
         void *res = NULL;
 
@@ -412,7 +418,6 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
                 *memptr = res;
         }
 
-        hooks_active = 1;
         return err_status;
     }
     return posix_memalign_found(memptr, alignment, size);
@@ -421,8 +426,6 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
 void *memalign(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (!is_power_of_2(alignment)) {
@@ -437,7 +440,6 @@ void *memalign(size_t alignment, size_t size) {
                 res = memalign_found(alignment, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return memalign_found(alignment, size);
@@ -446,8 +448,6 @@ void *memalign(size_t alignment, size_t size) {
 void *valloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
@@ -458,7 +458,6 @@ void *valloc(size_t size) {
                 res = valloc_found(size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return valloc_found(size);
@@ -467,8 +466,6 @@ void *valloc(size_t size) {
 void *pvalloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
@@ -480,7 +477,6 @@ void *pvalloc(size_t size) {
                 res = pvalloc_found(size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return pvalloc_found(size);
@@ -489,12 +485,10 @@ void *pvalloc(size_t size) {
 void free(void *p) {
     STAT_INC(NumFrees);
     if (hooks_active) {
-        hooks_active = 0;
 
         if (p != NULL)
             internal_free(p);
 
-        hooks_active = 1;
         return;
     }
     free_found(p);

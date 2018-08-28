@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <include/statistics.h>
+#include "statistics.h"
 #include "fail_function.h"
 #include "check.h"
 
