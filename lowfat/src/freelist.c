@@ -1,6 +1,16 @@
 #include <stdlib.h>
+#include <sys/mman.h>
 #include "freelist.h"
 #include "config.h"
+
+extern uint64_t page_size;
+
+int is_aligned(uint64_t value, uint64_t alignment);
+uint64_t __lowfat_ptr_size(void *ptr);
+extern size_t sizes[];
+
+void* __libc_malloc(size_t);
+void __libc_free(void*);
 
 // current top elements for every free list
 Element* free_list_tops[NUM_REGIONS];
@@ -8,11 +18,21 @@ Element* free_list_tops[NUM_REGIONS];
 void free_list_push(int index, void* addr) {
     Element* current_top = free_list_tops[index];
 
-    Element* new_top = malloc(sizeof(Element));
+    Element* new_top = __libc_malloc(sizeof(Element));
     new_top->addr = addr;
     new_top->prev = current_top;
 
     free_list_tops[index] = new_top;
+
+    // if the allocation size of the freed address is a multiple of page size we can return the physical space to the OS
+    // for any other size it would not be feasible to track when memory could be returned
+    size_t allocation_size = __lowfat_ptr_size(addr);
+    if (is_aligned(allocation_size, page_size)) {
+        munmap(addr, allocation_size);
+        // remap the space again as we might reuse it
+        // NOTE: This does not PHYSICALLY use space yet
+        mmap(addr, allocation_size, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+    }
 }
 
 void* free_list_pop(int index) {
@@ -21,7 +41,7 @@ void* free_list_pop(int index) {
     if (current_top != NULL) {
         free_list_tops[index] = current_top->prev;
         void* addr = current_top->addr;
-        free(current_top);
+        __libc_free(current_top);
         return addr;
     }
 

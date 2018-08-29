@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 // for reading symbols from glibc (not portable)
@@ -15,15 +16,18 @@
 #include "statistics.h"
 #include "config.h"
 
+// mutex for locking
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * framework to override standard c functions is taken from Fabian's libfunctions.c in the splay approach
  */
-
 uint64_t __lowfat_ptr_index(void *ptr);
 
 extern size_t sizes[];
 
-static uint64_t page_size;
+// system-dependent, but usually 4KB
+uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
@@ -41,13 +45,13 @@ void *__libc_malloc(size_t);
 void *__libc_calloc(size_t, size_t);
 
 typedef void *(*malloc_type)(size_t);
-static malloc_type malloc_found = __libc_malloc;
+static malloc_type malloc_found = __libc_malloc; // malloc is necessary for dlopen
 
 typedef void(*free_type)(void *);
 static free_type free_found = NULL;
 
 typedef void *(*calloc_type)(size_t, size_t);
-static calloc_type calloc_found = __libc_calloc;
+static calloc_type calloc_found = __libc_calloc; // calloc is necessary for dlopen if pthread is included
 
 typedef void *(*realloc_type)(void *, size_t);
 static realloc_type realloc_found = NULL;
@@ -133,79 +137,85 @@ int compute_size_index(size_t size) {
             low = mid + 1;
     }
     // if low > high, then the size lies between size[low] and size[high] and low = high + 1 at this point
-    // as we want to next higher value, low is the desired index
+    // as we want the next bigger size, low is the desired index
     return low;
 #endif
 }
 
-// returns NULL if size is not supported (too big) or if no space is left for the corresponding region
-void *internal_allocation(size_t size) {
+/**
+ * Lowfat allocator
+ *
+ * @param size the size of the allocation
+ * @param alignment alignment requirement for the allocation, must be power of 2 (or 0 if there is no requirement)
+ * @return lowfat pointer if possible, NULL if not (e.g. because no space left)
+ */
+void *lowfat_aligned_alloc(size_t size, size_t alignment) {
+
+    STAT_INC(NumLowFatAllocs);
 
     if (size == 0)
         return NULL;
 
+    // a pointer is allowed to point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
+    // though, if FAST_BASE is enabled, allocations > 2MB are padded anyway, so the 1 byte padding is unnecessary in that case
+#ifdef FAST_BASE
+    size_t padded_size;
+    if (size > FAST_BASE_NO_PAD_LIMIT)
+        padded_size = size + page_size;
+    else
+        padded_size = size + 1;
+#else
+    size_t padded_size = size + 1;
+#endif
+
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
-    if (size > sizes[NUM_REGIONS - 1])
+    if (padded_size > sizes[NUM_REGIONS - 1])
         return NULL;
 
-    int index = compute_size_index(size);
+    int index = compute_size_index(padded_size);
+
+    pthread_mutex_lock(&mutex);
 
     // first check free list for corresponding region
-    if (!free_list_is_empty(index))
-        return free_list_pop(index);
+    // if alignment is required this step is omitted as searching the whole free list for a suitable address might be expensive
+    if (!alignment && !free_list_is_empty(index)) {
+        STAT_INC(NumFreeListPops);
+        void* free_res = free_list_pop(index);
+        pthread_mutex_unlock(&mutex);
+        return free_res;
+    }
 
-    // otherwise use fresh space (if available)
     size_t allocation_size = sizes[index];
-
     void *res = regions[index];
 
-    // if no more fresh space left, use fallback allocator TODO nicer way to check this?
-    if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
-        return NULL;
-
-    // increase region pointer to point to fresh space for next allocation
-    regions[index] += allocation_size;
-
-    // allow read/write on allocated memory (only required for page aligned addresses)
-    if (is_aligned((uintptr_t) res, page_size))
-        mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
-
-    return res;
-
-}
-
-/* difference to internal_allocation:
- - doesn't check free list, as searching an aligned element might iterate over the whole list
- - increases fresh space pointer until space with correct alignment is found, all space until then is added to free list
- */
-void *internal_aligned_allocation(size_t size, size_t alignment) {
-
-    if (size == 0)
-        return NULL;
-
-    // use fallback allocator for sizes that are too large (-> non low fat pointer)
-    if (size > sizes[NUM_REGIONS - 1])
-        return NULL;
-
-    int index = compute_size_index(size);
-
-    // otherwise use fresh space (if available)
-    size_t allocation_size = sizes[index];
-
-    void *res = regions[index];
-
+    // for unaligned allocations this loop finishes in the first iteration
     while (1) {
 
-        // if no more fresh space left, use fallback allocator TODO nicer way to check this?
-        if ((uintptr_t) res >= (index + 2) * REGION_SIZE)
+        // check if there is still fresh space left in this region
+        if ((uintptr_t) res >= (index + 2) * REGION_SIZE) {
+            STAT_INC(NumFullRegionNonFatAllocs);
+            pthread_mutex_unlock(&mutex);
             return NULL;
+        }
 
-        if (is_aligned((uintptr_t) res, alignment)) {
+        if (!alignment || is_aligned((uintptr_t) res, alignment)) {
             // allow read/write on allocated memory (only required for page aligned addresses)
             if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
+#ifdef FAST_BASE
+            else {
+                // for some sizes, due to alignment requirements res can be located in a new page (with PROT_NONE)
+                // so the PROT needs to be adjusted for that page
+                // additionally, if the allocation overlaps into more pages, those are covered as well
+                uint64_t next_smaller_page_addr = ((uintptr_t) res & ~(page_size - 1)); //fast round down bithack
+                size_t prot_change_size = allocation_size + (uintptr_t) res - next_smaller_page_addr;
+                mprotect((void *) next_smaller_page_addr, prot_change_size, PROT_READ | PROT_WRITE);
+            }
+#endif
+
             regions[index] = res + allocation_size;
+            pthread_mutex_unlock(&mutex);
             return res;
         }
 
@@ -214,36 +224,44 @@ void *internal_aligned_allocation(size_t size, size_t alignment) {
 
         // check next fresh space slot
         res += allocation_size;
+
+        STAT_INC(NumNonAlignedFreeListAdds);
     }
+}
+
+void *lowfat_alloc(size_t size) {
+    return lowfat_aligned_alloc(size, 0);
 }
 
 void internal_free(void *p) {
     // add freed address to free list for corresponding region
     uintptr_t index = __lowfat_ptr_index(p);
-    if (index < NUM_REGIONS)
+    if (index < NUM_REGIONS) {
+        pthread_mutex_lock(&mutex);
+        STAT_INC(NumLowFatFrees);
         free_list_push(index, p);
+        pthread_mutex_unlock(&mutex);
+    }
     else
         free_found(p);
 }
 
 void *malloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
 
-        void *res = internal_allocation(size);
+        void *res = lowfat_alloc(size);
         if (res == NULL)
             res = malloc_found(size);
 
-        hooks_active = 1;
         return res;
     }
     return malloc_found(size);
 }
 
 void *calloc(size_t nmemb, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         size_t total_size = nmemb * size;
@@ -252,75 +270,61 @@ void *calloc(size_t nmemb, size_t size) {
         if (overflow || total_size > sizes[NUM_REGIONS - 1])
             res = calloc_found(nmemb, size);
         else {
-            res = internal_allocation(total_size);
+            res = lowfat_alloc(total_size);
             if (res != NULL)
                 memset(res, 0, total_size);
             else
                 res = calloc_found(nmemb, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return calloc_found(nmemb, size);
 }
 
 void *realloc(void *ptr, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res = NULL;
 
         // if ptr is NULL, simply use malloc
-        // otherwise we have 4 cases:
+        // otherwise we have 3 cases:
+
         // 1. ptr is low fat and the new one will be low fat as well -> our malloc, copy, our free
         // 2. ptr is low fat but the new one is not (size too big)   -> glibc malloc, copy, our free
-        // 3. ptr is not low fat but the new one will be             -> our malloc, copy, glibc free
-        // 4. ptr is not low fat and the new one won't be either     -> glibc realloc
         // Note: copy and free are only done if the allocation succeeded (i.e. errno is 0)
+
+        // 3. ptr is not low fat -> glibc realloc (even if new size would fit into low fat ptr)
+        // Note: if ptr isn't low fat, we can't use the low fat allocator for the new pointer in any case
+        //       because we don't know how many bytes too copy from ptr, so realloc is the only way here
 
         if (ptr == NULL)
             res = malloc(size);
         else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
             if (size <= sizes[NUM_REGIONS - 1])
-                res = internal_allocation(size); // case 1
+                res = lowfat_alloc(size); // case 1
 
             if (res == NULL)
-                res = malloc_found(size); // case 2 (or internal_allocation wasn't successful
+                res = malloc_found(size); // case 2 (or lowfat_alloc wasn't successful
 
-            if (errno == 0) {
-                size_t previous_size = sizes[__lowfat_ptr_index(ptr)];
-                memcpy(res, ptr, previous_size);
+            if (res != NULL) {
+                size_t old_size = sizes[__lowfat_ptr_index(ptr)];
+                size_t copy_size = old_size < size ? old_size : size;
+                memcpy(res, ptr, copy_size);
                 internal_free(ptr);
             }
         }
-        else {
-            if (size <= sizes[NUM_REGIONS - 1]) {
-                res = internal_allocation(size); // case 3
+        else
+            res = realloc_found(ptr, size); // case 3
 
-                if (res == NULL)
-                    res = malloc_found(size);
-
-                if (errno == 0) {
-                    size_t previous_size = sizes[__lowfat_ptr_index(ptr)];
-                    memcpy(res, ptr, previous_size);
-                    free_found(ptr);
-                }
-            }
-            else
-                res = realloc_found(ptr, size); // case 4
-        }
-
-        hooks_active = 1;
         return res;
     }
     return realloc_found(ptr, size);
 }
 
 void *aligned_alloc(size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
@@ -331,21 +335,19 @@ void *aligned_alloc(size_t alignment, size_t size) {
             res = aligned_alloc_found(alignment, size);
         else {
             // since size must be a multiple of alignment here, we can simply use the normal allocation routine
-            res = internal_allocation(size);
+            res = lowfat_alloc(size);
             if (res == NULL)
                 res = aligned_alloc_found(alignment, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return aligned_alloc_found(alignment, size);
 }
 
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         int err_status = 0; // 0 for Success
         void *res = NULL;
 
@@ -355,7 +357,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
         else if (size > sizes[NUM_REGIONS - 1])
             err_status = posix_memalign(memptr, alignment, size);
         else {
-            res = internal_aligned_allocation(size, alignment);
+            res = lowfat_aligned_alloc(size, alignment);
 
             if (res == NULL)
                 err_status = posix_memalign(memptr, alignment, size);
@@ -363,16 +365,14 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
                 *memptr = res;
         }
 
-        hooks_active = 1;
         return err_status;
     }
     return posix_memalign_found(memptr, alignment, size);
 }
 
 void *memalign(size_t alignment, size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (!is_power_of_2(alignment)) {
@@ -382,66 +382,60 @@ void *memalign(size_t alignment, size_t size) {
         else if (size > sizes[NUM_REGIONS - 1])
             res = memalign_found(alignment, size);
         else {
-            res = internal_aligned_allocation(size, alignment);
+            res = lowfat_aligned_alloc(size, alignment);
             if (res == NULL)
                 res = memalign_found(alignment, size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return memalign_found(alignment, size);
 }
 
 void *valloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
             res = valloc_found(size);
         else {
-            res = internal_aligned_allocation(size, page_size);
+            res = lowfat_aligned_alloc(size, page_size);
             if (res == NULL)
                 res = valloc_found(size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return valloc_found(size);
 }
 
 void *pvalloc(size_t size) {
+    STAT_INC(NumAllocs);
     if (hooks_active) {
-        hooks_active = 0;
-
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
             res = pvalloc_found(size);
         else {
             uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
-            res = internal_allocation(rounded_size);
+            res = lowfat_alloc(rounded_size);
             if (res == NULL)
                 res = pvalloc_found(size);
         }
 
-        hooks_active = 1;
         return res;
     }
     return pvalloc_found(size);
 }
 
 void free(void *p) {
+    STAT_INC(NumFrees);
     if (hooks_active) {
-        hooks_active = 0;
 
         if (p != NULL)
             internal_free(p);
 
-        hooks_active = 1;
         return;
     }
     free_found(p);
@@ -451,7 +445,7 @@ void free(void *p) {
 void enable_mpx(void);
 #endif
 
-#if defined(FAST_DIV) && !defined(POW_2_SIZES)
+#if defined(FAST_BASE) && !defined(POW_2_SIZES)
 void init_inv_sizes(void);
 #endif
 
@@ -459,7 +453,7 @@ int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
 
     // create regions for each size
-    for (int i = 0; i < NUM_REGIONS; i++) {
+    for (unsigned i = 0; i < NUM_REGIONS; i++) {
         uintptr_t region_address = (i + 1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
 
@@ -473,8 +467,8 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
 
     page_size = sysconf(_SC_PAGESIZE);
 
-#if defined(FAST_DIV) && !defined(POW_2_SIZES)
-    init_inv_sizes(void);
+#if defined(FAST_BASE) && !defined(POW_2_SIZES)
+    init_inv_sizes();
 #endif
 
     // set up statistics counters etc.
