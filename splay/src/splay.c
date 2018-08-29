@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "config.h"
 #include "statistics.h"
@@ -45,9 +47,31 @@ static void checkNullPtr(uintptr_t ptr, const char* errormsg) {
     }
 }
 
+static int getInodeForFile(const char* file) {
+    int fd, inode;
+    fd = open(file, O_RDONLY);
+
+    if (fd < 0) {
+        return -1;
+    }
+
+    struct stat file_stat;
+    int ret;
+    ret = fstat (fd, &file_stat);
+    if (ret < 0) {
+       return -1;
+    }
+    inode = file_stat.st_ino;
+    close(fd);
+    return inode;
+}
+
 static bool accessMemoryMap(uintptr_t witness_val) {
 #ifdef USE_MEMORY_MAP
     STAT_INC(NumMemMap);
+    int own_inode = getInodeForFile(__get_prog_name());
+    assert(own_inode > 0);
+
     char buf[32];
     pid_t pid = getpid();
     snprintf(buf, 32, "/proc/%d/maps", pid);
@@ -73,9 +97,12 @@ static bool accessMemoryMap(uintptr_t witness_val) {
             continue;
         }
 #endif
+        if ((int)inode == own_inode) {
+            continue;
+        }
 
         if (lower <= witness_val && witness_val < upper) {
-            /* fprintf(stderr, "Found range [%lx - %lx] for %lx\n", lower, upper, witness_val); */
+            /* fprintf(stderr, "Found range [%lx - %lx) for %lx\n", lower, upper, witness_val); */
             STAT_INC(NumMemMapSucc);
             splayInsert(&__memTree, lower, upper, IB_ERROR);
             success = true;
