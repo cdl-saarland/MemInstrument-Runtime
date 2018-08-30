@@ -19,7 +19,7 @@
 #include <dlfcn.h>
 
 // TODO make threadsafe
-static int hooks_active = 0;
+static _Thread_local int hooks_active = 0;
 
 typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc,
                                char **ubp_av, void (*init)(void),
