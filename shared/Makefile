@@ -1,5 +1,5 @@
 SRC_DIR     = src
-INCLUDE_DIR = src
+INCLUDE_DIR = include
 
 format:
 	@echo "===> CLANG-FORMAT"
