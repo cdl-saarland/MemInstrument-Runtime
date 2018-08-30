@@ -1,15 +1,15 @@
 #include "tracer.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include <execinfo.h>
 #include <unistd.h>
 
 static uint64_t running_index = 0;
 
-static FILE* OutFile = NULL;
+static FILE *OutFile = NULL;
 
-void tracerInit(const char* binname, const char* outfile) {
+void tracerInit(const char *binname, const char *outfile) {
     OutFile = fopen(outfile, "a");
     assert(OutFile);
     fprintf(OutFile, "TRACE %s\n", binname);
@@ -23,11 +23,12 @@ void tracerRegisterDelete(uint64_t lb, uint64_t ub) {
     fprintf(OutFile, "  DELETE(%lu) %#lx %#lx\n", running_index, lb, ub);
 }
 
-void tracerRegisterInsert(uint64_t lb, uint64_t ub, const char* data) {
-    fprintf(OutFile, "  INSERT(%lu) %#lx %#lx '%s'\n", running_index, lb, ub, data);
+void tracerRegisterInsert(uint64_t lb, uint64_t ub, const char *data) {
+    fprintf(OutFile, "  INSERT(%lu) %#lx %#lx '%s'\n", running_index, lb, ub,
+            data);
 }
 
-void tracerSetData(const char* data) {
+void tracerSetData(const char *data) {
     fprintf(OutFile, "  DATA(%lu) '%s'\n", running_index, data);
 }
 
@@ -44,7 +45,7 @@ void tracerEndOp(void) {
     ++running_index;
 }
 
-void tracerRegisterCheck(uint64_t lb, uint64_t ub, const char* data) {
+void tracerRegisterCheck(uint64_t lb, uint64_t ub, const char *data) {
     fprintf(OutFile, "BEGINCHECK(%lu)\n", running_index);
     fprintf(OutFile, "  LOWER(%lu) %#lx\n", running_index, lb);
     fprintf(OutFile, "  UPPER(%lu) %#lx\n", running_index, ub);
