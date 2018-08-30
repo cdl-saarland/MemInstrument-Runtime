@@ -34,26 +34,27 @@
 
 #include "config.h"
 
-void __setup_statistics(const char* n);
+void __setup_statistics(const char *n);
 
-const char* __get_prog_name(void);
+const char *__get_prog_name(void);
 
 #ifdef STATISTICS
 
 #include <stddef.h>
 
 // Declare all statistics counters
-#define STAT_ACTION(var, text) \
-    extern size_t __##var;
+#define STAT_ACTION(var, text) extern size_t __##var;
 
 #include STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 
-#define STAT_INC(var) { ++ __##var; }
+#define STAT_INC(var)                                                          \
+    { ++__##var; }
 
 #else
 
-#define STAT_INC(var) {;}
+#define STAT_INC(var)                                                          \
+    { ; }
 
 #endif

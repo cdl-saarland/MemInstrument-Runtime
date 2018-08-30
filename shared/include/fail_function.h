@@ -25,26 +25,32 @@
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-void __mi_fail_fmt(FILE* dest, const char* fmt, ...);
+    void
+    __mi_fail_fmt(FILE *dest, const char *fmt, ...);
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-void __mi_fail(void);
+    void
+    __mi_fail(void);
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-void __mi_fail_with_msg(const char* msg);
+    void
+    __mi_fail_with_msg(const char *msg);
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-void __mi_fail_with_ptr(const char* msg, void *faultingPtr);
+    void
+    __mi_fail_with_ptr(const char *msg, void *faultingPtr);
 
 #ifndef CONTINUE_ON_FATAL
 _Noreturn
 #endif
-void __mi_fail_verbose_with_ptr(const char* msg, void *faultingPtr, const char* verbMsg);
+    void
+    __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
+                               const char *verbMsg);
 
-void __mi_warning(const char* msg);
+void __mi_warning(const char *msg);
