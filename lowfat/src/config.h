@@ -5,8 +5,9 @@
 #define REGION_SIZE_LOG 32U // binary log of REGION_SIZE, if region size is changed, this must be adapted as well
 /*************/
 
-/** OPTIMIZATION **/
+/** OPTIMIZATION MODES **/
 // NOTE: Only one of these should be used at a time
+
 //#define FAST_BASE // multiply with (pre calculated) inverse of size
 #define POW_2_SIZES // faster size index computation if sizes only contains powers of 2
 
