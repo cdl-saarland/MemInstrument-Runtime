@@ -178,13 +178,12 @@ void __splay_insertGlobalsFromBinary(void) {
             continue;
         }
 
-        __splay_alloc_or_merge_with_msg((void*)base, extent, "from binary");
+        __splay_alloc_or_merge_with_msg((void *)base, extent, "from binary");
     }
     free(line);
     pclose(fp);
 #endif
 }
-
 
 static Node *getNode(uintptr_t witness_val, const char *str) {
     Node *n = splayFind(&__memTree, witness_val);
