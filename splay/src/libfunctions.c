@@ -4,6 +4,7 @@
 
 #include "splay.h"
 
+#include "enable_mpx.h"
 #include "fail_function.h"
 
 #include "config.h"
@@ -251,10 +252,6 @@ int munmap(void *addr, size_t size) {
     /* } */
     return munmap_found(addr, size);
 }
-
-#if ENABLE_MPX
-void enable_mpx(void);
-#endif
 
 int __libc_start_main(int *(main)(int, char **, char **), int argc,
                       char **ubp_av, void (*init)(void), void (*fini)(void),

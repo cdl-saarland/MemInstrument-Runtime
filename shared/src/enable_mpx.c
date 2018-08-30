@@ -71,6 +71,8 @@ static inline void xrstor_state(struct xsave_struct *fx, uint64_t mask) {
 }
 
 void mpx_handler(int signum, siginfo_t *info, void *ucontext) {
+    (void)signum;
+    (void)info;
     ucontext_t *uctxt = ucontext;
     greg_t trapno = uctxt->uc_mcontext.gregs[REG_TRAPNO];
     greg_t ip = uctxt->uc_mcontext.gregs[REG_IP_IDX];
