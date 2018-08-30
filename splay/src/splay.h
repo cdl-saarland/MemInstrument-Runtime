@@ -4,6 +4,8 @@
 
 void __setup_splay(void);
 
+void __splay_insertGlobalsFromBinary(void);
+
 void __splay_check_inbounds_named(void *witness, void *ptr, char *name);
 
 void __splay_check_inbounds(void *witness, void *ptr);

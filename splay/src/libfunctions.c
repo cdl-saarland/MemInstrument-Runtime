@@ -270,6 +270,9 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // set up splay tree
     __setup_splay();
 
+    // insert globals from the symbol table
+    __splay_insertGlobalsFromBinary();
+
     // splay register argv array
     __splay_alloc(ubp_av, argc * sizeof(char *));
 

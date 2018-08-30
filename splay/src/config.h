@@ -22,6 +22,9 @@
 // mmapped files, ...)
 #define USE_MEMORY_MAP_FILEBACKED_ONLY 1
 
+// Use nm to look up statically linked globals
+#define INSERT_GLOBALS_FROM_BINARY 1
+
 // Enable inserting mmapped allocations into splay tree, this might be
 // problematic since munmap does not remove these allocations (which can lead to
 // spurious violations).

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <assert.h>
 #include <fcntl.h>
@@ -33,6 +34,24 @@ _Noreturn
         __mi_fail_verbose_with_ptr(msg, ptr, vmsg);
     } else {
         __mi_fail_with_ptr(msg, ptr);
+    }
+}
+
+void __splay_dumpAllocationMap(void) {
+    __dumpAllocationMap(stderr, &__memTree);
+}
+
+void __splay_dumpProcMap(void) {
+    char buf[32];
+    pid_t pid = getpid();
+    snprintf(buf, 32, "/proc/%d/maps", pid);
+    FILE *F = fopen(buf, "r");
+
+    char *line;
+    size_t sz = 0;
+
+    for (; getline(&line, &sz, F) != -1; free(line), sz = 0) {
+        fprintf(stderr, "%s", line);
     }
 }
 
@@ -118,6 +137,54 @@ static bool accessMemoryMap(uintptr_t witness_val) {
     return false;
 #endif
 }
+
+/** This function reads the symbol table of the currently executed binary via
+ *  nm and inserts the static objects that it finds as globals into the splay
+ *  tree.
+ *
+ *  This is necessary for static values from uninstrumented statically linked
+ *  libraries (e.g. builtin typeinfo from the stdc++ lib).
+ */
+void __splay_insertGlobalsFromBinary(void) {
+#ifdef INSERT_GLOBALS_FROM_BINARY
+    FILE *fp;
+    const char *prefix = "nm -S --defined-only ";
+    const char *prog_name = __get_prog_name();
+    size_t len = strlen(prog_name);
+    len += strlen(prefix);
+    len += 1;
+    char *cmd = malloc(len * sizeof(char));
+    strcpy(cmd, prefix);
+    strcat(cmd, prog_name);
+
+    fp = popen(cmd, "r");
+
+    assert(fp != NULL);
+    if (fp == NULL) {
+        return;
+    }
+
+    char *line;
+    size_t sz = 0;
+
+    uint64_t base;
+    uint64_t extent;
+
+    for (; getline(&line, &sz, fp) != -1; free(line), sz = 0) {
+        /* fprintf(stderr, "%s", line); */
+
+        // format: [address] [size(optional)] [kind] [symbol]
+        if (sscanf(line, "%lx %lx", &base, &extent) != 2) {
+            continue;
+        }
+
+        __splay_alloc_or_merge_with_msg((void*)base, extent, "from binary");
+    }
+    free(line);
+    pclose(fp);
+#endif
+}
+
 
 static Node *getNode(uintptr_t witness_val, const char *str) {
     Node *n = splayFind(&__memTree, witness_val);
