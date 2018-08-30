@@ -13,4 +13,3 @@
 
 // If defined, use this key to find a file to print runtime stats to
 #define STATS_FILE "MI_STATS_FILE"
-
