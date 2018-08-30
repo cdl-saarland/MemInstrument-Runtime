@@ -42,6 +42,13 @@ void* free_list_pop(int index) {
         free_list_tops[index] = current_top->prev;
         void* addr = current_top->addr;
         __libc_free(current_top);
+
+        // if the allocation size of a freed allocation is a multiple of page size, its memory was re-mmaped after it has been freed
+        // and it must be made readable and writable again
+        size_t allocation_size = __lowfat_ptr_size(addr);
+        if (is_aligned(allocation_size, page_size))
+            mprotect(addr, allocation_size, PROT_READ | PROT_WRITE);
+
         return addr;
     }
 
