@@ -45,3 +45,8 @@ clean:
 	@echo "===> CLEAN"
 	$(Q)rm -rf ${BUILD_DIR}
 
+format:
+	@echo "===> CLANG-FORMAT"
+	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.c))
+	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.h))
+

@@ -24,7 +24,7 @@ SHARED_OBJ=$(SHARED_SRC:$(SHARED_SRC_DIR)/%.c=$(BUILD_DIR)/shared.%.o)
 
 DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
-.PHONY: all clean
+.PHONY: all clean format
 
 all: static dynamic
 
@@ -78,4 +78,9 @@ ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 clean:
 	@echo "===> CLEAN"
 	$(Q)rm -rf ${BUILD_DIR}
+
+format:
+	@echo "===> CLANG-FORMAT"
+	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.c))
+	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.h))
 

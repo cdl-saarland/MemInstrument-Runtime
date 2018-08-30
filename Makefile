@@ -19,7 +19,6 @@ splay_clean:
 sleep_clean:
 	$(MAKE) clean -C sleep
 
-
 rt_stat_clean:
 	$(MAKE) clean -C rt_stat
 
