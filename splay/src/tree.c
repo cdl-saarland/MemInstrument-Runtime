@@ -445,6 +445,7 @@ Node *splayFind(Tree *t, uintptr_t val) {
 
 void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     DEBUG(fprintf(stderr, "  call splayInsert(%8lx, %8lx)\n", base, bound))
+    ASSERTION(assert(base < bound);)
     Node *parent = NULL;
     Node *current = t->root;
     Node *newNode = __libc_malloc(sizeof(Node));
