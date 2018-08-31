@@ -1,35 +1,32 @@
+#include "splay.h"
+
+#include <fcntl.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <assert.h>
-#include <fcntl.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "config.h"
-#include "statistics.h"
-
 #include "fail_function.h"
-
-#include "splay.h"
-#include "tree.h"
-
-#ifdef ENABLE_TRACER
+#include "macros.h"
+#include "statistics.h"
 #include "tracer.h"
-#endif
+#include "tree.h"
+#include "tree_tools.h"
 
 Tree __memTree;
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    static void
-    __mi_fail_wrapper(const char *msg, void *ptr, char *vmsg) {
+static void dumpSplayAllocMapConditionally(void) {
 #ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-    __dumpAllocationMap(stderr, &__memTree);
+    dumpSplayAllocMap(stderr, &__memTree);
 #endif
+}
+
+MI_NO_RETURN static void __mi_fail_wrapper(const char *msg, void *ptr,
+                                           char *vmsg) {
+    dumpSplayAllocMapConditionally();
     if (vmsg) {
         __mi_fail_verbose_with_ptr(msg, ptr, vmsg);
     } else {
@@ -37,9 +34,7 @@ _Noreturn
     }
 }
 
-void __splay_dumpAllocationMap(void) {
-    __dumpAllocationMap(stderr, &__memTree);
-}
+void __splay_dumpAllocationMap(void) { dumpSplayAllocMap(stderr, &__memTree); }
 
 void __splay_dumpProcMap(void) {
     char buf[32];
@@ -87,7 +82,7 @@ static bool accessMemoryMap(uintptr_t witness_val) {
 #ifdef USE_MEMORY_MAP
     STAT_INC(NumMemMap);
     int own_inode = getInodeForFile(__get_prog_name());
-    assert(own_inode > 0);
+    ASSERTION(own_inode > 0, AL_INPUT)
 
     char buf[32];
     pid_t pid = getpid();
@@ -133,7 +128,7 @@ static bool accessMemoryMap(uintptr_t witness_val) {
     fclose(F);
     return success;
 #else
-    (void)witness_val;
+    UNUSED(witness_val)
     return false;
 #endif
 }
@@ -159,12 +154,12 @@ void __splay_insertGlobalsFromBinary(void) {
 
     fp = popen(cmd, "r");
 
-    assert(fp != NULL);
+    ASSERTION(fp != NULL, AL_INPUT)
     if (fp == NULL) {
         return;
     }
 
-    char *line;
+    char *line = NULL;
     size_t sz = 0;
 
     uint64_t base;
@@ -175,6 +170,9 @@ void __splay_insertGlobalsFromBinary(void) {
 
         // format: [address] [size(optional)] [kind] [symbol]
         if (sscanf(line, "%lx %lx", &base, &extent) != 2) {
+            continue;
+        }
+        if (extent <= 0) {
             continue;
         }
 
@@ -190,14 +188,14 @@ static Node *getNode(uintptr_t witness_val, const char *str) {
     if (n == NULL) {
         if (accessMemoryMap(witness_val)) {
             n = splayFind(&__memTree, witness_val);
-            assert(n);
+            ASSERTION(n != NULL, AL_INPUT)
             return n;
         }
         STAT_INC(NumNoWitness);
 #ifdef CRASH_ON_MISSING_WITNESS
         __mi_fail_wrapper(str, (void *)witness_val, NULL);
 #else
-        (void)str;
+        UNUSED(str)
 #endif
         return NULL;
     }
@@ -225,9 +223,9 @@ void __splay_check_inbounds_named(void *witness, void *ptr, char *name) {
     STAT_INC(NumInboundsChecks);
     uintptr_t witness_val = (uintptr_t)witness;
     uintptr_t ptr_val = (uintptr_t)ptr;
-#ifdef ENABLE_TRACER
+
     tracerRegisterCheck(ptr_val, ptr_val + 1, name);
-#endif
+
     if (isNullPtr(ptr_val)) {
         if (isNullPtr(witness_val)) {
             STAT_INC(NumSuccessfulInboundsChecksNULL);
@@ -250,9 +248,7 @@ void __splay_check_inbounds_named(void *witness, void *ptr, char *name) {
         } else {
             size_t off = ptr_val - n->base;
             size_t obj_size = n->bound - n->base;
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-            __dumpAllocationMap(stderr, &__memTree);
-#endif
+            dumpSplayAllocMapConditionally();
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(
                 stderr,
@@ -277,9 +273,9 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
                                      char *name) {
     STAT_INC(NumDerefChecks);
     uintptr_t ptr_val = (uintptr_t)ptr;
-#ifdef ENABLE_TRACER
+
     tracerRegisterCheck(ptr_val, ptr_val + sz, name);
-#endif
+
     if (isNullPtr(ptr_val)) {
         STAT_INC(NumFailedDerefChecksNULL);
         __mi_fail_wrapper("NULL dereference", (void *)ptr, name);
@@ -294,9 +290,7 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
         size_t off = ptr_val - n->base;
         size_t obj_size = n->bound - n->base;
 
-#ifdef DUMP_ALLOCATION_MAP_ON_FAIL
-        __dumpAllocationMap(stderr, &__memTree);
-#endif
+        dumpSplayAllocMapConditionally();
         if (name) {
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(stderr,
@@ -381,9 +375,8 @@ void __splay_alloc_or_merge_with_msg(void *ptr, size_t sz, const char *msg) {
     STAT_INC(NumMergeAllocs);
     uintptr_t val = (uintptr_t)ptr;
 
-#ifdef ENABLE_TRACER
     tracerStartOp();
-#endif
+
     if (val == (uintptr_t)0) {
         // This means that a global variable is located at a nullptr,
         // apparently this can happen if no definition for a weak symbol exists.
@@ -394,15 +387,12 @@ void __splay_alloc_or_merge_with_msg(void *ptr, size_t sz, const char *msg) {
 
     checkNullPtr(val, "Allocation at nullptr (merge)");
     splayInsert(&__memTree, val, val + sz, IB_EXTEND);
-#ifdef ENABLE_TRACER
+
     tracerSetData("global allocation");
     if (msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
-#else
-    (void)msg;
-#endif
 }
 
 void __splay_alloc_or_merge(void *ptr, size_t sz) {
@@ -410,22 +400,18 @@ void __splay_alloc_or_merge(void *ptr, size_t sz) {
 }
 
 void __splay_alloc_with_msg(void *ptr, size_t sz, const char *msg) {
-#ifdef ENABLE_TRACER
     tracerStartOp();
-#endif
+
     STAT_INC(NumStrictAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (heap)");
     splayInsert(&__memTree, val, val + sz, IB_ERROR);
-#ifdef ENABLE_TRACER
+
     tracerSetData("heap allocation");
     if (msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
-#else
-    (void)msg;
-#endif
 }
 
 void __splay_alloc(void *ptr, size_t sz) {
@@ -433,22 +419,18 @@ void __splay_alloc(void *ptr, size_t sz) {
 }
 
 void __splay_alloc_or_replace_with_msg(void *ptr, size_t sz, const char *msg) {
-#ifdef ENABLE_TRACER
     tracerStartOp();
-#endif
+
     STAT_INC(NumReplaceAllocs);
     uintptr_t val = (uintptr_t)ptr;
     checkNullPtr(val, "Allocation at nullptr (replace)");
     splayInsert(&__memTree, val, val + sz, IB_REPLACE);
-#ifdef ENABLE_TRACER
+
     tracerSetData("stack allocation");
     if (msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
-#else
-    (void)msg;
-#endif
 }
 
 void __splay_alloc_or_replace(void *ptr, size_t sz) {
@@ -456,9 +438,8 @@ void __splay_alloc_or_replace(void *ptr, size_t sz) {
 }
 
 void __splay_free_with_msg(void *ptr, const char *msg) {
-#ifdef ENABLE_TRACER
     tracerStartOp();
-#endif
+
     STAT_INC(NumFrees);
     uintptr_t val = (uintptr_t)ptr;
     if (val == 0) {
@@ -467,15 +448,11 @@ void __splay_free_with_msg(void *ptr, const char *msg) {
 
     bool success = splayRemove(&__memTree, val);
 
-#ifdef ENABLE_TRACER
     tracerSetData("heap free");
     if (msg) {
         tracerSetData(msg);
     }
     tracerEndOp();
-#else
-    (void)msg;
-#endif
 
     if (!success) {
         STAT_INC(NumDoubleFrees);

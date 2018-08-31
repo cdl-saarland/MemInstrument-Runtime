@@ -22,35 +22,23 @@
  *          the call stack to print in the backtrace on abort.
  */
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
+#ifndef MI_NO_RETURN
+#ifdef CONTINUE_ON_FATAL
+#define MI_NO_RETURN
+#else
+#define MI_NO_RETURN _Noreturn
 #endif
-    void
-    __mi_fail_fmt(FILE *dest, const char *fmt, ...);
+#endif
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail(void);
+MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...);
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_with_msg(const char *msg);
+MI_NO_RETURN void __mi_fail(void);
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_with_ptr(const char *msg, void *faultingPtr);
+MI_NO_RETURN void __mi_fail_with_msg(const char *msg);
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
-                               const char *verbMsg);
+MI_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr);
+
+MI_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
+                                             const char *verbMsg);
 
 void __mi_warning(const char *msg);

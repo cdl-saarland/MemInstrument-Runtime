@@ -1,3 +1,5 @@
+#include "fail_function.h"
+
 #include <execinfo.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -11,6 +13,10 @@
 #define RET_FAIL 73
 #endif
 
+#ifndef UNUSED
+#define UNUSED(x) (void)x;
+#endif
+
 #ifndef MAX_BACKTRACE_LENGTH
 #define MAX_BACKTRACE_LENGTH 16
 #endif
@@ -22,18 +28,13 @@
         backtrace_symbols_fd(buf, n, STDERR_FILENO);                           \
     }
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
+MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
 #ifdef FAIL_COUNTER
     STAT_INC(FAIL_COUNTER);
 #endif
 #ifdef SILENT
-    // avoid compiler warnings
-    (void)dest;
-    (void)fmt;
+    UNUSED(dest)
+    UNUSED(fmt)
 #endif
 
     va_list args;
@@ -69,36 +70,18 @@ _Noreturn
 #endif
 }
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail(void) {
-    __mi_fail_fmt(stderr, NULL);
-}
+MI_NO_RETURN void __mi_fail(void) { __mi_fail_fmt(stderr, NULL); }
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_with_msg(const char *msg) {
+MI_NO_RETURN void __mi_fail_with_msg(const char *msg) {
     __mi_fail_fmt(stderr, "%s", msg);
 }
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_with_ptr(const char *msg, void *faultingPtr) {
+MI_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr) {
     __mi_fail_fmt(stderr, "%s with pointer %p", msg, faultingPtr);
 }
 
-#ifndef CONTINUE_ON_FATAL
-_Noreturn
-#endif
-    void
-    __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
-                               const char *verbMsg) {
+MI_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
+                                             const char *verbMsg) {
     __mi_fail_fmt(stderr, "%s with pointer %p\nat %s", msg, faultingPtr,
                   verbMsg);
 }

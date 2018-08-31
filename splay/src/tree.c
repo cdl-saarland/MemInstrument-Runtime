@@ -1,172 +1,18 @@
 #include "tree.h"
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#ifdef ENABLE_TRACER
+#include "macros.h"
 #include "tracer.h"
-#endif
+
+#include "tree_tools.h"
 
 extern void *__libc_malloc(size_t size);
 extern void __libc_free(void *);
 
-#ifdef STATISTICS
-#define STATS(x)                                                               \
-    do {                                                                       \
-        x;                                                                     \
-    } while (false);
-#else
-#define STATS(x)                                                               \
-    do {                                                                       \
-    } while (false);
-#endif
-
-#ifdef ASSERTS
-#define ASSERTION(x)                                                           \
-    do {                                                                       \
-        x;                                                                     \
-    } while (false);
-#else
-#define ASSERTION(x)                                                           \
-    do {                                                                       \
-    } while (false);
-#endif
-
-#ifdef DBG
-#define DEBUG(x)                                                               \
-    do {                                                                       \
-        x;                                                                     \
-    } while (false);
-#else
-#define DEBUG(x)                                                               \
-    do {                                                                       \
-    } while (false);
-#endif
-
-#ifdef DBG
-// Functions for expensive debug checks and printing
-
-static bool validateNode(Node *parent, Node *n, size_t *expectedNodes) {
-    if (n == NULL) {
-        return true;
-    }
-    if (n->base > n->bound) {
-        fprintf(stderr, "Node with invalid interval found!\n");
-        return false;
-    }
-    if (n->parent != parent) {
-        fprintf(stderr, "Node with wrong parent found!\n");
-        return false;
-    }
-    if (parent != NULL) {
-        if (n->isLeft) {
-            if (n->parent->leftChild != n) {
-                fprintf(stderr, "Node with wrong left information found!\n");
-                return false;
-            }
-            if (parent->base < n->bound) {
-                fprintf(stderr,
-                        "Left node [%p, %p) with wrong order w.r.t parent node "
-                        "[%p, %p) found!\n",
-                        (void *)n->base, (void *)n->bound, (void *)parent->base,
-                        (void *)parent->bound);
-                return false;
-            }
-        }
-        if (!n->isLeft) {
-            if (n->parent->rightChild != n) {
-                fprintf(stderr, "Node with wrong right information found!\n");
-                return false;
-            }
-            if (parent->bound > n->base) {
-                fprintf(stderr,
-                        "Right node [%p, %p) with wrong order w.r.t parent "
-                        "node [%p, %p) found!\n",
-                        (void *)n->base, (void *)n->bound, (void *)parent->base,
-                        (void *)parent->bound);
-                return false;
-            }
-        }
-    }
-
-    if (expectedNodes == 0) {
-        fprintf(stderr, "Found more nodes than expected (or a loop)!\n");
-        return false;
-    }
-    (*expectedNodes)--;
-    return validateNode(n, n->leftChild, expectedNodes) &&
-           validateNode(n, n->rightChild, expectedNodes);
-}
-
-static bool validateTree(Tree *t) {
-    size_t expected = t->numNodes;
-    bool res = validateNode(NULL, t->root, &expected);
-    if (!res) {
-        return false;
-    }
-    if (expected != 0) {
-        fprintf(stderr, "Found fewer nodes than expected!\n");
-        return false;
-    }
-    return true;
-}
-#endif
-
-#ifdef PRINT_TREE_INTERVAL
-extern char *__progname;
-
-static void dotNodeLabel(FILE *F, Node *n) {
-    if (n == NULL) {
-        return;
-    }
-    fprintf(F, "  n%lx [label=\"base:  %08lx\nbound: %08lx\"];\n", n->base,
-            n->base, n->bound);
-    dotNodeLabel(F, n->leftChild);
-    dotNodeLabel(F, n->rightChild);
-}
-
-static void dotFromNode(FILE *F, Node *n) {
-    if (n == NULL) {
-        return;
-    }
-    if (n->leftChild != NULL) {
-        fprintf(F, "  n%08lx -> n%08lx [label=%s];\n", n->base,
-                n->leftChild->base, "l");
-    }
-    if (n->rightChild != NULL) {
-        fprintf(F, "  n%08lx -> n%08lx [label=%s];\n", n->base,
-                n->rightChild->base, "r");
-    }
-    dotFromNode(F, n->leftChild);
-    dotFromNode(F, n->rightChild);
-}
-
-static void dotTree(Tree *t) {
-    static unsigned num = 0; // TODO atomic
-    size_t pn_sz = strlen(__progname);
-    size_t sz = pn_sz + strlen("splay..dot") + 1 + 10;
-    char buf[sz];
-    sprintf(buf, "splay.%s.%u.dot", __progname, ++num);
-    FILE *F = fopen(buf, "w");
-
-    fprintf(F, "digraph splaytree_%s_%u\n{\n", __progname, num);
-    fprintf(F, "  label=\"splaytree %s %u\";\n", __progname, num);
-    fprintf(F, "  labelloc=top;\n");
-    fprintf(F, "  labeljust=left;\n\n");
-    dotNodeLabel(F, t->root);
-    fprintf(F, "\n");
-    dotFromNode(F, t->root);
-    fprintf(F, "}\n");
-
-    fclose(F);
-}
-
-#endif
-
 static void replaceInParent(Tree *t, Node *res, Node *new) {
-    ASSERTION(assert(res != NULL);)
+    ASSERTION(res != NULL, AL_TREE)
     if (new != NULL) {
         new->parent = res->parent;
         new->isLeft = res->isLeft;
@@ -199,9 +45,9 @@ static void replaceInParent(Tree *t, Node *res, Node *new) {
  *      b   c
  */
 static void rotateRight(Tree *t, Node *p) {
-    ASSERTION(assert(p != NULL);)
+    ASSERTION(p != NULL, AL_TREE)
     Node *x = p->leftChild;
-    ASSERTION(assert(x != NULL);)
+    ASSERTION(x != NULL, AL_TREE)
     Node *b = x->rightChild;
 
     replaceInParent(t, p, x);
@@ -232,9 +78,9 @@ static void rotateRight(Tree *t, Node *p) {
  *  a   b
  */
 static void rotateLeft(Tree *t, Node *p) {
-    ASSERTION(assert(p != NULL);)
+    ASSERTION(p != NULL, AL_TREE)
     Node *x = p->rightChild;
-    ASSERTION(assert(x != NULL);)
+    ASSERTION(x != NULL, AL_TREE)
     Node *b = x->leftChild;
 
     replaceInParent(t, p, x);
@@ -253,7 +99,7 @@ static void splay(Tree *t, Node *x) {
     if (x == NULL) {
         return;
     }
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     while (x->parent != NULL) {
         Node *p = x->parent;
         Node *g = p->parent;
@@ -263,19 +109,19 @@ static void splay(Tree *t, Node *x) {
             } else {
                 rotateLeft(t, p);
             }
-            DEBUG(assert(validateTree(t)))
+            ASSERTION(validateTree(t), AL_TREE_COMPLEX)
             continue;
         }
         if (x->isLeft && p->isLeft) { // ZIG-ZIG (all left)
             rotateRight(t, g);
             rotateRight(t, p);
-            DEBUG(assert(validateTree(t)))
+            ASSERTION(validateTree(t), AL_TREE_COMPLEX)
             continue;
         }
         if (!(x->isLeft || p->isLeft)) { // ZIG-ZIG (all right)
             rotateLeft(t, g);
             rotateLeft(t, p);
-            DEBUG(assert(validateTree(t)))
+            ASSERTION(validateTree(t), AL_TREE_COMPLEX)
             continue;
         }
         // ZIG-ZAG
@@ -286,11 +132,11 @@ static void splay(Tree *t, Node *x) {
             rotateLeft(t, p);
             rotateRight(t, g);
         }
-        DEBUG(assert(validateTree(t)))
+        ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     }
-    ASSERTION(assert(t->root == x);)
-    ASSERTION(assert(x->parent == NULL);)
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(t->root == x, AL_TREE)
+    ASSERTION(x->parent == NULL, AL_TREE)
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
 
 #ifdef PRINT_TREE_INTERVAL
     static unsigned int ctr = 0;
@@ -303,7 +149,7 @@ static void splay(Tree *t, Node *x) {
 }
 
 static Node *findMin(Node *n) {
-    ASSERTION(assert(n != NULL);)
+    ASSERTION(n != NULL, AL_TREE)
     Node *current = n;
     while (current->leftChild != NULL) {
         current = current->leftChild;
@@ -318,9 +164,7 @@ static void copyData(Node *to, Node *from) {
 
 void splayInit(Tree *t) {
     t->root = NULL;
-#ifdef DBG
     t->numNodes = 0;
-#endif
 }
 
 static Node *find_from_node(Node *n, uintptr_t val) {
@@ -340,17 +184,15 @@ static Node *find_from_node(Node *n, uintptr_t val) {
 }
 
 static Node *find_impl(Tree *t, uintptr_t val) {
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     return find_from_node(t->root, val);
 }
 
 static void removeNode(Tree *t, Node *n) {
     Node *res = n;
-    ASSERTION(assert(res != NULL && "Trying to remove non-existing element!");)
+    ASSERTION(res != NULL && "Trying to remove non-existing element!", AL_TREE)
 
-#ifdef ENABLE_TRACER
     tracerRegisterDelete(n->base, n->bound);
-#endif
 
     if (res->leftChild == NULL && res->rightChild == NULL) {
         replaceInParent(t, res, NULL);
@@ -367,27 +209,23 @@ static void removeNode(Tree *t, Node *n) {
 
     __libc_free(res);
 
-#ifdef DBG
     t->numNodes--;
-#endif
 
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
 }
 
 bool splayRemove(Tree *t, uintptr_t val) {
-    DEBUG(fprintf(stderr, "  call splayRemove(%8lx)\n", val))
     Node *res = find_impl(t, val);
     if (res == NULL) {
         return false;
     }
     removeNode(t, res);
-    DEBUG(fprintf(stderr, "  return splayRemove(%8lx)\n", val))
     return true;
 }
 
 size_t splayRemoveInterval_from_node(Tree *t, Node *n, uintptr_t low,
                                      uintptr_t high) {
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     if (n == NULL) {
         return 0;
     }
@@ -418,7 +256,7 @@ size_t splayRemoveInterval_from_node(Tree *t, Node *n, uintptr_t low,
         removeNode(t, n);
         ++res;
     }
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     return res;
 }
 
@@ -430,13 +268,9 @@ size_t splayRemoveInterval(Tree *t, uintptr_t low, uintptr_t high) {
 }
 
 Node *splayFind(Tree *t, uintptr_t val) {
-    DEBUG(fprintf(stderr, "  call splayFind(%8lx)\n", val))
-
     Node *current = find_impl(t, val);
-
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     splay(t, current);
-    DEBUG(fprintf(stderr, "  return splayFind(%8lx)\n", val))
     return current;
 }
 
@@ -444,8 +278,7 @@ Node *splayFind(Tree *t, uintptr_t val) {
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
 void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
-    DEBUG(fprintf(stderr, "  call splayInsert(%8lx, %8lx)\n", base, bound))
-    ASSERTION(assert(base < bound);)
+    ASSERTION(base < bound, AL_TREE)
     Node *parent = NULL;
     Node *current = t->root;
     Node *newNode = __libc_malloc(sizeof(Node));
@@ -460,30 +293,22 @@ void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
     switch (ib) {
     case IB_EXTEND:
         kind = 'g'; // global/function
-#ifdef ENABLE_TRACER
         tracerRegisterInsert(base, bound, "global");
-#endif
         break;
 
     case IB_ERROR:
         kind = 'h'; // heap
-#ifdef ENABLE_TRACER
         tracerRegisterInsert(base, bound, "heap");
-#endif
         break;
 
     case IB_REPLACE:
         kind = 's'; // stack
-#ifdef ENABLE_TRACER
         tracerRegisterInsert(base, bound, "stack");
-#endif
         break;
     }
     newNode->kind = kind;
 #else
-#ifdef ENABLE_TRACER
     tracerRegisterInsert(base, bound, "unknown");
-#endif
 #endif
 
     bool left = false;
@@ -499,13 +324,13 @@ void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
         } else {
             switch (ib) {
             case IB_ERROR:
-                assert(false && "Trying to insert a conflicting element!");
+                UNREACHABLE("Trying to insert a conflicting element!");
                 __libc_free(newNode);
                 return;
             case IB_EXTEND: {
 
 #ifdef TREE_ANNOTATE_NODES
-                assert(current->kind == 'g');
+                ASSERTION(current->kind == 'g', AL_TREE);
 #endif
                 bool fullyContained =
                     current->base <= base && current->bound >= bound;
@@ -515,22 +340,17 @@ void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                     splayRemoveInterval_from_node(t, current->rightChild, base,
                                                   bound);
                 }
-#ifdef ENABLE_TRACER
                 tracerRegisterDelete(current->base, current->bound);
-#endif
                 current->base = min(current->base, base);
                 current->bound = max(current->bound, bound);
 
                 splay(t, current);
-                DEBUG(fprintf(stderr,
-                              "  return splayInsert(%8lx, %8lx) -- extended\n",
-                              base, bound))
                 __libc_free(newNode);
                 return;
             }
             case IB_REPLACE: {
 #ifdef TREE_ANNOTATE_NODES
-                assert(current->kind == 's');
+                ASSERTION(current->kind == 's', AL_TREE);
 #endif
                 bool fullyContained =
                     current->base <= base && current->bound >= bound;
@@ -540,17 +360,12 @@ void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
                     splayRemoveInterval_from_node(t, current->rightChild, base,
                                                   bound);
                 }
-#ifdef ENABLE_TRACER
                 tracerRegisterDelete(current->base, current->bound);
-#endif
 
                 current->base = base;
                 current->bound = bound;
 
                 splay(t, current);
-                DEBUG(fprintf(stderr,
-                              "  return splayInsert(%8lx, %8lx) -- replaced\n",
-                              base, bound))
                 __libc_free(newNode);
                 return;
             }
@@ -570,31 +385,7 @@ void splayInsert(Tree *t, uintptr_t base, uintptr_t bound, InsertBehavior ib) {
             parent->rightChild = newNode;
         }
     }
-#ifdef DBG
     t->numNodes++;
-#endif
-    DEBUG(assert(validateTree(t)))
+    ASSERTION(validateTree(t), AL_TREE_COMPLEX)
     splay(t, newNode);
-    DEBUG(fprintf(stderr, "  return splayInsert(%8lx, %8lx)\n", base, bound))
-}
-
-static void dumpAllocationMapForNode(FILE *F, const Node *N) {
-    if (N->leftChild) {
-        dumpAllocationMapForNode(F, N->leftChild);
-    }
-    fprintf(F, "  %p - %p (%luB)", (void *)N->base, (void *)N->bound,
-            N->bound - N->base);
-#ifdef TREE_ANNOTATE_NODES
-    fprintf(F, ": %c", N->kind);
-#endif
-    fprintf(F, "\n");
-    if (N->rightChild) {
-        dumpAllocationMapForNode(F, N->rightChild);
-    }
-}
-
-void __dumpAllocationMap(FILE *F, const Tree *T) {
-    fprintf(F, "splay: dumped allocation map: {{{\n");
-    dumpAllocationMapForNode(F, T->root);
-    fprintf(F, "splay: end of dumped allocation map }}}\n");
 }

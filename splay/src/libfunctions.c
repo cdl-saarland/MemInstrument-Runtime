@@ -10,9 +10,7 @@
 #include "config.h"
 #include "statistics.h"
 
-#ifdef ENABLE_TRACER
 #include "tracer.h"
-#endif
 
 // for reading symbols from glibc (not portable)
 #define __USE_GNU
@@ -263,9 +261,7 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
 
-#ifdef ENABLE_TRACER
-    tracerInit(ubp_av[0], TRACER_FILE);
-#endif
+    tracerInit(ubp_av[0]);
 
     // set up splay tree
     __setup_splay();

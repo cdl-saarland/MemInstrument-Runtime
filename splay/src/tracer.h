@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-void tracerInit(const char *binname, const char *outfile);
+void tracerInit(const char *binname);
 
 void tracerStartOp(void);
 
