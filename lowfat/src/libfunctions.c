@@ -12,9 +12,9 @@
 #include <dlfcn.h>
 #include <errno.h>
 
+#include "config.h"
 #include "freelist.h"
 #include "statistics.h"
-#include "config.h"
 
 // mutex for locking
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
