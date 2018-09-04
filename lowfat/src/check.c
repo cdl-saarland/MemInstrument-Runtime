@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include "check.h"
 #include "statistics.h"
 #include "fail_function.h"
-#include "check.h"
 
 // the metadata table in the paper starts at 1, the arrays used in this implementation start at 0, so subtract 1 after shift
 uint64_t __lowfat_ptr_index(void *ptr) {
