@@ -34,7 +34,8 @@ static void *regions[NUM_REGIONS];
 
 // internal structures (i.e free list) use the glibc functions for allocating and freeing, as they don't need runtime checks
 // this flag ensures that behavior
-static int hooks_active = 0;
+// the flag is active on default, so new threads can use the low fat allocator
+static int _Thread_local hooks_active = 1;
 
 typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
 
@@ -151,8 +152,6 @@ int compute_size_index(size_t size) {
  */
 void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
-    STAT_INC(NumLowFatAllocs);
-
     if (size == 0)
         return NULL;
 
@@ -215,6 +214,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 #endif
 
             regions[index] = res + allocation_size;
+            STAT_INC(NumLowFatAllocs);
             pthread_mutex_unlock(&mutex);
             return res;
         }
@@ -249,11 +249,13 @@ void internal_free(void *p) {
 void *malloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
 
         void *res = lowfat_alloc(size);
         if (res == NULL)
             res = malloc_found(size);
 
+        hooks_active = 1;
         return res;
     }
     return malloc_found(size);
@@ -262,6 +264,7 @@ void *malloc(size_t size) {
 void *calloc(size_t nmemb, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res;
 
         size_t total_size = nmemb * size;
@@ -277,6 +280,7 @@ void *calloc(size_t nmemb, size_t size) {
                 res = calloc_found(nmemb, size);
         }
 
+        hooks_active = 1;
         return res;
     }
     return calloc_found(nmemb, size);
@@ -285,6 +289,7 @@ void *calloc(size_t nmemb, size_t size) {
 void *realloc(void *ptr, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res = NULL;
 
         // if ptr is NULL, simply use malloc
@@ -295,8 +300,8 @@ void *realloc(void *ptr, size_t size) {
         // Note: copy and free are only done if the allocation succeeded (i.e. errno is 0)
 
         // 3. ptr is not low fat -> glibc realloc (even if new size would fit into low fat ptr)
-        // Note: if ptr isn't low fat, we can't use the low fat allocator for the new pointer in any case
-        //       because we don't know how many bytes too copy from ptr, so realloc is the only way here
+        // Note for 3: if ptr isn't low fat, we can't use the low fat allocator for the new pointer in any case
+        //             because we don't know how many bytes too copy from ptr, so glibc_realloc is the only way here
 
         if (ptr == NULL)
             res = malloc(size);
@@ -317,6 +322,7 @@ void *realloc(void *ptr, size_t size) {
         else
             res = realloc_found(ptr, size); // case 3
 
+        hooks_active = 1;
         return res;
     }
     return realloc_found(ptr, size);
@@ -325,6 +331,7 @@ void *realloc(void *ptr, size_t size) {
 void *aligned_alloc(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res;
 
         if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
@@ -340,6 +347,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
                 res = aligned_alloc_found(alignment, size);
         }
 
+        hooks_active = 1;
         return res;
     }
     return aligned_alloc_found(alignment, size);
@@ -348,6 +356,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         int err_status = 0; // 0 for Success
         void *res = NULL;
 
@@ -365,6 +374,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
                 *memptr = res;
         }
 
+        hooks_active = 1;
         return err_status;
     }
     return posix_memalign_found(memptr, alignment, size);
@@ -373,6 +383,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
 void *memalign(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res;
 
         if (!is_power_of_2(alignment)) {
@@ -387,6 +398,7 @@ void *memalign(size_t alignment, size_t size) {
                 res = memalign_found(alignment, size);
         }
 
+        hooks_active = 1;
         return res;
     }
     return memalign_found(alignment, size);
@@ -395,6 +407,7 @@ void *memalign(size_t alignment, size_t size) {
 void *valloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
@@ -405,6 +418,7 @@ void *valloc(size_t size) {
                 res = valloc_found(size);
         }
 
+        hooks_active = 1;
         return res;
     }
     return valloc_found(size);
@@ -413,6 +427,7 @@ void *valloc(size_t size) {
 void *pvalloc(size_t size) {
     STAT_INC(NumAllocs);
     if (hooks_active) {
+        hooks_active = 0;
         void *res;
 
         if (size > sizes[NUM_REGIONS - 1])
@@ -424,6 +439,7 @@ void *pvalloc(size_t size) {
                 res = pvalloc_found(size);
         }
 
+        hooks_active = 1;
         return res;
     }
     return pvalloc_found(size);
@@ -432,10 +448,12 @@ void *pvalloc(size_t size) {
 void free(void *p) {
     STAT_INC(NumFrees);
     if (hooks_active) {
+        hooks_active = 0;
 
         if (p != NULL)
             internal_free(p);
 
+        hooks_active = 1;
         return;
     }
     free_found(p);
@@ -451,6 +469,8 @@ void init_inv_sizes(void);
 
 int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
+    // for program initialization we can't use the low fat allocator
+    hooks_active = 0;
 
     // create regions for each size
     for (unsigned i = 0; i < NUM_REGIONS; i++) {

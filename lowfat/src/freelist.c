@@ -9,16 +9,13 @@ int is_aligned(uint64_t value, uint64_t alignment);
 uint64_t __lowfat_ptr_size(void *ptr);
 extern size_t sizes[];
 
-void* __libc_malloc(size_t);
-void __libc_free(void*);
-
 // current top elements for every free list
 Element* free_list_tops[NUM_REGIONS];
 
 void free_list_push(int index, void* addr) {
     Element* current_top = free_list_tops[index];
 
-    Element* new_top = __libc_malloc(sizeof(Element));
+    Element* new_top = malloc(sizeof(Element));
     new_top->addr = addr;
     new_top->prev = current_top;
 
@@ -41,7 +38,7 @@ void* free_list_pop(int index) {
     if (current_top != NULL) {
         free_list_tops[index] = current_top->prev;
         void* addr = current_top->addr;
-        __libc_free(current_top);
+        free(current_top);
 
         // if the allocation size of a freed allocation is a multiple of page size, its memory was re-mmaped after it has been freed
         // and it must be made readable and writable again
