@@ -94,7 +94,7 @@ void *malloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = malloc_found(size);
+        void *res = malloc_found(size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, size);
 
@@ -108,7 +108,7 @@ void *calloc(size_t nmemb, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = calloc_found(nmemb, size);
+        void *res = calloc_found(nmemb, size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, nmemb * size);
 
@@ -124,7 +124,7 @@ void *realloc(void *ptr, size_t size) {
 
         __splay_free(ptr);
 
-        void *res = realloc_found(ptr, size);
+        void *res = realloc_found(ptr, size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, size);
 
@@ -138,7 +138,7 @@ void *memalign(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = memalign_found(alignment, size);
+        void *res = memalign_found(alignment, size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, size);
 
@@ -152,7 +152,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        int res = posix_memalign_found(memptr, alignment, size);
+        int res = posix_memalign_found(memptr, alignment, size + INCREASE_MALLOC_SIZE);
 
         if (!res && *memptr) {
             __splay_alloc(*memptr, size);
@@ -168,7 +168,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = aligned_alloc_found(alignment, size);
+        void *res = aligned_alloc_found(alignment, size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, size);
 
@@ -182,7 +182,7 @@ void *valloc(size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        void *res = valloc_found(size);
+        void *res = valloc_found(size + INCREASE_MALLOC_SIZE);
 
         __splay_alloc(res, size);
 
