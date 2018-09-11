@@ -252,13 +252,13 @@ void __splay_check_inbounds_named(void *witness, void *ptr, char *name) {
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(
                 stderr,
-                "Outflowing out-of-bounds pointer %p with offset %#x, "
+                "Outflowing out-of-bounds pointer %p with offset %d, "
                 "associated to a %s object of size %dB at [%p-%p)",
                 ptr, off, stringForKind(n->kind), obj_size, n->base, n->bound);
 #else
             __mi_fail_fmt(stderr,
                           "Outflowing out-of-bounds pointer %p with offset "
-                          "%#x, associated to an object of size %dB at [%p-%p)",
+                          "%d, associated to an object of size %dB at [%p-%p)",
                           ptr, off, obj_size, n->base, n->bound);
 #endif
         }
@@ -295,14 +295,14 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(stderr,
                           "Out-of-bounds dereference of pointer %p with access "
-                          "size %dB to offset %#x, associated to a %s object "
+                          "size %dB to offset %d, associated to a %s object "
                           "of size %dB at [%p-%p):\n'%s'",
                           ptr, sz, off, stringForKind(n->kind), obj_size,
                           n->base, n->bound, name);
 #else
             __mi_fail_fmt(stderr,
                           "Out-of-bounds dereference of pointer %p with access "
-                          "size %dB to offset %#x, associated to an object of "
+                          "size %dB to offset %d, associated to an object of "
                           "size %dB at [%p-%p)\n'%s'",
                           ptr, sz, off, obj_size, n->base, n->bound, name);
 #endif
@@ -310,7 +310,7 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
 #ifdef TREE_ANNOTATE_NODES
             __mi_fail_fmt(stderr,
                           "Out-of-bounds dereference of pointer %p with access "
-                          "size %dB to offset %#x, associated to a %s object "
+                          "size %dB to offset %d, associated to a %s object "
                           "of size %dB at [%p-%p)",
                           ptr, sz, off, stringForKind(n->kind), obj_size,
                           n->base, n->bound);
@@ -318,7 +318,7 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
             __mi_fail_fmt(
                 stderr,
                 "Out-of-bounds dereference of pointer %p with access size %dB "
-                "to offset %#x, associated to an object of size %dB at [%p-%p)",
+                "to offset %d, associated to an object of size %dB at [%p-%p)",
                 ptr, sz, off, obj_size, n->base, n->bound);
 #endif
         }

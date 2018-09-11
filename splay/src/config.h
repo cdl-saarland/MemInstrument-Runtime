@@ -3,6 +3,10 @@
 /// Bound below which pointer values are considered as NULL pointers
 #define NULLPTR_BOUND 4096
 
+/// Amount by which malloc'ed allocations should be increased
+#define INCREASE_MALLOC_SIZE 1
+// #define INCREASE_MALLOC_SIZE 0
+
 /// Fail if a free call without witness is encountered (possible double free)
 // #define CHECK_DOUBLE_FREE 1
 
