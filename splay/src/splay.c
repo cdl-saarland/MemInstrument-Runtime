@@ -180,6 +180,7 @@ void __splay_insertGlobalsFromBinary(void) {
     }
     free(line);
     pclose(fp);
+    free(cmd);
 #endif
 }
 
