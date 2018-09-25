@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -353,7 +354,7 @@ uintptr_t __splay_get_upper(void *witness) {
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        return (uintptr_t)-1;
+        return UINTPTR_MAX >> 1;
     }
     return n->bound;
 }
@@ -367,7 +368,7 @@ uintptr_t __splay_get_maxbyteoffset(void *witness) {
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        return (uintptr_t)-1;
+        return UINTPTR_MAX >> 1;
     }
     return (n->bound - n->base) - 1;
 }
