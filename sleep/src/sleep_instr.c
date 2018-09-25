@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <unistd.h>
 
@@ -98,7 +99,7 @@ uintptr_t __splay_get_upper(void *witness) {
     (void)witness;
     STAT_INC(NumGetUpper);
     sleepFun(get_bound_delay / 2);
-    return (uintptr_t)-1;
+    return UINTPTR_MAX;
 }
 
 void *__splay_get_upper_as_ptr(void *witness) {
@@ -109,7 +110,7 @@ uintptr_t __splay_get_maxbyteoffset(void *witness) {
     (void)witness;
     STAT_INC(NumGetUpper);
     sleepFun(get_bound_delay / 2);
-    return (uintptr_t)-1;
+    return UINTPTR_MAX;
 }
 
 void __splay_alloc_or_merge(void *ptr, size_t sz) {
