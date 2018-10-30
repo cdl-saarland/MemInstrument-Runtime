@@ -1,8 +1,9 @@
 #pragma once
 
 /** GENERAL **/
-#define REGION_SIZE 0x100000000ULL // 0x100000000 for 4GB
-#define REGION_SIZE_LOG 32U // binary log of REGION_SIZE, if region size is changed, this must be adapted as well
+#define REGION_SIZE 0x800000000ULL // 0x100000000 for 4GB, 0x800000000 for 32GB
+// binary log of REGION_SIZE, if region size is changed, this must be adapted as well
+#define REGION_SIZE_LOG 35U // 32U for 4GB, 35U for 32GB
 /*************/
 
 /** OPTIMIZATION MODES **/

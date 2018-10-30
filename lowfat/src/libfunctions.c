@@ -26,7 +26,7 @@ uint64_t __lowfat_ptr_index(void *ptr);
 
 extern size_t sizes[];
 
-// system-dependent, but usually 4KB
+// system-dependent, but often 4KB
 uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
@@ -35,7 +35,7 @@ static void *regions[NUM_REGIONS];
 // internal structures (i.e free list) use the glibc functions for allocating and freeing, as they don't need runtime checks
 // this flag ensures that behavior
 // the flag is active on default, so new threads can use the low fat allocator
-static int _Thread_local hooks_active = 1;
+_Thread_local static int hooks_active = 1;
 
 typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
 
@@ -459,6 +459,47 @@ void free(void *p) {
     free_found(p);
 }
 
+size_t lf_sizes[32] = {1073741824, 536870912, 268435456, 134217728, 67108864, 33554432,
+                     16777216, 8388608, 4194304, 2097152, 1048576, 524288, 262144, 131072,
+                     65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256,
+                     128, 64, 32, 16, 16, 16, 16, 16, 16};
+int64_t lf_offsets[32] = {  -139741055942656, -139775415681024, -139809775419392, -139844135157760, -139878494896128,
+                            -139912854634496, -139947214372864, -139981574111232, -140015933849600, -140050293587968,
+                            -140084653326336, -140119013064704, -140153372803072, -140187732541440, -140222092279808,
+                            -140256452018176, -140290811756544, -140325171494912, -140359531233280, -140393890971648,
+                            -140428250710016, -140462610448384, -140496970186752, -140531329925120, -140565689663488,
+                            -140600049401856, -140634409140224, -140634409140224, -140634409140224, -140634409140224,
+                            -140634409140224, -140634409140224};
+uint64_t lf_masks[32] = {  0xffffffffc0000000, 0xffffffffe0000000, 0xfffffffff0000000, 0xfffffffff8000000,
+                           0xfffffffffc000000, 0xfffffffffe000000, 0xffffffffff000000, 0xffffffffff800000,
+                           0xffffffffffc00000, 0xffffffffffe00000, 0xfffffffffff00000, 0xfffffffffff80000,
+                           0xfffffffffffc0000, 0xfffffffffffe0000, 0xffffffffffff0000, 0xffffffffffff8000,
+                           0xffffffffffffc000, 0xffffffffffffe000, 0xfffffffffffff000, 0xfffffffffffff800,
+                           0xfffffffffffffc00, 0xfffffffffffffe00, 0xffffffffffffff00, 0xffffffffffffff80,
+                           0xffffffffffffffc0, 0xffffffffffffffe0, 0xfffffffffffffff0, 0xfffffffffffffff0,
+                           0xfffffffffffffff0, 0xfffffffffffffff0, 0xfffffffffffffff0, 0xfffffffffffffff0};
+
+// size 0 can't happen, because there is no LLVM type with size 0
+void* __lowfat_stack_alloc(size_t size) {
+    // TODO explain this better
+    // normally, we would need sz + 1 to cover the "one after object" pointer, but actually
+    // not necessary here, because counting leading zeros already covers that for us
+    // e.g. clz(4) = 61 while clz(3) = 60
+    int index = __builtin_clzll(size) - 32;
+    size_t padded_size = lf_sizes[index];
+    uint64_t mask = lf_masks[index];
+
+    void* stack_ptr_copy;
+    // align stack pointer
+    asm __volatile__ ("subq %1, %%rsp; andq %2, %%rsp; movq %%rsp, %0;"
+                      :"=r" (stack_ptr_copy)
+                      : "r" (padded_size), "r" (mask));
+
+    // compute mirrored stack ptr (= low-fat ptr)
+    void* mirrored_lowfat_ptr = stack_ptr_copy + lf_offsets[index];
+    return mirrored_lowfat_ptr;
+}
+
 #if ENABLE_MPX
 void enable_mpx(void);
 #endif
@@ -477,7 +518,7 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
         uintptr_t region_address = (i + 1) * REGION_SIZE;
         regions[i] = mmap((void *) region_address, REGION_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
 
-        // check that mmap mapped the desired address (otherwise we might get false positive later for the safety checks)
+        // check that mmap mapped the desired addresses (otherwise we might get false positive later for the safety checks)
         if ((uintptr_t) regions[i] % REGION_SIZE != 0)
             exit(99); // TODO more info than just exotic return code
     }
