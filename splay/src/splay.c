@@ -333,6 +333,9 @@ void __splay_check_dereference(void *witness, void *ptr, size_t sz) {
 
 uintptr_t __splay_get_lower(void *witness) {
     STAT_INC(NumGetLower);
+    if (isNullPtr((uintptr_t)witness)) {
+        return 0;
+    }
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
@@ -351,6 +354,9 @@ void *__splay_get_base(void *witness) {
 
 uintptr_t __splay_get_upper(void *witness) {
     STAT_INC(NumGetUpper);
+    if (isNullPtr((uintptr_t)witness)) {
+        return 0;
+    }
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
@@ -365,6 +371,9 @@ void *__splay_get_upper_as_ptr(void *witness) {
 
 uintptr_t __splay_get_maxbyteoffset(void *witness) {
     STAT_INC(NumGetUpper);
+    if (isNullPtr((uintptr_t)witness)) {
+        return 0;
+    }
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
