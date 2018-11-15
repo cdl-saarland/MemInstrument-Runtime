@@ -104,10 +104,10 @@ void __mi_print_stats(void) {
     fclose(dest);
 }
 
-typedef int (*fcn)(int *(main)(int, char **, char **), int argc, char **ubp_av,
+typedef int (*fcn)(int (*main)(int, char **, char **), int argc, char **ubp_av,
                    void (*init)(void), void (*fini)(void),
                    void (*rtld_fini)(void), void(*stack_end));
-int __libc_start_main(int *(main)(int, char **, char **), int argc,
+int __libc_start_main(int (*main)(int, char **, char **), int argc,
                       char **ubp_av, void (*init)(void), void (*fini)(void),
                       void (*rtld_fini)(void), void(*stack_end)) {
 
