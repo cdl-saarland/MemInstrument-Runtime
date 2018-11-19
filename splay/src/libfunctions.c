@@ -19,7 +19,7 @@
 // TODO make threadsafe
 static _Thread_local int hooks_active = 1;
 
-typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc,
+typedef int (*start_main_type)(int (*main)(int, char **, char **), int argc,
                                char **ubp_av, void (*init)(void),
                                void (*fini)(void), void (*rtld_fini)(void),
                                void(*stack_end));
@@ -251,7 +251,7 @@ int munmap(void *addr, size_t size) {
     return munmap_found(addr, size);
 }
 
-int __libc_start_main(int *(main)(int, char **, char **), int argc,
+int __libc_start_main(int (*main)(int, char **, char **), int argc,
                       char **ubp_av, void (*init)(void), void (*fini)(void),
                       void (*rtld_fini)(void), void(*stack_end)) {
     hooks_active = 0;
