@@ -331,16 +331,39 @@ void __splay_check_dereference(void *witness, void *ptr, size_t sz) {
     __splay_check_dereference_named(witness, ptr, sz, NULL);
 }
 
+#define WIDE_LOWER 0
+#define WIDE_UPPER (UINTPTR_MAX >> 1)
+
+// Storage for caching lookups via get_lower/upper
+void *__prev_witness = NULL;
+bool __prev_available = 0;
+uintptr_t __prev_lower = 0;
+uintptr_t __prev_upper = 0;
+
 uintptr_t __splay_get_lower(void *witness) {
     STAT_INC(NumGetLower);
     if (isNullPtr((uintptr_t)witness)) {
         return 0;
     }
+    if (__prev_available && witness == __prev_witness) {
+        uintptr_t t = __prev_lower;
+        __prev_lower = 0;
+        __prev_upper = 0;
+        __prev_available = 0;
+        __prev_witness = NULL;
+        return t;
+    }
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
+    __prev_available = 1;
+    __prev_witness = witness;
     if (n == NULL) {
-        return 0;
+        __prev_lower = WIDE_LOWER;
+        __prev_upper = WIDE_UPPER;
+        return WIDE_LOWER;
     }
+    __prev_lower = n->base;
+    __prev_upper = n->bound;
     return n->base;
 }
 
@@ -357,11 +380,25 @@ uintptr_t __splay_get_upper(void *witness) {
     if (isNullPtr((uintptr_t)witness)) {
         return 0;
     }
+    if (__prev_available && witness == __prev_witness) {
+        uintptr_t t = __prev_upper;
+        __prev_lower = 0;
+        __prev_upper = 0;
+        __prev_available = 0;
+        __prev_witness = NULL;
+        return t;
+    }
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
+    __prev_available = 1;
+    __prev_witness = witness;
     if (n == NULL) {
-        return UINTPTR_MAX >> 1;
+        __prev_lower = WIDE_LOWER;
+        __prev_upper = WIDE_UPPER;
+        return WIDE_UPPER;
     }
+    __prev_lower = n->base;
+    __prev_upper = n->bound;
     return n->bound;
 }
 
@@ -377,7 +414,7 @@ uintptr_t __splay_get_maxbyteoffset(void *witness) {
     Node *n =
         getNode((uintptr_t)witness, "Taking bounds of unknown allocation");
     if (n == NULL) {
-        return UINTPTR_MAX >> 1;
+        return WIDE_UPPER;
     }
     return (n->bound - n->base) - 1;
 }
