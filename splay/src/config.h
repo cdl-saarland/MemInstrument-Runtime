@@ -39,6 +39,11 @@
 /// Enable collecting and printing statistics at run time
 // #define STATISTICS 1
 
+
+/// Do not run anything and return early before calling the main function.
+///   "Semantics is what makes programs slow"
+// #define START_MAIN_EARLY_RETURN 1
+
 #define STATS_COUNTER_DEFS "statistic_counters.def"
 
 /// If defined, use this key to find a file to print runtime stats to
