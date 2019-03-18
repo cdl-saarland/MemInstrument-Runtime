@@ -206,6 +206,10 @@ static Node *getNode(uintptr_t witness_val, const char *str) {
 
 void __setup_splay(void) { splayInit(&__memTree); }
 
+void __splay_inc_external_counter(void) {
+    STAT_INC(NumExtChecks);
+}
+
 #ifdef TREE_ANNOTATE_NODES
 static const char *stringForKind(char c) {
     switch (c) {
