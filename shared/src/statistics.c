@@ -86,8 +86,12 @@ void __setup_statistics(const char *n) {
         fprintf(stderr,
                 "meminstrument: Failed to register statistics printer!\n");
     }
+#ifdef STATS_FILE_ENV
+    mi_stats_file = getenv(STATS_FILE_ENV);
+#else
 #ifdef STATS_FILE
-    mi_stats_file = getenv(STATS_FILE);
+    mi_stats_file = STATS_FILE;
+#endif
 #endif
 #endif
 }
