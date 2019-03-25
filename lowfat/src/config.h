@@ -4,23 +4,18 @@
 #define REGION_SIZE 0x800000000ULL // 0x100000000 for 4GB, 0x800000000 for 32GB
 // binary log of REGION_SIZE, if region size is changed, this must be adapted as well
 #define REGION_SIZE_LOG 35U // 32U for 4GB, 35U for 32GB
-/*************/
 
-/** OPTIMIZATION MODES **/
-// NOTE: Only one of these should be used at a time
+// min permitted low-fat object size
+#define MIN_PERMITTED_LF_SIZE 16U
+// binary log of min permitted low-fat object size
+#define MIN_PERMITTED_LF_SIZE_LOG 4U
+// max permitted low-fat object size, anything above will be allocated with a fall back glibc allocator
+// 0x40000000
+#define MAX_PERMITTED_LF_SIZE 0x40000000ULL
 
-//#define FAST_BASE // multiply with (pre calculated) inverse of size
-#define POW_2_SIZES // faster size index computation if sizes only contains powers of 2
-
-#ifdef FAST_BASE
-#define FAST_BASE_NO_PAD_LIMIT 2097152 // 2MB in paper
-#endif
-
-#ifdef POW_2_SIZES
+// number of low-fat regions, i.e. how many permitted allocation sizes
+// there are 27 powers of 2 from 16B to 1GB
 #define NUM_REGIONS 27U
-#else
-#define NUM_REGIONS 529U
-#endif
 /******************/
 
 /** STATISTICS **/

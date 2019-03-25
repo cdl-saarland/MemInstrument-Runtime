@@ -7,7 +7,6 @@ extern uint64_t page_size;
 
 int is_aligned(uint64_t value, uint64_t alignment);
 uint64_t __lowfat_ptr_size(void *ptr);
-extern size_t sizes[];
 
 // current top elements for every free list
 Element* free_list_tops[NUM_REGIONS];

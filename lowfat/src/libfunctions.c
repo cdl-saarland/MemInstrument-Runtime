@@ -24,8 +24,6 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 uint64_t __lowfat_ptr_index(void *ptr);
 
-extern size_t sizes[];
-
 // system-dependent, but often 4KB
 uint64_t page_size;
 
@@ -113,34 +111,15 @@ int is_power_of_2(size_t value) {
 }
 
 /*
- * if size is contained in sizes, return its index
- * otherwise, returns index of next bigger size contained in sizes
+ * returns the index of the low-fat region that is appropriate for size
  */
-int compute_size_index(size_t size) {
-#ifdef POW_2_SIZES
+unsigned int compute_size_index(size_t size) {
     // get the index of the next higher power of 2 by counting leading zeros
-    // Note: this only works, if there are no powers of 2 skipped in sizes!
-    int index = 64 - __builtin_clzll(size) - 4; // offset of 4  because the smallest size is 16 Bytes
+    // Note: this only works, if there are no powers of 2 skipped
+    int index = 64 - __builtin_clzll(size) - MIN_PERMITTED_LF_SIZE_LOG;
     if (is_power_of_2(size))
         index--; // corner case if size is already a power 2
-    return index < 0 ? 0 : index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
-#else
-    // binary search over sizes to find next bigger (or equal) size
-    int low = 0, high = NUM_REGIONS - 1;
-    int mid;
-    while (low <= high) {
-        mid = (low + high) / 2;
-        if (size == sizes[mid])
-            return mid;
-        else if (size < sizes[mid])
-            high = mid - 1;
-        else
-            low = mid + 1;
-    }
-    // if low > high, then the size lies between size[low] and size[high] and low = high + 1 at this point
-    // as we want the next bigger size, low is the desired index
-    return low;
-#endif
+    return index < 0 ? 0 : (unsigned int) index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 }
 
 /**
@@ -156,22 +135,13 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return NULL;
 
     // a pointer is allowed to point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
-    // though, if FAST_BASE is enabled, allocations > 2MB are padded anyway, so the 1 byte padding is unnecessary in that case
-#ifdef FAST_BASE
-    size_t padded_size;
-    if (size > FAST_BASE_NO_PAD_LIMIT)
-        padded_size = size + page_size;
-    else
-        padded_size = size + 1;
-#else
     size_t padded_size = size + 1;
-#endif
 
     // use fallback allocator for sizes that are too large (-> non low fat pointer)
-    if (padded_size > sizes[NUM_REGIONS - 1])
+    if (padded_size > MAX_PERMITTED_LF_SIZE)
         return NULL;
 
-    int index = compute_size_index(padded_size);
+    unsigned int index = compute_size_index(padded_size);
 
     pthread_mutex_lock(&mutex);
 
@@ -184,7 +154,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return free_res;
     }
 
-    size_t allocation_size = sizes[index];
+    size_t allocation_size = MIN_PERMITTED_LF_SIZE << index;
     void *res = regions[index];
 
     // for unaligned allocations this loop finishes in the first iteration
@@ -201,17 +171,6 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
             // allow read/write on allocated memory (only required for page aligned addresses)
             if ((is_aligned((uintptr_t) res, page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
-
-#ifdef FAST_BASE
-            else {
-                // for some sizes, due to alignment requirements res can be located in a new page (with PROT_NONE)
-                // so the PROT needs to be adjusted for that page
-                // additionally, if the allocation overlaps into more pages, those are covered as well
-                uint64_t next_smaller_page_addr = ((uintptr_t) res & ~(page_size - 1)); //fast round down bithack
-                size_t prot_change_size = allocation_size + (uintptr_t) res - next_smaller_page_addr;
-                mprotect((void *) next_smaller_page_addr, prot_change_size, PROT_READ | PROT_WRITE);
-            }
-#endif
 
             regions[index] = res + allocation_size;
             STAT_INC(NumLowFatAllocs);
@@ -235,7 +194,7 @@ void *lowfat_alloc(size_t size) {
 
 void internal_free(void *p) {
     // add freed address to free list for corresponding region
-    uintptr_t index = __lowfat_ptr_index(p);
+    uint64_t index = __lowfat_ptr_index(p);
     if (index < NUM_REGIONS) {
         pthread_mutex_lock(&mutex);
         STAT_INC(NumLowFatFrees);
@@ -270,7 +229,7 @@ void *calloc(size_t nmemb, size_t size) {
         size_t total_size = nmemb * size;
 
         int overflow = size != 0 && total_size / size != nmemb;
-        if (overflow || total_size > sizes[NUM_REGIONS - 1])
+        if (overflow || total_size > MAX_PERMITTED_LF_SIZE)
             res = calloc_found(nmemb, size);
         else {
             res = lowfat_alloc(total_size);
@@ -306,14 +265,14 @@ void *realloc(void *ptr, size_t size) {
         if (ptr == NULL)
             res = malloc(size);
         else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
-            if (size <= sizes[NUM_REGIONS - 1])
+            if (size <= MAX_PERMITTED_LF_SIZE)
                 res = lowfat_alloc(size); // case 1
 
             if (res == NULL)
                 res = malloc_found(size); // case 2 (or lowfat_alloc wasn't successful
 
             if (res != NULL) {
-                size_t old_size = sizes[__lowfat_ptr_index(ptr)];
+                size_t old_size = MIN_PERMITTED_LF_SIZE << __lowfat_ptr_index(ptr);
                 size_t copy_size = old_size < size ? old_size : size;
                 memcpy(res, ptr, copy_size);
                 internal_free(ptr);
@@ -338,7 +297,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
             errno = EINVAL;
             res = NULL;
         }
-        else if (size > sizes[NUM_REGIONS - 1])
+        else if (size > MAX_PERMITTED_LF_SIZE)
             res = aligned_alloc_found(alignment, size);
         else {
             // since size must be a multiple of alignment here, we can simply use the normal allocation routine
@@ -363,7 +322,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
         // check valid parameters
         if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
             err_status = EINVAL;
-        else if (size > sizes[NUM_REGIONS - 1])
+        else if (size > MAX_PERMITTED_LF_SIZE)
             err_status = posix_memalign(memptr, alignment, size);
         else {
             res = lowfat_aligned_alloc(size, alignment);
@@ -390,7 +349,7 @@ void *memalign(size_t alignment, size_t size) {
             errno = EINVAL;
             res = NULL;
         }
-        else if (size > sizes[NUM_REGIONS - 1])
+        else if (size > MAX_PERMITTED_LF_SIZE)
             res = memalign_found(alignment, size);
         else {
             res = lowfat_aligned_alloc(size, alignment);
@@ -410,7 +369,7 @@ void *valloc(size_t size) {
         hooks_active = 0;
         void *res;
 
-        if (size > sizes[NUM_REGIONS - 1])
+        if (size > MAX_PERMITTED_LF_SIZE)
             res = valloc_found(size);
         else {
             res = lowfat_aligned_alloc(size, page_size);
@@ -430,7 +389,7 @@ void *pvalloc(size_t size) {
         hooks_active = 0;
         void *res;
 
-        if (size > sizes[NUM_REGIONS - 1])
+        if (size > MAX_PERMITTED_LF_SIZE)
             res = pvalloc_found(size);
         else {
             uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
@@ -504,10 +463,6 @@ void* __lowfat_stack_alloc(size_t size) {
 void enable_mpx(void);
 #endif
 
-#if defined(FAST_BASE) && !defined(POW_2_SIZES)
-void init_inv_sizes(void);
-#endif
-
 int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
     // for program initialization we can't use the low fat allocator
@@ -527,10 +482,6 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
     initDynamicFunctions();
 
     page_size = sysconf(_SC_PAGESIZE);
-
-#if defined(FAST_BASE) && !defined(POW_2_SIZES)
-    init_inv_sizes();
-#endif
 
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
