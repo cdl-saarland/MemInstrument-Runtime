@@ -10,7 +10,7 @@
 // binary log of min permitted low-fat object size
 #define MIN_PERMITTED_LF_SIZE_LOG 4U
 // max permitted low-fat object size, anything above will be allocated with a fall back glibc allocator
-// 0x40000000
+// 0x40000000ULL = 1GB
 #define MAX_PERMITTED_LF_SIZE 0x40000000ULL
 
 // number of low-fat regions, i.e. how many permitted allocation sizes
