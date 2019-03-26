@@ -3,11 +3,15 @@
 #include "config.h"
 
 uint64_t __lowfat_ptr_index(void *ptr);
-uint64_t __lowfat_ptr_base(void *ptr);
-uint64_t __lowfat_ptr_size(void *ptr);
+uint64_t __lowfat_ptr_base(void *ptr, uint64_t index);
+uint64_t __lowfat_ptr_size(uint64_t index);
 
-// interface for LLVM
+
+/*** interface for LLVM ***/
+
+// lower/upper bound functions for Tina's tool PICO
 void *__lowfat_get_lower_bound(void *ptr);
 void *__lowfat_get_upper_bound(void *ptr);
+
 void __lowfat_check_dereference(void *witness, void *ptr, size_t size);
 void __lowfat_check_inbounds(void *witness, void *ptr);

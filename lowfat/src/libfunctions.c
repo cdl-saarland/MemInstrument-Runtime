@@ -113,13 +113,13 @@ int is_power_of_2(size_t value) {
 /*
  * returns the index of the low-fat region that is appropriate for size
  */
-unsigned int compute_size_index(size_t size) {
+unsigned compute_size_index(size_t size) {
     // get the index of the next higher power of 2 by counting leading zeros
     // Note: this only works, if there are no powers of 2 skipped
     int index = 64 - __builtin_clzll(size) - MIN_PERMITTED_LF_SIZE_LOG;
     if (is_power_of_2(size))
         index--; // corner case if size is already a power 2
-    return index < 0 ? 0 : (unsigned int) index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
+    return index < 0 ? 0 : (unsigned) index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
 }
 
 /**
@@ -141,7 +141,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     if (padded_size > MAX_PERMITTED_LF_SIZE)
         return NULL;
 
-    unsigned int index = compute_size_index(padded_size);
+    unsigned index = compute_size_index(padded_size);
 
     pthread_mutex_lock(&mutex);
 
