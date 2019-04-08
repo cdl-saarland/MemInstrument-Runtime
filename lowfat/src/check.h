@@ -13,5 +13,5 @@ uint64_t __lowfat_ptr_size(uint64_t index);
 void *__lowfat_get_lower_bound(void *ptr);
 void *__lowfat_get_upper_bound(void *ptr);
 
-void __lowfat_check_dereference(void *witness, void *ptr, size_t size);
-void __lowfat_check_inbounds(void *witness, void *ptr);
+void __lowfat_check_deref(void *witness, void *ptr, size_t size);
+void __lowfat_check_oob(void *witness, void *ptr);

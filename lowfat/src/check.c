@@ -34,7 +34,7 @@ void *__lowfat_get_upper_bound(void *ptr) {
         return (void*) INT64_MAX;
 }
 
-void __lowfat_check_dereference(void *witness, void *ptr, size_t size) {
+void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
     STAT_INC(NumDerefChecks);
 
     uint64_t index = __lowfat_ptr_index(witness);
@@ -43,7 +43,7 @@ void __lowfat_check_dereference(void *witness, void *ptr, size_t size) {
         __mi_fail_with_ptr("Out-of-bounds pointer dereference!", ptr);
 }
 
-void __lowfat_check_inbounds(void *witness, void *ptr) {
+void __lowfat_check_oob(void *witness, void *ptr) {
     STAT_INC(NumInboundsChecks);
 
     uint64_t index = __lowfat_ptr_index(witness);
