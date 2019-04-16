@@ -21,7 +21,10 @@ inline uint64_t __lowfat_ptr_size(uint64_t index) {
 void *__lowfat_get_lower_bound(void *ptr) {
     STAT_INC(NumGetLower)
     uint64_t index = __lowfat_ptr_index(ptr);
-    return (void*) __lowfat_ptr_base(ptr, index);
+    if (index < NUM_REGIONS)
+        return (void*) __lowfat_ptr_base(ptr, index);
+    else
+        return (void*) 0;
 }
 
 // returns INT64_MAX instead of UINT64_MAX for non-fat pointers, as UINT64_MAX can cause problems for PICO
