@@ -21,5 +21,5 @@
 /** STATISTICS **/
 #define STATISTICS 1
 #define STATS_COUNTER_DEFS "statistic_counters.def"
-#define STATS_FILE "MI_STATS_FILE"
+#define STATS_FILE "mi_stats.txt"
 /****************/
