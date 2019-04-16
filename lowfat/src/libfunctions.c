@@ -134,6 +134,8 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     if (size == 0)
         return NULL;
 
+    STAT_INC(NumLowFatAllocs);
+
     // a pointer is allowed to point to the address right after an array, so we pad the size by 1 to avoid false positives for OOB detection
     size_t padded_size = size + 1;
 
@@ -173,18 +175,16 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
             regions[index] = res + allocation_size;
-            STAT_INC(NumLowFatAllocs);
             pthread_mutex_unlock(&mutex);
             return res;
         }
 
         // space is not aligned, add it to the free list
         free_list_push(index, res);
+        STAT_INC(NumNonAlignedFreeListAdds);
 
         // check next fresh space slot
         res += allocation_size;
-
-        STAT_INC(NumNonAlignedFreeListAdds);
     }
 }
 

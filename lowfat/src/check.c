@@ -39,14 +39,20 @@ void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
 
     uint64_t index = __lowfat_ptr_index(witness);
     // optimized check: only need to compare base of ptr (+ size) and witness
-    if (index < NUM_REGIONS && (((uintptr_t) ptr + size) ^ (uintptr_t) witness) >> (index + MIN_PERMITTED_LF_SIZE_LOG) != 0)
-        __mi_fail_with_ptr("Out-of-bounds pointer dereference!", ptr);
+    if (index < NUM_REGIONS) {
+        STAT_INC(NumLowFatDerefChecks);
+        if ((((uintptr_t) ptr + size) ^ (uintptr_t) witness) >> (index + MIN_PERMITTED_LF_SIZE_LOG) != 0)
+            __mi_fail_with_ptr("Out-of-bounds pointer dereference!", ptr);
+    }
 }
 
 void __lowfat_check_oob(void *witness, void *ptr) {
     STAT_INC(NumInboundsChecks);
 
     uint64_t index = __lowfat_ptr_index(witness);
-    if (index < NUM_REGIONS && ((uintptr_t) ptr ^ (uintptr_t) witness) >> (index + MIN_PERMITTED_LF_SIZE_LOG) != 0)
-        __mi_fail_with_ptr("Outflowing out-of-bounds pointer!", ptr);
+    if (index < NUM_REGIONS) {
+        STAT_INC(NumLowFatInboundsChecks);
+        if (((uintptr_t) ptr ^ (uintptr_t) witness) >> (index + MIN_PERMITTED_LF_SIZE_LOG) != 0)
+            __mi_fail_with_ptr("Outflowing out-of-bounds pointer!", ptr);
+    }
 }

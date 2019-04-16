@@ -1,24 +1,18 @@
 // vim:set ft=c:
 
-STAT_ACTION(NumFatalFails, "# of fatally failed checks")
-
 STAT_ACTION(NumDerefChecks, "# of performed dereference checks")
-STAT_ACTION(NumFailedDerefChecksOOB, "# of failed deref checks because of OOB pointers")
-STAT_ACTION(NumFailedDerefChecksNULL, "# of failed deref checks because of NULL pointers")
-
+STAT_ACTION(NumLowFatDerefChecks, "# of performed dereference checks with low fat pointers")
 STAT_ACTION(NumInboundsChecks, "# of performed inbounds checks")
-STAT_ACTION(NumFailedInboundsChecksOOB, "# of failed inbounds checks because of OOB pointers")
-STAT_ACTION(NumFailedInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
-STAT_ACTION(NumSuccessfulInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
+STAT_ACTION(NumLowFatInboundsChecks, "# of performed inbounds checks with low fat pointers")
 
 STAT_ACTION(NumAllocs, "# of registered malloc (-like) allocations")
 STAT_ACTION(NumLowFatAllocs, "# of registered malloc (-like) allocations with low fat allocator")
 STAT_ACTION(NumFrees, "# of registered deallocations")
 STAT_ACTION(NumLowFatFrees, "# of registered low fat deallocations")
+STAT_ACTION(NumFreeListPops, "# of reused low fat addresses")
 
 STAT_ACTION(NumFullRegionNonFatAllocs, "# of non fat pointers created because of fully used low fat regions")
 STAT_ACTION(NumNonAlignedFreeListAdds, "# of fresh space addresses added to free list because of alignment requirements")
-STAT_ACTION(NumFreeListPops, "# of reused low fat addresses")
 
 STAT_ACTION(NumGetLower, "# of queries for lower bounds")
 STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
