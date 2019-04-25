@@ -10,6 +10,8 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
 SHARED_SRC_DIR = ${SHARED_DIR}/src
 
+CC = clang
+
 Q ?= @
 
 CFLAGS  += -Wall -Wextra -g -O2 -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}

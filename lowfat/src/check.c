@@ -6,15 +6,15 @@
 #include "fail_function.h"
 
 // the metadata table in the paper starts at 1, the regions used in this implementation start at 0, so subtract 1 after shift
-inline uint64_t __lowfat_ptr_index(void *ptr) {
+uint64_t __lowfat_ptr_index(void *ptr) {
     return ((uint64_t) ptr >> REGION_SIZE_LOG) - 1;
 }
 
-inline uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
+uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
     return (uint64_t) ptr & (UINT64_MAX << (index + MIN_PERMITTED_LF_SIZE_LOG));
 }
 
-inline uint64_t __lowfat_ptr_size(uint64_t index) {
+uint64_t __lowfat_ptr_size(uint64_t index) {
     return MIN_PERMITTED_LF_SIZE << index;
 }
 
