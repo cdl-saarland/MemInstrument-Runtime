@@ -68,12 +68,12 @@ ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CC) -MMD -o $@ ${CFLAGS} $< -L${BUILD_DIR} -l${LIB_NAME} ${LDFLAGS}
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
+	$(Q)$(CC) -MMD -o $@ ${CFLAGS} $< -L${BUILD_DIR} -l:lib${LIB_NAME}.a ${LDFLAGS}
 
 clean:
 	@echo "===> CLEAN"
