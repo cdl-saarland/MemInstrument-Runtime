@@ -14,6 +14,8 @@ make
 in this directory.
 The Makefile supports `make clean` to clean the build directory.
 
+A dynamic library `libsoftboundcets_rt.so` can be built with `make dynamic`.
+
 ### Build with Link-Time Optimization (LTO)
 
 The library can be build LTO friendly.
