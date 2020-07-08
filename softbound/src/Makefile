@@ -1,4 +1,4 @@
-all: static dynamic
+all: static
 
 # Use spatial checks only
 CFLAGS=-Wall -pedantic -fPIC -O3 -D__SOFTBOUNDCETS_SPATIAL -D_GNU_SOURCE #-D__SOFTBOUNDCETS_DEBUG
@@ -18,7 +18,7 @@ ifneq ($(LLVM_GOLD),)
 all: static_lto
 endif
 
-CLANG=/home/tina/Build/softbound_debug_gold/bin/betterclang
+CLANG=clang
 
 softboundcets_rt: softboundcets.h softboundcets-checks.c softboundcets.c softboundcets-wrappers.c
 	$(CLANG) $(CFLAGS) -c softboundcets-checks.c -o softboundcets-checks.o
