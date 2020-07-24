@@ -2,7 +2,7 @@
 *.a
 *.so
 /lto
-Wrapper.h
+SBWrapper.h
 
 # Custom Vim stuff
 .*.swp
