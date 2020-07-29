@@ -7,6 +7,7 @@ import math
 import textwrap
 import sys
 import shutil
+import pathlib
 
 def is_available(program_name):
     """Check if a given program is available."""
@@ -60,12 +61,11 @@ def generate_header(header_name, file_path, includes, namespace, content,
         """)
     return header_text
 
-def surround_with_header_stuff(text, number_of_functions, out_file_name):
+def surround_with_header_stuff(text, number_of_functions, file_path):
     """
     Specify the header content and use it to instantiate the LLVM header template.
     """
     header_name = "SB_WRAPPER_H"
-    file_path = "SBMI/" + out_file_name
     namespace = "sbmi"
     short_description = "Supported Wrapper Functions"
     long_description = "Contains all wrapper functions available in the SBMI runtime."
@@ -119,7 +119,8 @@ def generate_file(list_of_source_files, out_file_name, verbose):
 
     subprocess.run(["ctags", "-o", tmp_file_name, "--c-types=f"] +
                    list_of_source_files, check=True)
-    c_file_content = process_file(tmp_file_name, out_file_name, verbose)
+    file_name = out_file_name.split("include/")[-1]
+    c_file_content = process_file(tmp_file_name, file_name, verbose)
 
     # Delete the temporarily generated file
     os.remove(tmp_file_name)
@@ -147,11 +148,14 @@ def main():
     list_of_source_files = ["softboundcets-wrappers.c",
                             "softboundcets.c", "softboundcets.h"]
 
-    out_file_name = "SBWrapper.h"
+    # Generate the directory where the auto-generated header is put
+    # TODO change this out_dir when moving this to the meminstrument run-times
+    out_dir = os.path.join("include", "SBMI")
+    pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
+
+    out_file_name = os.path.join(out_dir, "SBWrapper.h")
 
     generate_file(list_of_source_files, out_file_name, args.verbose)
-
-    # TODO move to include directory
 
 if __name__ == "__main__":
     main()
