@@ -3,6 +3,7 @@
 *.so
 /lto
 SBWrapper.h
+compile_commands.json
 
 # Custom Vim stuff
 .*.swp
