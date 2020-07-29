@@ -48,9 +48,8 @@ def generate_header(header_name, file_path, includes, namespace, content,
 
     #ifndef {header_name}
     #define {header_name}
-
-    {includes}
-
+    """) + includes + textwrap.dedent(
+    f"""
     namespace {namespace} {{
 
     """) + content + textwrap.dedent(
@@ -69,7 +68,7 @@ def surround_with_header_stuff(text, number_of_functions, file_path):
     namespace = "sbmi"
     short_description = "Supported Wrapper Functions"
     long_description = "Contains all wrapper functions available in the SBMI runtime."
-    includes = '#include "llvm/ADT/SmallVector.h"'
+    includes = '\n#include "llvm/ADT/SmallVector.h"\n'
     content = "llvm::SmallVector<String, " + \
         str(number_of_functions) + "> available_wrappers = {\n" + text + "}"
 
