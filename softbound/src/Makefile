@@ -15,7 +15,7 @@ OBJECTS := $(SOURCES:.c=.o)
 LTO_DIR := lto
 LTO_OBJECTS := $(addprefix $(LTO_DIR)/, $(SOURCES:.c=.lto.o))
 
-all: static gen_compile_commands
+all: gen_compile_commands static cxx_header
 
 # If LLVM_GOLD is set, also build a library for use with LTO
 #
@@ -47,6 +47,11 @@ compile_commands.json: $(COMPDB_ENTRIES)
 
 gen_compile_commands: compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
+
+# Auto-generate C++ header
+cxx_header:
+	./generate_available_wrapper.py
+	./generate_run_time_config_info.py
 
 # Compile without LTO static or dynamic
 $(OBJECTS): $(SOURCES)
