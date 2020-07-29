@@ -1,8 +1,8 @@
 # Project specific
 *.a
 *.so
+/include
 /lto
-SBWrapper.h
 compile_commands.json
 
 # Custom Vim stuff
@@ -72,6 +72,8 @@ default.cfg
 *.o
 
 # Python
+__pycache__
+.pylintrc
 .*.pyc
 
 # QtCreator
