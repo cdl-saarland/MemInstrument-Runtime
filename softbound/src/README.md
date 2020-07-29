@@ -3,6 +3,11 @@
 This repository is a fork from a modified version of the run-time of [SoftBound+CETS 3.9](https://github.com/santoshn/SoftBoundCETS-3.9).
 The C-sources are compiled to a stand-alone library for usage with SoftBound-instrumented programs.
 
+## Requirements
+
+* [Ctags](http://ctags.sourceforge.net/)
+* [GNU Make](https://www.gnu.org/software/make/) (untested with other build tools)
+
 ## Build instructions
 
 A static library (`libsoftboundcets_rt.a`) can be build by simply running
@@ -67,4 +72,4 @@ Note that statistic tracking influences the program execution time and should th
 
 Currently, crashes will occur when the instrumentation is configured to ensure spatial+temporal, but the run-time is configured for something else. Make sure to configure them the same way.
 
-TODO automate this, the run-time can simply generate a header (or reuse the defined wrapper header) to ensure this doesn't happen.
+TODO The run-time now generates a header that can be included in a C++ project to avoid such misconfiguration
