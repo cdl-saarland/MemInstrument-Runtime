@@ -28,6 +28,7 @@ all: static_lto
 endif
 
 # Write a compile_commands.json file
+# This code is a modified version of https://gist.github.com/JayKickliter/f4e1945abe1d3bbbe3263640a3669e3c
 %.compdb_entry: %.c
 	@echo "    {" > $@
 	@echo "        \"command\": \"$(CLANG) $(CFLAGS) -c $<\","  >> $@
