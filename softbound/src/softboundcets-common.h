@@ -27,8 +27,7 @@ __WEAK_INLINE void __softboundcets_deallocate_shadow_stack_space();
 __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate();
 
 __WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
-                                                       void *bound,
-                                                       int arg_no);
+                                                       void *bound, int arg_no);
 
 __METADATA_INLINE
 void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
@@ -139,8 +138,8 @@ __WEAK_INLINE void *__softboundcets_metadata_load_lock(void *address);
 
 #ifdef __SOFTBOUNDCETS_SPATIAL
 
-__METADATA_INLINE void
-__softboundcets_metadata_load(void *addr_of_ptr, void **base, void **bound);
+__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
+                                                     void **base, void **bound);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 

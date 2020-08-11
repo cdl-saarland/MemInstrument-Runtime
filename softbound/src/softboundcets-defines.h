@@ -44,6 +44,23 @@
 #include <stddef.h>
 #include <unistd.h>
 
+// Configure the run-time to ensure...
+//  * spatial safety only:  __SOFTBOUNDCETS_SPATIAL
+//  * temporal safety only: __SOFTBOUNDCETS_TEMPORAL
+//  * both:                 __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+
+// #ifndef __SOFTBOUNDCETS_SPATIAL
+// #define __SOFTBOUNDCETS_SPATIAL 0
+// #endif
+
+// #ifndef __SOFTBOUNDCETS_TEMPORAL
+// #define __SOFTBOUNDCETS_TEMPORAL 0
+// #endif
+
+// #ifndef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+// #define __SOFTBOUNDCETS_SPATIAL_TEMPORAL 0
+// #endif
+
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
 #define NOERRORS 0
