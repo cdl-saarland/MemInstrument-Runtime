@@ -40,7 +40,6 @@ def generate_header(header_name, file_path, includes, namespace, content,
     //
     //===----------------------------------------------------------------------===//
     ///
-    /// \\file
     /// {long_description}
     /// THIS FILE IS AUTO-GENERATED. DO NOT UPDATE IT MANUALLY.
     ///
