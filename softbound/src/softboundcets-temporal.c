@@ -1,5 +1,8 @@
 #include "softboundcets-temporal.h"
 
+#include <assert.h>
+#include <stdio.h>
+
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 
 extern size_t __softboundcets_key_id_counter;

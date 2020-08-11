@@ -1,5 +1,6 @@
 #include "softboundcets-spatial.h"
 
+#include <assert.h>
 //===----------------------------- Checks ---------------------------------===//
 
 __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,

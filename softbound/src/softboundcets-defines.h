@@ -41,15 +41,7 @@
 #ifndef __SOFTBOUNDCETS_H__
 #define __SOFTBOUNDCETS_H__
 
-#include <assert.h>
-#include <fcntl.h>
-#include <limits.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 // Add an option to not report errors

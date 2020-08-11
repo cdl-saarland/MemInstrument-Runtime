@@ -5,6 +5,13 @@
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
+#include <assert.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/mman.h>
+
 static __attribute__((__constructor__)) void __softboundcets_global_init();
 
 extern __NO_INLINE void __softboundcets_stub(void);
