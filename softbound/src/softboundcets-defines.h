@@ -54,9 +54,8 @@
 #define NOERRORMISSINGBOUNDS 0
 #endif
 
-// Option for printing statistics about dynamically executed checks [testing only]
-// #define ENABLE_RT_STATS 1
-
+// Option for printing statistics about dynamically executed checks [testing
+// only]
 #ifndef ENABLE_RT_STATS
 #define ENABLE_RT_STATS 0
 #endif

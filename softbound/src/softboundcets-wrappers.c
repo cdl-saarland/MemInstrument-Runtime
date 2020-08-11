@@ -1494,7 +1494,7 @@ __WEAK_INLINE void softboundcets_free(void *ptr) { free(ptr); }
 
 __WEAK_INLINE long int softboundcets_lrand48() { return lrand48(); }
 
-/* ////////////////////Time Related Library Wrappers///////////////////////// */
+//===--------------- Time Related Library Wrappers ------------------------===//
 
 __WEAK_INLINE char *softboundcets_ctime(const time_t *timep) {
 
@@ -1702,9 +1702,9 @@ __WEAK_INLINE unsigned short const **softboundcets___ctype_b_loc(void) {
 #ifdef __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_upper:
-    // "The array shall contain a total of 384 characters, and can be indexed
-    // with any signed or unsigned char (i.e. with an index value between -128
-    // and 255)"
+    // "The array shall contain a total of 384 characters, and can be
+    // indexed with any signed or unsigned char (i.e. with an index value
+    // between -128 and 255)"
     __softboundcets_metadata_store(
         (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
         (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
@@ -1723,9 +1723,9 @@ __WEAK_INLINE int const **softboundcets___ctype_toupper_loc(void) {
 #ifdef __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_upper:
-    // "The array shall contain a total of 384 characters, and can be indexed
-    // with any signed or unsigned char (i.e. with an index value between -128
-    // and 255)"
+    // "The array shall contain a total of 384 characters, and can be
+    // indexed with any signed or unsigned char (i.e. with an index value
+    // between -128 and 255)"
     __softboundcets_metadata_store(
         (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
         (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
@@ -1744,9 +1744,9 @@ __WEAK_INLINE int const **softboundcets___ctype_tolower_loc(void) {
 #ifdef __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_lower:
-    // "The array shall contain a total of 384 characters, and can be indexed
-    // with any signed or unsigned char (i.e. with an index value between -128
-    // and 255)"
+    // "The array shall contain a total of 384 characters, and can be
+    // indexed with any signed or unsigned char (i.e. with an index value
+    // between -128 and 255)"
     __softboundcets_metadata_store(
         (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
         (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
@@ -1912,8 +1912,8 @@ int softboundcets_clock_gettime(clockid_t clk_id, struct timespec *tp) {
 //                      Generic Wrappers for frequent cases
 //===----------------------------------------------------------------------===//
 
-// The location the returned pointer points to can be dereferenced, but neither
-// can elements before or after it.
+// The location the returned pointer points to can be dereferenced, but
+// neither can elements before or after it.
 __WEAK_INLINE
 void __softboundcets_generic_pointer_width_bounds(void *ret_ptr) {
     __softboundcets_store_return_metadata(
@@ -1921,12 +1921,12 @@ void __softboundcets_generic_pointer_width_bounds(void *ret_ptr) {
         __softboundcets_global_lock);
 }
 
-// DISCLAIMER: These methods should ideally not be needed. They limit the bug
-// finding capabilities, but honestly reflect the execution time behavior of
-// SoftBound checks and metadata propagation.
+// DISCLAIMER: These methods should ideally not be needed. They limit the
+// bug finding capabilities, but honestly reflect the execution time
+// behavior of SoftBound checks and metadata propagation.
 
-// There is no information on the allocation size, we only know that accessing
-// it in a positive fashion is valid.
+// There is no information on the allocation size, we only know that
+// accessing it in a positive fashion is valid.
 __WEAK_INLINE
 void __softboundcets_generic_wide_upper_bound_return(void *ret_ptr) {
     __softboundcets_store_return_metadata(
@@ -1934,8 +1934,8 @@ void __softboundcets_generic_wide_upper_bound_return(void *ret_ptr) {
         __softboundcets_global_lock);
 }
 
-// There is no information on the allocation size, we need to assume all memory
-// is readable through this pointer.
+// There is no information on the allocation size, we need to assume all
+// memory is readable through this pointer.
 __WEAK_INLINE
 void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
     __softboundcets_store_return_metadata(
@@ -1943,8 +1943,8 @@ void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
         __softboundcets_global_lock);
 }
 
-// This function is a similar convenience function to the one above, just for
-// metadata stores instead of returned pointers.
+// This function is a similar convenience function to the one above, just
+// for metadata stores instead of returned pointers.
 __WEAK_INLINE
 void __softboundcets_metadata_store_generic_wide_bounds(void *addr_of_ptr) {
     __softboundcets_metadata_store(addr_of_ptr, NULL,
@@ -2020,7 +2020,7 @@ char *softboundcets_crypt_r(const char *key, const char *salt,
 }
 #endif
 
-//---------------------- dynamic linker related ------------------------------//
+//===------------------ dynamic linker related ----------------------------===//
 
 __WEAK_INLINE
 void *softboundcets_dlopen(const char *filename, int flag) {
@@ -2048,7 +2048,8 @@ int softboundcets_dladdr(void *addr, Dl_info *info) {
         __softboundcets_metadata_store_generic_wide_bounds(addr1);
         __softboundcets_metadata_store_generic_wide_bounds(addr2);
     } else {
-        // dli_sname and dli_saddr are set to NULL, this should not be accessed
+        // dli_sname and dli_saddr are set to NULL, this should not be
+        // accessed
         __softboundcets_metadata_store_generic_null_bounds(addr1);
         __softboundcets_metadata_store_generic_null_bounds(addr2);
     }
@@ -2226,16 +2227,16 @@ int softboundcets_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                               size_t servlen, int flags) {
 
     // From the man page:
-    // The caller can specify that no hostname (or no service name) is required
-    // by providing a NULL host (or serv) argument or a zero hostlen (or
-    // servlen) argument.
+    // The caller can specify that no hostname (or no service name) is
+    // required by providing a NULL host (or serv) argument or a zero
+    // hostlen (or servlen) argument.
 
     if (hostlen && host) {
         char *base = (char *)__softboundcets_load_base_shadow_stack(2);
         char *bound = (char *)__softboundcets_load_bound_shadow_stack(2);
         if (host < base || host + hostlen > bound) {
-            __softboundcets_printf(
-                "[getnameinfo] 'host' buffer size is smaller than hostlen\n");
+            __softboundcets_printf("[getnameinfo] 'host' buffer size is "
+                                   "smaller than hostlen\n");
             __softboundcets_abort();
         }
     }
@@ -2244,8 +2245,8 @@ int softboundcets_getnameinfo(const struct sockaddr *sa, socklen_t salen,
         char *base = (char *)__softboundcets_load_base_shadow_stack(3);
         char *bound = (char *)__softboundcets_load_bound_shadow_stack(3);
         if (serv < base || serv + servlen > bound) {
-            __softboundcets_printf(
-                "[getnameinfo] 'serv' buffer size is smaller than servlen\n");
+            __softboundcets_printf("[getnameinfo] 'serv' buffer size is "
+                                   "smaller than servlen\n");
             __softboundcets_abort();
         }
     }
