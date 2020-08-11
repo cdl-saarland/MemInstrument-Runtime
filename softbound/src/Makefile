@@ -15,7 +15,9 @@ OBJECTS := $(SOURCES:.c=.o)
 LTO_DIR := lto
 LTO_OBJECTS := $(addprefix $(LTO_DIR)/, $(SOURCES:.c=.lto.o))
 
-all: gen_compile_commands static cxx_header
+all: static exports
+
+exports: cxx_header
 
 # If LLVM_GOLD is set, also build a library for use with LTO
 #
@@ -50,7 +52,7 @@ gen_compile_commands: compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
 
 # Auto-generate C++ header
-cxx_header:
+cxx_header: gen_compile_commands
 	./generate_available_wrapper.py
 	./generate_run_time_config_info.py
 
@@ -58,10 +60,10 @@ cxx_header:
 $(OBJECTS): $(SOURCES)
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o $(var:.c=.o);)
 
-static: $(OBJECTS)
+static: $(OBJECTS) exports
 	ar $(ARFLAGS) ${STAT_LIB_NAME} $(OBJECTS)
 
-dynamic: $(OBJECTS)
+dynamic: $(OBJECTS) exports
 	$(CLANG) -shared -o ${DYN_LIB_NAME} $(OBJECTS) ${LINK_LIBS}
 
 # Compile with LTO
@@ -72,7 +74,7 @@ lto_dir:
 ${LTO_OBJECTS}: $(SOURCES)
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o $(addprefix $(LTO_DIR)/, $(var:.c=.lto.o));)
 
-static_lto: lto_dir ${LTO_OBJECTS}
+static_lto: lto_dir ${LTO_OBJECTS} exports
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) lto/${STAT_LIB_NAME} ${LTO_OBJECTS}
 
 clean:
