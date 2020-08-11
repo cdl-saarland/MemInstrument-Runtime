@@ -7,9 +7,9 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <sys/mman.h>
 
 static __attribute__((__constructor__)) void __softboundcets_global_init();
@@ -452,17 +452,17 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
     primary_index = (ptr >> 25);
     trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
 
-    if (!__SOFTBOUNDCETS_PREALLOCATE_TRIE) {
-        if (trie_secondary_table == NULL) {
-            trie_secondary_table = __softboundcets_trie_allocate();
-            __softboundcets_trie_primary_table[primary_index] =
-                trie_secondary_table;
-        }
-        //    __softboundcetswithss_printf("addr_of_ptr=%zx, primary_index =%zx,
-        //    trie_secondary_table=%p\n", addr_of_ptr, primary_index,
-        //    trie_secondary_table);
-        assert(trie_secondary_table != NULL);
+#if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
+    if (trie_secondary_table == NULL) {
+        trie_secondary_table = __softboundcets_trie_allocate();
+        __softboundcets_trie_primary_table[primary_index] =
+            trie_secondary_table;
     }
+    //    __softboundcetswithss_printf("addr_of_ptr=%zx, primary_index =%zx,
+    //    trie_secondary_table=%p\n", addr_of_ptr, primary_index,
+    //    trie_secondary_table);
+    assert(trie_secondary_table != NULL);
+#endif
 
     size_t secondary_index = ((ptr >> 3) & 0x3fffff);
     __softboundcets_trie_entry_t *entry_ptr =
@@ -594,32 +594,32 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
     size_t primary_index = (ptr >> 25);
     trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
 
-    if (!__SOFTBOUNDCETS_PREALLOCATE_TRIE) {
-        if (trie_secondary_table == NULL) {
+#if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
+    if (trie_secondary_table == NULL) {
 
 #ifdef __SOFTBOUNDCETS_SPATIAL
-            *((void **)base) = 0;
-            *((void **)bound) = 0;
+        *((void **)base) = 0;
+        *((void **)bound) = 0;
 #elif __SOFTBOUNDCETS_TEMPORAL
-            *((size_t *)key) = 0;
-            *((size_t *)lock) = 0;
+        *((size_t *)key) = 0;
+        *((size_t *)lock) = 0;
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-            *((void **)base) = 0;
-            *((void **)bound) = 0;
-            *((size_t *)key) = 0;
-            *((size_t *)lock) = 0;
+        *((void **)base) = 0;
+        *((void **)bound) = 0;
+        *((size_t *)key) = 0;
+        *((size_t *)lock) = 0;
 
 #else
-            *((void **)base) = 0;
-            *((void **)bound) = 0;
-            *((size_t *)key) = 0;
-            *((size_t *)lock) = 0;
+        *((void **)base) = 0;
+        *((void **)bound) = 0;
+        *((size_t *)key) = 0;
+        *((size_t *)lock) = 0;
 #endif
-            return;
-        }
-    } /* PREALLOCATE_ENDS */
+        return;
+    }
+#endif /* PREALLOCATE_ENDS */
 
     /* MAIN SOFTBOUNDCETS LOAD WHICH RUNS ON THE NORMAL MACHINE */
     size_t secondary_index = ((ptr >> 3) & 0x3fffff);
@@ -657,8 +657,9 @@ __WEAK_INLINE void
 __softboundcets_allocation_secondary_trie_allocate_range(void *initial_ptr,
                                                          size_t size) {
 
-    if (!__SOFTBOUNDCETS_PREALLOCATE_TRIE)
-        return;
+#if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
+    return;
+#endif
 
     void *addr_of_ptr = initial_ptr;
     size_t start_addr_of_ptr = (size_t)addr_of_ptr;
@@ -684,8 +685,9 @@ __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr) {
 
     /* URGENT: THIS FUNCTION REQUIRES REWRITE */
 
-    if (!__SOFTBOUNDCETS_PREALLOCATE_TRIE)
-        return;
+#if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
+    return;
+#endif
 
     size_t ptr = (size_t)addr_of_ptr;
     size_t primary_index = (ptr >> 25);

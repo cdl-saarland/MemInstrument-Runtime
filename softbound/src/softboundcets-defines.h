@@ -140,15 +140,16 @@ static const int __SOFTBOUNDCETS_DEBUG = 0;
 #define __SOFTBOUNDCETS_NORETURN __attribute__((__noreturn__))
 #endif
 
-#ifdef __SOFTBOUNDCETS_PREALLOCATE_TRIE
-#undef __SOFTBOUNDCETS_PREALLOCATE_TRIE
-static const int __SOFTBOUNDCETS_PREALLOCATE_TRIE = 1;
-#else
-static const int __SOFTBOUNDCETS_PREALLOCATE_TRIE = 0;
+// TODO add description of this option
+#ifndef __SOFTBOUNDCETS_PREALLOCATE_TRIE
+#define __SOFTBOUNDCETS_PREALLOCATE_TRIE 0
 #endif
 
+// TODO add description of this option
+#ifndef __SOFTBOUNDCETS_FREE_MAP
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 #define __SOFTBOUNDCETS_FREE_MAP 1
+#endif
 #endif
 
 // check if __WORDSIZE works with clang on both Linux and MacOSX
