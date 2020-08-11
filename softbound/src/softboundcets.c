@@ -53,6 +53,7 @@
 #endif
 #include "softboundcets-common.h"
 #include "softboundcets-defines.h"
+#include "softboundcets-spatial.h"
 
 #include <limits.h>
 // Use meminstruments mechanism to get a useful stack trace
