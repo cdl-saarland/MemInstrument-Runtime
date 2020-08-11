@@ -5,8 +5,6 @@
 
 static __attribute__((__constructor__)) void __softboundcets_global_init();
 
-void __softboundcets_global_init(void);
-
 /* Layout of the shadow stack
 
   1) size of the previous stack frame

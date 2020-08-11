@@ -11,25 +11,12 @@
 #include <sys/mman.h>
 
 extern __NO_INLINE void __softboundcets_stub(void);
-
 extern void __softboundcets_init(void);
 
 void __softboundcets_global_init(void) {
     __softboundcets_init();
     __softboundcets_stub();
 }
-
-/* Layout of the shadow stack
-
-  1) size of the previous stack frame
-  2) size of the current stack frame
-  3) base/bound/key/lock of each argument
-
-  Allocation: read the current stack frames size, increment the
-  shadow_stack_ptr by current_size + 2, store the previous size into
-  the new prev value, calcuate the allocation size and store in the
-  new current stack size field; Deallocation: read the previous size,
-  and decrement the shadow_stack_ptr */
 
 __WEAK_INLINE void
 __softboundcets_allocate_shadow_stack_space(int num_pointer_args) {
