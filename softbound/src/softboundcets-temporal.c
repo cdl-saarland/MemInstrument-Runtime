@@ -227,8 +227,9 @@ __WEAK_INLINE void *__softboundcets_get_global_lock() {
 
 __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
 
-    if (!__SOFTBOUNDCETS_FREE_MAP)
-        return;
+#if !__SOFTBOUNDCETS_FREE_MAP
+    return;
+#endif
 
     assert(ptr != NULL);
 
@@ -259,9 +260,10 @@ __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
 __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
                                                               void *ptr) {
 
-    if (!__SOFTBOUNDCETS_FREE_MAP) {
-        return;
-    }
+#if !__SOFTBOUNDCETS_FREE_MAP
+    return;
+#endif
+
 #if 0
   if(ptr_key == 1){
     printf("freeing a global key\n");

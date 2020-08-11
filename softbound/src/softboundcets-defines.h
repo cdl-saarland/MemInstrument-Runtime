@@ -147,19 +147,8 @@ static const int __SOFTBOUNDCETS_PREALLOCATE_TRIE = 1;
 static const int __SOFTBOUNDCETS_PREALLOCATE_TRIE = 0;
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-#define __SOFTBOUNDCETS_FREE_MAP
-#endif
-
-#ifdef __SOFTBOUNDCETS_TEMPORAL
-#define __SOFTBOUNDCETS_FREE_MAP
-#endif
-
-#ifdef __SOFTBOUNDCETS_FREE_MAP
-#undef __SOFTBOUNDCETS_FREE_MAP
-static const int __SOFTBOUNDCETS_FREE_MAP = 1;
-#else
-static const int __SOFTBOUNDCETS_FREE_MAP = 0;
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
+#define __SOFTBOUNDCETS_FREE_MAP 1
 #endif
 
 // check if __WORDSIZE works with clang on both Linux and MacOSX

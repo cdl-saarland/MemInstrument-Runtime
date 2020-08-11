@@ -197,14 +197,14 @@ void __softboundcets_init(void) {
         __softboundcets_shadow_stack_ptr + 1;
     *(current_size_shadow_stack_ptr) = 0;
 
-    if (__SOFTBOUNDCETS_FREE_MAP) {
-        size_t length_free_map =
-            (__SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) * sizeof(size_t);
-        __softboundcets_free_map_table =
-            mmap(0, length_free_map, PROT_READ | PROT_WRITE,
-                 SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-        assert(__softboundcets_free_map_table != (void *)-1);
-    }
+#if __SOFTBOUNDCETS_FREE_MAP
+    size_t length_free_map =
+        (__SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) * sizeof(size_t);
+    __softboundcets_free_map_table =
+        mmap(0, length_free_map, PROT_READ | PROT_WRITE,
+             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
+    assert(__softboundcets_free_map_table != (void *)-1);
+#endif
 
     size_t length_trie = (__SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES) *
                          sizeof(__softboundcets_trie_entry_t *);

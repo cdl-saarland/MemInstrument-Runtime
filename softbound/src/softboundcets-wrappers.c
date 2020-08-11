@@ -1397,15 +1397,15 @@ __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
         __softboundcets_store_return_metadata(
             ret_ptr, ((char *)(ret_ptr) + (nmemb * size)), ptr_key, ptr_lock);
 
-        if (__SOFTBOUNDCETS_FREE_MAP) {
+#if __SOFTBOUNDCETS_FREE_MAP
 #if 0
        __softboundcets_printf("calloc ptr=%p, ptr_key=%zx\n",
                               ret_ptr, ptr_key);
 #endif
-            //       __softboundcets_add_to_free_map(ptr_key, ret_ptr);
-        }
-    } else {
+        //__softboundcets_add_to_free_map(ptr_key, ret_ptr);
+#else
         __softboundcets_store_null_return_metadata();
+#endif
     }
     return ret_ptr;
 }
@@ -1447,13 +1447,13 @@ __WEAK_INLINE void *softboundcets_malloc(size_t size) {
         __softboundcets_store_return_metadata(ret_ptr, ret_bound, ptr_key,
                                               ptr_lock);
 
-        if (__SOFTBOUNDCETS_FREE_MAP) {
+#if __SOFTBOUNDCETS_FREE_MAP
 #if 0
        __softboundcets_printf("malloc ptr=%p, ptr_key=%zx\n",
                               ret_ptr, ptr_key);
 #endif
-            //      __softboundcets_add_to_free_map(ptr_key, ret_ptr);
-        }
+        //__softboundcets_add_to_free_map(ptr_key, ret_ptr);
+#endif
     }
     return ret_ptr;
 }
