@@ -311,7 +311,7 @@ __WEAK_INLINE size_t softboundcets_fread_unlocked(void *ptr, size_t size,
 }
 
 #if 0
-__WEAK_INLINE int 
+__WEAK_INLINE int
 softboundcets_fputs_unlocked(const char *s, FILE *stream){
   return fputs_unlocked(s, stream);
 }
@@ -544,7 +544,7 @@ __WEAK_INLINE int softboundcets_utimes(const char *filename,
 #if 0
 __WEAK_INLINE int softboundcets_futimesat(int dirfd, const char *pathname,
                                           const struct timeval times[2]){
-  
+
   return futimesat(dirfd, pathname, times);
 }
 #endif
@@ -893,7 +893,7 @@ pid_t softboundcets_getpid(void) { return getpid(); }
 __WEAK_INLINE pid_t softboundcets_getppid(void) { return getppid(); }
 
 #if 0
-__WEAK_INLINE 
+__WEAK_INLINE
 int softboundcets_openat(int dirfd, const char *pathname, int flags, mode_t mode){
   return opennat(dirfd, pathname, flags, mode);
 }
@@ -1199,14 +1199,18 @@ __WEAK_INLINE char *softboundcets_strtok(char *str, const char *delim) {
 }
 
 __WEAK_INLINE void __softboundcets_strdup_handler(void *ret_ptr) {
-  key_type ptr_key;
-  lock_type ptr_lock;
+
+  key_type ptr_key = 0;
+  lock_type ptr_lock = NULL;
 
   if (ret_ptr == NULL) {
     __softboundcets_store_null_return_metadata();
   } else {
     //    printf("strndup malloced pointer %p\n", ret_ptr);
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
+#endif
     __softboundcets_store_return_metadata(
         ret_ptr, (void *)((char *)ret_ptr + strlen(ret_ptr) + 1), ptr_key,
         ptr_lock);
@@ -1243,8 +1247,8 @@ __WEAK_INLINE char *softboundcets_strcat(char *dest, const char *src) {
 
 #if 0
   if(dest + strlen(dest) + strlen(src) > dest_bound){
-    printf("overflow with strcat, dest = %p, strlen(dest)=%d, 
-            strlen(src)=%d, dest_bound=%p \n", 
+    printf("overflow with strcat, dest = %p, strlen(dest)=%d,
+            strlen(src)=%d, dest_bound=%p \n",
            dest, strlen(dest), strlen(src), dest_bound);
     __softboundcets_abort();
   }
@@ -1349,13 +1353,7 @@ __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
   size_t ptr_key = 1;
   void *ptr_lock = __softboundcets_global_lock;
 
-#ifdef __SOFTBOUNDCETS_TEMPORAL
-  ptr_key = __softboundcets_load_key_shadow_stack(1);
-  ptr_lock = __softboundcets_load_lock_shadow_stack(1);
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-  ptr_key = __softboundcets_load_key_shadow_stack(1);
-  ptr_lock = __softboundcets_load_lock_shadow_stack(1);
-#else
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
   ptr_key = __softboundcets_load_key_shadow_stack(1);
   ptr_lock = __softboundcets_load_lock_shadow_stack(1);
 #endif
@@ -1363,8 +1361,11 @@ __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
   __softboundcets_store_return_metadata(ret_ptr, (char *)(ret_ptr) + size,
                                         ptr_key, ptr_lock);
   if (ret_ptr != ptr) {
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_check_remove_from_free_map(ptr_key, ptr);
     __softboundcets_add_to_free_map(ptr_key, ret_ptr);
+#endif
     __softboundcets_copy_metadata(ret_ptr, ptr, size);
   }
 
@@ -1390,7 +1391,7 @@ __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
 
     if (__SOFTBOUNDCETS_FREE_MAP) {
 #if 0
-       __softboundcets_printf("calloc ptr=%p, ptr_key=%zx\n", 
+       __softboundcets_printf("calloc ptr=%p, ptr_key=%zx\n",
                               ret_ptr, ptr_key);
 #endif
       //       __softboundcets_add_to_free_map(ptr_key, ret_ptr);
@@ -1440,7 +1441,7 @@ __WEAK_INLINE void *softboundcets_malloc(size_t size) {
 
     if (__SOFTBOUNDCETS_FREE_MAP) {
 #if 0
-       __softboundcets_printf("malloc ptr=%p, ptr_key=%zx\n", 
+       __softboundcets_printf("malloc ptr=%p, ptr_key=%zx\n",
                               ret_ptr, ptr_key);
 #endif
       //      __softboundcets_add_to_free_map(ptr_key, ret_ptr);
@@ -1895,14 +1896,8 @@ int softboundcets_clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 #endif
 
-#if 0
 
-int softboundcets__obstack_memory_used(struct obstack *h){
-  return _obstack_memory_used(h);
-}
-
-#endif
-
+#if __SOFTBOUNDCETS_SPATIAL
 //===----------------------------------------------------------------------===//
 //                      Generic Wrappers for frequent cases
 //===----------------------------------------------------------------------===//
@@ -2297,3 +2292,5 @@ int softboundcets_munmap(void *addr, size_t length) {
 //===----------------------------------------------------------------------===//
 
 void softboundcets_uuid_generate(uuid_t out) { uuid_generate(out); }
+
+#endif
