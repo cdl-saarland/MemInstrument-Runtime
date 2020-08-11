@@ -44,11 +44,17 @@
 #include <stddef.h>
 #include <unistd.h>
 
-// Add an option to not report errors
+// Option to not report errors at all [testing only]
+#ifndef NOERRORS
 #define NOERRORS 0
-#define NOERRORMISSINGBOUNDS 0
+#endif
 
-// Option for printing statistics about dynamically executed checks
+// Option to not report errors if a bound value is null [testing only]
+#ifndef NOERRORMISSINGBOUNDS
+#define NOERRORMISSINGBOUNDS 0
+#endif
+
+// Option for printing statistics about dynamically executed checks [testing only]
 // #define ENABLE_RT_STATS 1
 
 #ifndef ENABLE_RT_STATS
@@ -61,10 +67,6 @@ void __rt_stat_inc_sb_access_check(void);
 void __rt_stat_inc_sb_mem_check(void);
 
 void __rt_stat_inc_external_check(void);
-#endif
-
-#if 0
-#define __SOFTBOUNDCETS_SPATIAL_TEMPORAL 1
 #endif
 
 /* Trie represented by the following by a structure with four fields
