@@ -1,6 +1,8 @@
 #include "softboundcets-spatial.h"
 
 #include <assert.h>
+
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_SPATIAL
 //===----------------------------- Checks ---------------------------------===//
 
 __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
@@ -132,3 +134,5 @@ __softboundcets_shrink_bounds(void *new_base, void *new_bound, void *old_base,
     *(base_alloca) = new_base < old_base ? old_base : new_base;
     *(bound_alloca) = new_bound > old_bound ? old_bound : new_bound;
 }
+
+#endif
