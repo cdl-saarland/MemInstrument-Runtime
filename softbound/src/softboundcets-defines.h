@@ -45,6 +45,9 @@
 #include <stddef.h>
 #include <unistd.h>
 
+// Ensure that we work on a 64bit system
+static_assert(__WORDSIZE == 64, "This library is coded for 64bit systems only");
+
 // Configure the run-time to ensure...
 //  * spatial safety only:  __SOFTBOUNDCETS_SPATIAL
 //  * temporal safety only: __SOFTBOUNDCETS_TEMPORAL
@@ -173,30 +176,6 @@ static const int __SOFTBOUNDCETS_DEBUG = 0;
 #endif
 #endif
 
-// check if __WORDSIZE works with clang on both Linux and MacOSX
-/* Allocating one million entries for the temporal key */
-#if __WORDSIZE == 32
-static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
-    ((size_t)4 * (size_t)1024 * (size_t)1024);
-static const size_t __SOFTBOUNDCETS_LOWER_ZERO_POINTER_BITS = 2;
-static const size_t __SOFTBOUNDCETS_N_STACK_TEMPORAL_ENTRIES =
-    ((size_t)1024 * (size_t)64);
-static const size_t __SOFTBOUNDCETS_N_GLOBAL_LOCK_SIZE =
-    ((size_t)1024 * (size_t)32);
-// 2^23 entries each will be 8 bytes each
-static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =
-    ((size_t)8 * (size_t)1024 * (size_t)1024);
-static const size_t __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES =
-    ((size_t)128 * (size_t)32);
-/* 256 Million simultaneous objects */
-static const size_t __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES =
-    ((size_t)32 * (size_t)1024 * (size_t)1024);
-// each secondary entry has 2^ 22 entries
-static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
-    ((size_t)4 * (size_t)1024 * (size_t)1024);
-
-#else
-
 static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
     ((size_t)64 * (size_t)1024 * (size_t)1024);
 static const size_t __SOFTBOUNDCETS_LOWER_ZERO_POINTER_BITS = 3;
@@ -220,17 +199,11 @@ static const size_t __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES =
 static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
     ((size_t)4 * (size_t)1024 * (size_t)1024);
 
-#endif
-
 #define __WEAK__ __attribute__((__weak__))
 
 #define __WEAK_INLINE __attribute__((__weak__, __always_inline__))
 
-#if __WORDSIZE == 32
-#define __METADATA_INLINE
-#else
 #define __METADATA_INLINE __attribute__((__weak__, __always_inline__))
-#endif
 
 #define __NO_INLINE __attribute__((__noinline__))
 
