@@ -90,7 +90,7 @@ def process_file(file_name, out_file_name, verbose):
                 continue
 
             # ignore helper functions
-            if (not line.startswith("softboundcets")) and (not line.startswith("__softboundcets")):
+            if (not line.startswith("softboundcets")):
                 if verbose:
                     print("Ignore softbound helper function:\t" + line)
                 continue
@@ -143,8 +143,7 @@ def main():
                         help="Print verbose output")
     args = parser.parse_args()
 
-    list_of_source_files = ["softboundcets-wrappers.c",
-                            "softboundcets.c", "softboundcets.h"]
+    list_of_source_files = ["softboundcets-wrappers.c"]
 
     # Generate the directory where the auto-generated header is put
     # TODO change this out_dir when moving this to the meminstrument run-times
