@@ -1,4 +1,5 @@
-CLANG := /home/tina/Build/softbound_debug_gold/bin/betterclang
+CLANG := clang
+CLANG_FORMAT := clang-format
 
 # Use spatial checks only
 CFLAGS := -Wall -pedantic -fPIC -O3 -D__SOFTBOUNDCETS_SPATIAL -D_GNU_SOURCE
@@ -41,6 +42,7 @@ endif
 COMPDB_ENTRIES = $(addsuffix .compdb_entry, $(basename $(SOURCES)))
 
 compile_commands.json: $(COMPDB_ENTRIES)
+	@echo "===> GENERATE compile_commands.json"
 	@echo "[" > $@.tmp
 	@cat $^ >> $@.tmp
 	@sed '$$d' < $@.tmp > $@
@@ -50,25 +52,30 @@ compile_commands.json: $(COMPDB_ENTRIES)
 
 gen_compile_commands: compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
+	@echo "'compile_commands.json' sucessfully generated"
 
 # Auto-generate C++ header
 cxx_header: gen_compile_commands
+	@echo "===> GENERATE C++ header"
 	./generate_available_wrapper.py
 	./generate_run_time_config_info.py
 
 # Compile without LTO static or dynamic
 $(OBJECTS): $(SOURCES)
+	@echo "===> CC"
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o $(var:.c=.o);)
 
 static: $(OBJECTS) exports
+	@echo "===> MAKE STATIC"
 	ar $(ARFLAGS) ${STAT_LIB_NAME} $(OBJECTS)
 
 dynamic: $(OBJECTS) exports
+	@echo "===> MAKE DYNAMIC"
 	$(CLANG) -shared -o ${DYN_LIB_NAME} $(OBJECTS) ${LINK_LIBS}
 
 # Compile with LTO
 lto_dir:
-	@echo "LTO enabled, building with -flto..."
+	@echo "===> MAKE LTO"
 	@mkdir $(LTO_DIR)
 
 ${LTO_OBJECTS}: $(SOURCES)
@@ -77,5 +84,11 @@ ${LTO_OBJECTS}: $(SOURCES)
 static_lto: lto_dir ${LTO_OBJECTS} exports
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) lto/${STAT_LIB_NAME} ${LTO_OBJECTS}
 
+format:
+	@echo "===> CLANG-FORMAT"
+	$(CLANG_FORMAT) -i $(sort $(wildcard *.c))
+	$(CLANG_FORMAT) -i $(sort $(wildcard *.h))
+
 clean:
+	@echo "===> CLEAN"
 	rm -rf compile_commands.json *.o *.a *.so *~ lto/
