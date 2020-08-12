@@ -251,12 +251,6 @@ extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
 extern void __softboundcets_printf(const char *str, ...);
 extern size_t *__softboundcets_global_lock;
 
-void *__softboundcets_safe_calloc(size_t, size_t);
-void *__softboundcets_safe_malloc(size_t);
-void __softboundcets_safe_free(void *);
-
-void *__softboundcets_safe_mmap(void *addr, size_t length, int prot, int flags,
-                                int fd, off_t offset);
 __WEAK_INLINE void
 __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
 

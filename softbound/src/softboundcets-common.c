@@ -52,7 +52,7 @@ __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate() {
     __softboundcets_trie_entry_t *secondary_entry;
     size_t length = (__SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES) *
                     sizeof(__softboundcets_trie_entry_t);
-    secondary_entry = __softboundcets_safe_mmap(
+    secondary_entry = mmap(
         0, length, PROT_READ | PROT_WRITE, SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
     // assert(secondary_entry != (void*)-1);
     // printf("snd trie table %p %lx\n", secondary_entry, length);
