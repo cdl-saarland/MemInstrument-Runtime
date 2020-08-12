@@ -121,7 +121,7 @@ extern void __softboundcets_process_memory_total();
 __WEAK_INLINE void
 __softboundcets_read_shadow_stack_metadata_store(char **endptr, int arg_num) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     void *nptr_base = __softboundcets_load_base_shadow_stack(arg_num);
     void *nptr_bound = __softboundcets_load_bound_shadow_stack(arg_num);
 
@@ -142,15 +142,6 @@ __softboundcets_read_shadow_stack_metadata_store(char **endptr, int arg_num) {
     __softboundcets_metadata_store(endptr, nptr_base, nptr_bound, nptr_key,
                                    nptr_lock);
 
-#else
-
-    void *nptr_base = __softboundcets_load_base_shadow_stack(arg_num);
-    void *nptr_bound = __softboundcets_load_bound_shadow_stack(arg_num);
-    size_t nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
-    void *nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
-    __softboundcets_metadata_store(endptr, nptr_base, nptr_bound, nptr_key,
-                                   nptr_lock);
-
 #endif
 }
 
@@ -158,7 +149,7 @@ __WEAK_INLINE void
 __softboundcets_propagate_metadata_shadow_stack_from(int from_argnum,
                                                      int to_argnum) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
     void *base = __softboundcets_load_base_shadow_stack(from_argnum);
     void *bound = __softboundcets_load_bound_shadow_stack(from_argnum);
@@ -173,18 +164,6 @@ __softboundcets_propagate_metadata_shadow_stack_from(int from_argnum,
     __softboundcets_store_lock_shadow_stack(lock, to_argnum);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *base = __softboundcets_load_base_shadow_stack(from_argnum);
-    void *bound = __softboundcets_load_bound_shadow_stack(from_argnum);
-    size_t key = __softboundcets_load_key_shadow_stack(from_argnum);
-    void *lock = __softboundcets_load_lock_shadow_stack(from_argnum);
-
-    __softboundcets_store_base_shadow_stack(base, to_argnum);
-    __softboundcets_store_bound_shadow_stack(bound, to_argnum);
-    __softboundcets_store_key_shadow_stack(key, to_argnum);
-    __softboundcets_store_lock_shadow_stack(lock, to_argnum);
-
-#else
 
     void *base = __softboundcets_load_base_shadow_stack(from_argnum);
     void *bound = __softboundcets_load_bound_shadow_stack(from_argnum);
@@ -201,7 +180,7 @@ __softboundcets_propagate_metadata_shadow_stack_from(int from_argnum,
 
 __WEAK_INLINE void __softboundcets_store_null_return_metadata() {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
     __softboundcets_store_base_shadow_stack(NULL, 0);
     __softboundcets_store_bound_shadow_stack(NULL, 0);
@@ -212,13 +191,6 @@ __WEAK_INLINE void __softboundcets_store_null_return_metadata() {
     __softboundcets_store_lock_shadow_stack(NULL, 0);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    __softboundcets_store_base_shadow_stack(NULL, 0);
-    __softboundcets_store_bound_shadow_stack(NULL, 0);
-    __softboundcets_store_key_shadow_stack(0, 0);
-    __softboundcets_store_lock_shadow_stack(NULL, 0);
-
-#else
 
     __softboundcets_store_base_shadow_stack(NULL, 0);
     __softboundcets_store_bound_shadow_stack(NULL, 0);
@@ -233,7 +205,7 @@ __WEAK_INLINE void __softboundcets_store_return_metadata(void *base,
                                                          size_t key,
                                                          void *lock) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
     __softboundcets_store_base_shadow_stack(base, 0);
     __softboundcets_store_bound_shadow_stack(bound, 0);
@@ -244,13 +216,6 @@ __WEAK_INLINE void __softboundcets_store_return_metadata(void *base,
     __softboundcets_store_lock_shadow_stack(lock, 0);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    __softboundcets_store_base_shadow_stack(base, 0);
-    __softboundcets_store_bound_shadow_stack(bound, 0);
-    __softboundcets_store_key_shadow_stack(key, 0);
-    __softboundcets_store_lock_shadow_stack(lock, 0);
-
-#else
 
     __softboundcets_store_base_shadow_stack(base, 0);
     __softboundcets_store_bound_shadow_stack(bound, 0);
@@ -783,19 +748,8 @@ __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
         __softboundcets_abort();
     }
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-    char *base = (char *)__softboundcets_load_base_shadow_stack(1);
-    char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
-
-    if (buf < base || buf + size > bound) {
-        __softboundcets_printf("[getcwd], overflow in buf in getcwd\n");
-        __softboundcets_abort();
-    }
-
-#endif
-
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     char *base = (char *)__softboundcets_load_base_shadow_stack(1);
     char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
 
@@ -1123,7 +1077,7 @@ __WEAK_INLINE char *softboundcets_stpcpy(char *dest, char *src) {
 
 __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
     char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
 
@@ -1147,7 +1101,7 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
     }
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
     char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
@@ -1276,7 +1230,7 @@ __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
 
 __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
     char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
 
@@ -1297,7 +1251,7 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
     //  }
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
 #ifdef __SOFTBOUNDCETS_WRAPPER_CHECKS
 
@@ -1388,9 +1342,7 @@ __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
     void *ret_ptr = calloc(nmemb, size);
     if (ret_ptr != NULL) {
 
-#ifdef __SOFTBOUNDCETS_TEMPORAL
-        __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
 #endif
 
@@ -1437,9 +1389,7 @@ __WEAK_INLINE void *softboundcets_malloc(size_t size) {
         __softboundcets_store_null_return_metadata();
     } else {
 
-#ifdef __SOFTBOUNDCETS_TEMPORAL
-        __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
 #endif
 
@@ -1699,7 +1649,7 @@ __WEAK_INLINE unsigned short const **softboundcets___ctype_b_loc(void) {
     __softboundcets_store_return_metadata(
         (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(ret_ptr)), 1,
         __softboundcets_global_lock);
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_upper:
     // "The array shall contain a total of 384 characters, and can be
@@ -1720,7 +1670,7 @@ __WEAK_INLINE int const **softboundcets___ctype_toupper_loc(void) {
     __softboundcets_store_return_metadata(
         (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(int32_t *)), 1,
         __softboundcets_global_lock);
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_upper:
     // "The array shall contain a total of 384 characters, and can be
@@ -1741,7 +1691,7 @@ __WEAK_INLINE int const **softboundcets___ctype_tolower_loc(void) {
     __softboundcets_store_return_metadata(
         (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(int32_t *)), 1,
         __softboundcets_global_lock);
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_lower:
     // "The array shall contain a total of 384 characters, and can be
@@ -1784,8 +1734,7 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
 
     for (i = 0; i < element_size; i += 8) {
 
-#if defined(__SOFTBOUNDCETS_SPATIAL) ||                                        \
-    defined(__SOFTBOUNDCETS_SPATIAL_TEMPORAL)
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         void *base_idx1;
         void *bound_idx1;
 
@@ -1793,8 +1742,7 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
         void *bound_idx2;
 #endif
 
-#if defined(__SOFTBOUNDCETS_TEMPORAL) ||                                       \
-    defined(__SOFTBOUNDCETS_SPATIAL_TEMPORAL)
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         size_t key_idx1 = 1;
         size_t key_idx2 = 1;
 
@@ -1807,7 +1755,7 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
 
         //    printf("addr_idx1= %p, addr_idx2=%p\n", addr_idx1, addr_idx2);
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_load(addr_idx1, &base_idx1, &bound_idx1);
         __softboundcets_metadata_load(addr_idx2, &base_idx2, &bound_idx2);
 
@@ -1834,9 +1782,6 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
         __softboundcets_metadata_store(addr_idx2, base_idx1, bound_idx1,
                                        key_idx1, lock_idx1);
 
-#else
-        __softboundcets_printf("not implemented\n");
-        __softboundcets_abort();
 #endif
     }
 }

@@ -41,6 +41,7 @@
 #ifndef __SOFTBOUNDCETS_H__
 #define __SOFTBOUNDCETS_H__
 
+#include <assert.h>
 #include <stddef.h>
 #include <unistd.h>
 
@@ -49,17 +50,34 @@
 //  * temporal safety only: __SOFTBOUNDCETS_TEMPORAL
 //  * both:                 __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-// #ifndef __SOFTBOUNDCETS_SPATIAL
-// #define __SOFTBOUNDCETS_SPATIAL 0
-// #endif
+#ifndef __SOFTBOUNDCETS_SPATIAL
+#define __SOFTBOUNDCETS_SPATIAL 0
+#endif
 
-// #ifndef __SOFTBOUNDCETS_TEMPORAL
-// #define __SOFTBOUNDCETS_TEMPORAL 0
-// #endif
+#ifndef __SOFTBOUNDCETS_TEMPORAL
+#define __SOFTBOUNDCETS_TEMPORAL 0
+#endif
 
-// #ifndef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-// #define __SOFTBOUNDCETS_SPATIAL_TEMPORAL 0
-// #endif
+#ifndef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#define __SOFTBOUNDCETS_SPATIAL_TEMPORAL 0
+#endif
+
+// Enforce that a configuration is given
+static_assert(__SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_TEMPORAL ||
+                  __SOFTBOUNDCETS_SPATIAL_TEMPORAL,
+              "Invalid configuration. Please decide to configure the run-time "
+              "to either full safety (__SOFTBOUNDCETS_SPATIAL_TEMPORAL), "
+              "temporal safety only (__SOFTBOUNDCETS_TEMPORAL) or spatial "
+              "safety only (__SOFTBOUNDCETS_SPATIAL)");
+
+// Enforce that exactly one configuration is given
+static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
+               __SOFTBOUNDCETS_SPATIAL_TEMPORAL) &&
+                  !(__SOFTBOUNDCETS_SPATIAL && __SOFTBOUNDCETS_TEMPORAL &&
+                    __SOFTBOUNDCETS_SPATIAL_TEMPORAL),
+              "Invalid configuration. Please use only exactly one of "
+              "__SOFTBOUNDCETS_SPATIAL, __SOFTBOUNDCETS_TEMPORAL and "
+              "__SOFTBOUNDCETS_SPATIAL_TEMPORAL.");
 
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
@@ -92,7 +110,7 @@ void __rt_stat_inc_external_check(void);
 
 typedef struct {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     void *base;
     void *bound;
 
@@ -117,20 +135,6 @@ typedef struct {
     void *bound;
     size_t key;
     void *lock;
-#define __SOFTBOUNDCETS_METADATA_NUM_FIELDS 4
-
-#define __BASE_INDEX 0
-#define __BOUND_INDEX 1
-#define __KEY_INDEX 2
-#define __LOCK_INDEX 3
-
-#else
-
-    void *base;
-    void *bound;
-    size_t key;
-    void *lock;
-
 #define __SOFTBOUNDCETS_METADATA_NUM_FIELDS 4
 
 #define __BASE_INDEX 0

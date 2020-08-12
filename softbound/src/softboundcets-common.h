@@ -34,7 +34,7 @@ void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
    spatial+temporal modes
 */
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 __WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
                                                  size_t size, void *dest_base,
                                                  void *dest_bound,
@@ -56,19 +56,12 @@ __softboundcets_memcopy_check(void *dest, void *src, size_t size,
                               void *src_bound, size_t dest_key, void *dest_lock,
                               size_t src_key, void *src_lock);
 
-#else
-
-__WEAK_INLINE void
-__softboundcets_memcopy_check(void *dest, void *src, size_t size,
-                              void *dest_base, void *dest_bound, void *src_base,
-                              void *src_bound, size_t dest_key, void *dest_lock,
-                              size_t src_key, void *src_lock);
 #endif
 
 /* Memset check, different variants based on spatial, temporal and
    spatial+temporal modes */
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 __WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
                                                 void *dest_base,
                                                 void *dest_bound);
@@ -85,18 +78,12 @@ __WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
                                                 void *dest_bound,
                                                 size_t dest_key,
                                                 void *dest_lock);
-#else
 
-__WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
-                                                void *dest_base,
-                                                void *dest_bound,
-                                                size_t dest_key,
-                                                void *dest_lock);
 #endif
 
 /* Metadata store parameterized by the mode of checking */
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
 __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
                                                       void *base, void *bound);
@@ -112,15 +99,9 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
                                                       void *base, void *bound,
                                                       size_t key, void *lock);
 
-#else
-
-__METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
-                                                      void *base, void *bound,
-                                                      size_t key, void *lock);
-
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
 __WEAK_INLINE void *__softboundcets_metadata_map(void *addr_of_ptr);
 
@@ -134,7 +115,7 @@ __WEAK_INLINE void *__softboundcets_metadata_load_lock(void *address);
 
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
 __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
                                                      void **base, void **bound);
@@ -145,12 +126,6 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
                                                      size_t *key, void **lock);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
-                                                     void **base, void **bound,
-                                                     size_t *key, void **lock);
-
-#else
 
 __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
                                                      void **base, void **bound,

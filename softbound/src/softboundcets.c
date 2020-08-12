@@ -45,6 +45,7 @@
 #include <malloc.h>
 #endif
 #include <ctype.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -55,8 +56,8 @@
 #include "softboundcets-common.h"
 #include "softboundcets-defines.h"
 #include "softboundcets-spatial.h"
+#include "softboundcets-temporal.h"
 
-#include <limits.h>
 // Use meminstruments mechanism to get a useful stack trace
 static const char *mi_prog_name = NULL;
 
@@ -230,7 +231,7 @@ static void softboundcets_init_ctype() {
     base_ptr = (void *)(*(__ctype_b_loc()));
     __softboundcets_allocation_secondary_trie_allocate(base_ptr);
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
     __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
                                    ((char *)base_ptr + 256));
 
@@ -238,11 +239,6 @@ static void softboundcets_init_ctype() {
     __softboundcets_metadata_store(ptr, 1, __softboundcets_global_lock);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
-                                   ((char *)base_ptr + 256), 1,
-                                   __softboundcets_global_lock);
-
-#else
     __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
                                    ((char *)base_ptr + 256), 1,
                                    __softboundcets_global_lock);
@@ -296,8 +292,7 @@ int main(int argc, char **argv) {
     int i;
     char *temp_ptr;
     int return_value;
-#if defined(__SOFTBOUNDCETS_TEMPORAL) ||                                       \
-    defined(__SOFTBOUNDCETS_SPATIAL_TEMPORAL)
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     size_t argv_key;
     void *argv_loc;
 #endif
@@ -306,7 +301,7 @@ int main(int argc, char **argv) {
     malloc_address = temp;
     __softboundcets_allocation_secondary_trie_allocate_range(0, (size_t)temp);
 
-#ifndef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_stack_memory_allocation(&argv_loc, &argv_key);
 #endif
 
@@ -316,7 +311,7 @@ int main(int argc, char **argv) {
 
     for (i = 0; i < argc; i++) {
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
         __softboundcets_metadata_store(&new_argv[i], new_argv[i],
                                        new_argv[i] + strlen(new_argv[i]) + 1);
@@ -326,12 +321,6 @@ int main(int argc, char **argv) {
         __softboundcets_metadata_store(&new_argv[i], argv_key, argv_loc);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-        __softboundcets_metadata_store(&new_argv[i], new_argv[i],
-                                       new_argv[i] + strlen(new_argv[i]) + 1,
-                                       argv_key, argv_loc);
-
-#else
 
         __softboundcets_metadata_store(&new_argv[i], new_argv[i],
                                        new_argv[i] + strlen(new_argv[i]) + 1,
@@ -353,7 +342,7 @@ int main(int argc, char **argv) {
 
     __softboundcets_allocate_shadow_stack_space(2);
 
-#ifdef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL
 
     __softboundcets_store_base_shadow_stack(&new_argv[0], 1);
     __softboundcets_store_bound_shadow_stack(temp_ptr, 1);
@@ -371,20 +360,13 @@ int main(int argc, char **argv) {
     __softboundcets_store_key_shadow_stack(argv_key, 1);
     __softboundcets_store_lock_shadow_stack(argv_loc, 1);
 
-#else
-
-    __softboundcets_store_base_shadow_stack(&new_argv[0], 1);
-    __softboundcets_store_bound_shadow_stack(temp_ptr, 1);
-    __softboundcets_store_key_shadow_stack(argv_key, 1);
-    __softboundcets_store_lock_shadow_stack(argv_loc, 1);
-
 #endif
 
     //  printf("before calling program main\n");
     return_value = softboundcets_pseudo_main(argc, new_argv);
     __softboundcets_deallocate_shadow_stack_space();
 
-#ifndef __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_stack_memory_deallocation(argv_key);
 #endif
     return return_value;
@@ -401,4 +383,5 @@ void *__softboundcets_safe_calloc(size_t nmemb, size_t size) {
 }
 
 void *__softboundcets_safe_malloc(size_t size) { return malloc(size); }
+
 void __softboundcets_safe_free(void *ptr) { free(ptr); }

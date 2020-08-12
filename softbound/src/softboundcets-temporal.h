@@ -10,7 +10,7 @@
 
 //===----------------------------- Checks ---------------------------------===//
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 __WEAK_INLINE void
 __softboundcets_temporal_load_dereference_check(void *pointer_lock, size_t key,
                                                 void *base, void *bound);
@@ -19,7 +19,7 @@ __WEAK_INLINE void
 __softboundcets_temporal_load_dereference_check(void *pointer_lock, size_t key);
 #endif
 
-#ifdef __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 __WEAK_INLINE void
 __softboundcets_temporal_store_dereference_check(void *pointer_lock, size_t key,
                                                  void *base, void *bound);
