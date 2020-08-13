@@ -132,6 +132,8 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 
 #define __NO_INLINE __attribute__((__noinline__))
 
+#define __SOFTBOUNDCETS_NORETURN __attribute__((__noreturn__))
+
 #if defined(__APPLE__)
 #define SOFTBOUNDCETS_MMAP_FLAGS (MAP_ANON | MAP_NORESERVE | MAP_PRIVATE)
 #else
@@ -200,12 +202,6 @@ void __rt_stat_inc_external_check(void);
 #define __softboundcets_debug_printf(...) __softboundcets_printf(__VA_ARGS__)
 #else
 #define __softboundcets_debug_printf(...)
-#endif
-
-#if __SOFTBOUNDCETS_DEBUG
-#define __SOFTBOUNDCETS_NORETURN
-#else
-#define __SOFTBOUNDCETS_NORETURN __attribute__((__noreturn__))
 #endif
 
 static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
