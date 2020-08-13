@@ -197,9 +197,9 @@ void __rt_stat_inc_external_check(void);
 #endif
 
 #if __SOFTBOUNDCETS_DEBUG
-#define __softboundcets_debug_printf(x) __softboundcets_printf(x)
+#define __softboundcets_debug_printf(...) __softboundcets_printf(__VA_ARGS__)
 #else
-#define __softboundcets_debug_printf(x)
+#define __softboundcets_debug_printf(...)
 #endif
 
 #if __SOFTBOUNDCETS_DEBUG

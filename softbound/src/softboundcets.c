@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
                                        new_argv[i] + strlen(new_argv[i]) + 1);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
-        //    printf("performing metadata store\n");
+
         __softboundcets_metadata_store(&new_argv[i], argv_key, argv_loc);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
@@ -323,7 +323,6 @@ int main(int argc, char **argv) {
 #endif
     }
 
-    //  printf("before init_ctype\n");
     softboundcets_init_ctype();
 
     /* Santosh: Real Nasty hack because C programmers assume argv[argc]
@@ -343,7 +342,6 @@ int main(int argc, char **argv) {
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-    //  printf("before writing to shadow stack\n");
     __softboundcets_store_key_shadow_stack(argv_key, 1);
     __softboundcets_store_lock_shadow_stack(argv_loc, 1);
 
@@ -356,7 +354,6 @@ int main(int argc, char **argv) {
 
 #endif
 
-    //  printf("before calling program main\n");
     return_value = softboundcets_pseudo_main(argc, new_argv);
     __softboundcets_deallocate_shadow_stack_space();
 

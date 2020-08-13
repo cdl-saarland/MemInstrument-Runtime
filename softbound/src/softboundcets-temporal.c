@@ -251,7 +251,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
 
 #if 0
   if(ptr_key == 1){
-    printf("freeing a global key\n");
+    __softboundcets_printf(("freeing a global key\n");
     __softboundcets_abort();
   }
 #endif

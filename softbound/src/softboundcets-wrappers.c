@@ -541,10 +541,10 @@ __WEAK_INLINE int softboundcets_putchar(int c) { return putchar(c); }
 
 __WEAK_INLINE char *softboundcets_gets(char *s) {
 
-    printf("[SBCETS] gets used and should not be used\n");
+    __softboundcets_printf("[Error] gets used and should not be used\n");
     __softboundcets_abort();
 #if 0
-  printf("[Softboundcets][Warning] Should not use gets\n");
+  __softboundcets_printf("[Warning] Should not use gets\n");
   char* ret_ptr = gets(s);
   __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
   return ret_ptr;
@@ -963,7 +963,7 @@ __WEAK_INLINE unsigned int softboundcets_sleep(unsigned int seconds) {
 __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
 
     if (buf == NULL) {
-        printf("This case not handled, requesting memory from system\n");
+        __softboundcets_printf("[getcwd] The given buffer is null.\n");
         __softboundcets_abort();
     }
 
@@ -973,7 +973,7 @@ __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
     char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
 
     if (buf < base || buf + size > bound) {
-        __softboundcets_printf("[getcwd], overflow in buf in getcwd\n");
+        __softboundcets_printf("[getcwd] Overflow in the buffer argument\n");
         __softboundcets_abort();
     }
 
@@ -1168,12 +1168,12 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
     size_t size = strlen(src);
     if (dest < dest_base || (dest > dest_bound - size - 1) ||
         (size > (size_t)dest_bound)) {
-        printf("[strcpy] overflow in strcpy with dest\n");
+        __softboundcets_printf("[strcpy] overflow in dest\n");
         __softboundcets_abort();
     }
     if (src < src_base || (src > src_bound - size - 1) ||
         (size > (size_t)src_bound)) {
-        printf("[strcpy] overflow in strcpy with src\n");
+        __softboundcets_printf("[strcpy] overflow in src\n");
         __softboundcets_abort();
     }
 #endif
@@ -1194,12 +1194,12 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
     size_t size = strlen(src);
     if (dest < dest_base || (dest > dest_bound - size - 1) ||
         (size > (size_t)dest_bound)) {
-        printf("[strcpy] overflow in strcpy with dest\n");
+        __softboundcets_printf("[strcpy] overflow in dest\n");
         __softboundcets_abort();
     }
     if (src < src_base || (src > src_bound - size - 1) ||
         (size > (size_t)src_bound)) {
-        printf("[strcpy] overflow in strcpy with src\n");
+        __softboundcets_printf("[strcpy] overflow in src\n");
         __softboundcets_abort();
     }
 #endif
@@ -1226,7 +1226,8 @@ __WEAK_INLINE void __softboundcets_strdup_handler(void *ret_ptr) {
     if (ret_ptr == NULL) {
         __softboundcets_store_null_return_metadata();
     } else {
-        //    printf("strndup malloced pointer %p\n", ret_ptr);
+        __softboundcets_debug_printf(
+            "[strdup handler] str(n)dup malloced pointer %p\n", ret_ptr);
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
@@ -1267,7 +1268,7 @@ __WEAK_INLINE char *softboundcets_strcat(char *dest, const char *src) {
 
 #if 0
   if(dest + strlen(dest) + strlen(src) > dest_bound){
-    printf("overflow with strcat, dest = %p, strlen(dest)=%d,
+    __softboundcets_printf("overflow with strcat, dest = %p, strlen(dest)=%d,
             strlen(src)=%d, dest_bound=%p \n",
            dest, strlen(dest), strlen(src), dest_bound);
     __softboundcets_abort();
@@ -1296,7 +1297,7 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
     /* Can either (dest + n) or (src + n) overflow? */
     if (dest < dest_base || (dest > dest_bound - n) ||
         (n > (size_t)dest_bound)) {
-        printf("[strncpy] overflow in strncpy with dest\n");
+        __softboundcets_printf("[strncpy] overflow in dest\n");
         __softboundcets_abort();
     }
 
@@ -1322,12 +1323,12 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
     /* Can either (dest + n) or (src + n) overflow? */
     if (dest < dest_base || dest + n > dest_bound) {
-        printf("[strncpy] overflow in strncpy with dest\n");
+        __softboundcets_printf("[strncpy] overflow in dest\n");
         __softboundcets_abort();
     }
     if (src < src_base || src + n > src_bound) {
-        //    printf("[strncpy] overflow in strncpy with src, src=%zx,
-        //    src_base=%zx, src_bound=%zx\n", src, src_base, src_bound);
+           __softboundcets_printf("[strncpy] overflow in src, src=%zx,
+           src_base=%zx, src_bound=%zx\n", src, src_base, src_bound);
         __softboundcets_abort();
     }
 #endif
@@ -1392,10 +1393,8 @@ __WEAK_INLINE sighandler_t softboundcets_signal(int signum,
 
 __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
 
-#if 0
-  /* TODO: may be necessary to copy metadata */
-   printf("performing relloc, which can cause ptr=%p\n", ptr);
-#endif
+    __softboundcets_debug_printf("[realloc] ptr=%p\n", ptr);
+
     void *ret_ptr = realloc(ptr, size);
     __softboundcets_allocation_secondary_trie_allocate(ret_ptr);
     size_t ptr_key = 1;
@@ -1764,7 +1763,7 @@ struct hostent *softboundcets_gethostbyname(const char *name) {
 #if defined(__linux__)
 __WEAK_INLINE int *softboundcets___errno_location() {
     void *ret_ptr = (int *)__errno_location();
-    //  printf("ERRNO: ptr is %lx", ptrs->ptr);
+    __softboundcets_debug_printf("[errno_location]");
     __softboundcets_store_return_metadata(
         ret_ptr, (void *)((char *)ret_ptr + sizeof(int *)), 1,
         __softboundcets_global_lock);
@@ -1823,8 +1822,6 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
 
         char *addr_idx1 = &base_bytes[idx1 * element_size + i];
         char *addr_idx2 = &base_bytes[idx2 * element_size + i];
-
-        //    printf("addr_idx1= %p, addr_idx2=%p\n", addr_idx1, addr_idx2);
 
 #if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_load(addr_idx1, &base_idx1, &bound_idx1);

@@ -55,7 +55,8 @@ __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate() {
     secondary_entry = mmap(0, length, PROT_READ | PROT_WRITE,
                            SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
     // assert(secondary_entry != (void*)-1);
-    // printf("snd trie table %p %lx\n", secondary_entry, length);
+    // __softboundcets_printf("snd trie table %p %lx\n", secondary_entry,
+    // length);
     return secondary_entry;
 }
 
@@ -65,13 +66,13 @@ __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate() {
 
 __WEAK_INLINE void __softboundcets_print_metadata(void* base, void* bound, void* ptr, size_t key, size_t* lock){
 
-  printf("[print metadata] ptr = %p, base=%p, bound=%p, key = %zd, lock = %p, *lock = %zd\n", ptr, base, bound, key, lock, *lock);
+  __softboundcets_printf("[print metadata] ptr = %p, base=%p, bound=%p, key = %zd, lock = %p, *lock = %zd\n", ptr, base, bound, key, lock, *lock);
 
 }
 
 __WEAK_INLINE void __softboundcets_intermediate(char cmp1, char cmp2, char cmp3, size_t loaded_lock){
 
-  printf("cmp = %d, cmp2 =%d cmp=%d, loaded_lock=%zd\n", cmp1, cmp2, cmp3, loaded_lock);
+  __softboundcets_printf("cmp = %d, cmp2 =%d cmp=%d, loaded_lock=%zd\n", cmp1, cmp2, cmp3, loaded_lock);
 
 }
 
@@ -81,14 +82,16 @@ __WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
                                                        void *bound,
                                                        int arg_no) {
 
-    printf("[introspect_metadata]ptr=%p, base=%p, bound=%p, arg_no=%d\n", ptr,
-           base, bound, arg_no);
+    __softboundcets_printf(
+        "[introspect_metadata]ptr=%p, base=%p, bound=%p, arg_no=%d\n", ptr,
+        base, bound, arg_no);
 }
 
 __METADATA_INLINE
 void __softboundcets_copy_metadata(void *dest, void *from, size_t size) {
 
-    //  printf("dest=%p, from=%p, size=%zx\n", dest, from, size);
+    __softboundcets_debug_printf("[Copy metadata] dest=%p, from=%p, size=%zx\n",
+                                 dest, from, size);
 
     size_t dest_ptr = (size_t)dest;
     size_t dest_ptr_end = dest_ptr + size;
@@ -97,13 +100,11 @@ void __softboundcets_copy_metadata(void *dest, void *from, size_t size) {
     size_t from_ptr_end = from_ptr + size;
 
     if (from_ptr % 8 != 0) {
-        // printf("dest=%p, from=%p, size=%zx\n", dest, from, size);
         return;
         //    from_ptr = from_ptr %8;
         //    dest_ptr = dest_ptr %8;
     }
 
-    //  printf("dest=%p, from=%p, size=%zx\n", dest, from, size);
     __softboundcets_trie_entry_t *trie_secondary_table_dest_begin;
     __softboundcets_trie_entry_t *trie_secondary_table_from_begin;
 
@@ -277,8 +278,8 @@ __softboundcets_memcopy_check(void *dest, void *src, size_t size,
 
 #ifndef __NOSIM_CHECKS
 
-    /* printf("dest=%zx, src=%zx, size=%zx, ulong_max=%zx\n",  */
-    /*        dest, src, size, ULONG_MAX); */
+    __softboundcets_debug_printf("dest=%zx, src=%zx, size=%zx, ulong_max=%zx\n",
+                                 dest, src, size, ULONG_MAX);
     if (size >= LONG_MAX)
         __softboundcets_abort();
 
@@ -386,8 +387,6 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
     size_t ptr = (size_t)addr_of_ptr;
     size_t primary_index;
     __softboundcets_trie_entry_t *trie_secondary_table;
-    //  __softboundcets_trie_entry_t** trie_primary_table =
-    //  __softboundcets_trie_primary_table;
 
     primary_index = (ptr >> 25);
     trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
@@ -398,9 +397,9 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
         __softboundcets_trie_primary_table[primary_index] =
             trie_secondary_table;
     }
-    //    __softboundcetswithss_printf("addr_of_ptr=%zx, primary_index =%zx,
-    //    trie_secondary_table=%p\n", addr_of_ptr, primary_index,
-    //    trie_secondary_table);
+    __softboundcets_debug_printf(
+        "addr_of_ptr=%zx, primary_index =%zx, trie_secondary_table =% p\n ",
+        addr_of_ptr, primary_index, trie_secondary_table);
     assert(trie_secondary_table != NULL);
 #endif
 
@@ -511,8 +510,6 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
 
     size_t ptr = (size_t)addr_of_ptr;
     __softboundcets_trie_entry_t *trie_secondary_table;
-    //    __softboundcets_trie_entry_t** trie_primary_table =
-    //    __softboundcets_trie_primary_table;
 
     // assert(__softboundcetswithss_trie_primary_table[primary_index] ==
     // trie_secondary_table);
