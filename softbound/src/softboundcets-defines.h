@@ -48,6 +48,10 @@
 // Ensure that we work on a 64bit system
 static_assert(__WORDSIZE == 64, "This library is coded for 64bit systems only");
 
+//===----------------------------------------------------------------------===//
+//                       Configuration options
+//===----------------------------------------------------------------------===//
+
 // Configure the run-time to ensure...
 //  * spatial safety only:  __SOFTBOUNDCETS_SPATIAL
 //  * temporal safety only: __SOFTBOUNDCETS_TEMPORAL
@@ -98,19 +102,44 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define ENABLE_RT_STATS 0
 #endif
 
-#if ENABLE_RT_STATS
-void __rt_stat_inc_sb_access_check(void);
-
-void __rt_stat_inc_sb_mem_check(void);
-
-void __rt_stat_inc_external_check(void);
+// TODO add description of this option
+#ifndef __SOFTBOUNDCETS_PREALLOCATE_TRIE
+#define __SOFTBOUNDCETS_PREALLOCATE_TRIE 0
 #endif
+
+// TODO add description of this option
+#ifndef __SOFTBOUNDCETS_FREE_MAP
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
+#define __SOFTBOUNDCETS_FREE_MAP 1
+#endif
+#endif
+
+//===----------------------------------------------------------------------===//
+//                              Shorthands
+//===----------------------------------------------------------------------===//
+
+#define __WEAK__ __attribute__((__weak__))
+
+#define __WEAK_INLINE __attribute__((__weak__, __always_inline__))
+
+#define __METADATA_INLINE __attribute__((__weak__, __always_inline__))
+
+#define __NO_INLINE __attribute__((__noinline__))
+
+#if defined(__APPLE__)
+#define SOFTBOUNDCETS_MMAP_FLAGS (MAP_ANON | MAP_NORESERVE | MAP_PRIVATE)
+#else
+#define SOFTBOUNDCETS_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE)
+#endif
+
+//===----------------------------------------------------------------------===//
+//                            Data structures
+//===----------------------------------------------------------------------===//
 
 /* Trie represented by the following by a structure with four fields
  * if both __SOFTBOUNDCETS_SPATIAL and __SOFTBOUNDCETS_TEMPORAL are
  * specified. It has key and lock with size_t
  */
-
 typedef struct {
 
 #if __SOFTBOUNDCETS_SPATIAL
@@ -149,10 +178,16 @@ typedef struct {
 
 } __softboundcets_trie_entry_t;
 
-#if defined(__APPLE__)
-#define SOFTBOUNDCETS_MMAP_FLAGS (MAP_ANON | MAP_NORESERVE | MAP_PRIVATE)
-#else
-#define SOFTBOUNDCETS_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE)
+//===----------------------------------------------------------------------===//
+//                              TODO
+//===----------------------------------------------------------------------===//
+
+#if ENABLE_RT_STATS
+void __rt_stat_inc_sb_access_check(void);
+
+void __rt_stat_inc_sb_mem_check(void);
+
+void __rt_stat_inc_external_check(void);
 #endif
 
 #ifdef __SOFTBOUNDCETS_DEBUG
@@ -162,18 +197,6 @@ static const int __SOFTBOUNDCETS_DEBUG = 1;
 #else
 static const int __SOFTBOUNDCETS_DEBUG = 0;
 #define __SOFTBOUNDCETS_NORETURN __attribute__((__noreturn__))
-#endif
-
-// TODO add description of this option
-#ifndef __SOFTBOUNDCETS_PREALLOCATE_TRIE
-#define __SOFTBOUNDCETS_PREALLOCATE_TRIE 0
-#endif
-
-// TODO add description of this option
-#ifndef __SOFTBOUNDCETS_FREE_MAP
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
-#define __SOFTBOUNDCETS_FREE_MAP 1
-#endif
 #endif
 
 static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
@@ -199,14 +222,6 @@ static const size_t __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES =
 static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
     ((size_t)4 * (size_t)1024 * (size_t)1024);
 
-#define __WEAK__ __attribute__((__weak__))
-
-#define __WEAK_INLINE __attribute__((__weak__, __always_inline__))
-
-#define __METADATA_INLINE __attribute__((__weak__, __always_inline__))
-
-#define __NO_INLINE __attribute__((__noinline__))
-
 extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 extern size_t *__softboundcets_shadow_stack_ptr;
@@ -215,6 +230,8 @@ extern size_t *__softboundcets_temporal_space_begin;
 extern size_t *__softboundcets_stack_temporal_space_begin;
 extern size_t *__softboundcets_free_map_table;
 
+extern size_t *__softboundcets_global_lock;
+
 #if NOERRORS
 extern void __softboundcets_abort();
 #else
@@ -222,7 +239,6 @@ extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
 #endif
 
 extern void __softboundcets_printf(const char *str, ...);
-extern size_t *__softboundcets_global_lock;
 
 __WEAK_INLINE void
 __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
