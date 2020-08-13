@@ -153,9 +153,7 @@ void __softboundcets_init(void) {
 
     softboundcets_initialized = 1;
 
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf("Initializing softboundcets metadata space\n");
-    }
+    __softboundcets_debug_printf("Initializing softboundcets metadata space\n");
 
     assert(sizeof(__softboundcets_trie_entry_t) >= 16);
 

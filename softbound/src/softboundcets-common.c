@@ -412,13 +412,12 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
 
     entry_ptr->base = base;
     entry_ptr->bound = bound;
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf(
-            "\t[metadata_store] addr_of_ptr=%p, base=%p, bound=%p, "
-            "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
-            addr_of_ptr, base, bound, primary_index, secondary_index,
-            entry_ptr);
-    }
+
+    __softboundcets_debug_printf(
+        "\t[metadata_store] addr_of_ptr=%p, base=%p, bound=%p, "
+        "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
+        addr_of_ptr, base, bound, primary_index, secondary_index, entry_ptr);
+
 #elif __SOFTBOUNDCETS_TEMPORAL
 
     entry_ptr->key = key;

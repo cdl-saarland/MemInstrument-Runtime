@@ -2148,9 +2148,8 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
     }
 
     // Store the metadata for the first element of the linked list
-    if (__SOFTBOUNDCETS_DEBUG) {
-        printf("[getaddrinfo] Store metadata for the first element\n");
-    }
+    __softboundcets_debug_printf(
+        "[getaddrinfo] Store metadata for the first element\n");
     __softboundcets_metadata_store(res, *res,
                                    ((char *)*res) + sizeof(struct addrinfo));
 
@@ -2160,9 +2159,9 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
 
         // ai_addr is a pointer to a struct with no further indirection
         void *addr_of_addr = &(next->ai_addr);
-        if (__SOFTBOUNDCETS_DEBUG) {
-            printf("[getaddrinfo] Store ai_addr info\n");
-        }
+
+        __softboundcets_debug_printf("[getaddrinfo] Store ai_addr info\n");
+
         if (next->ai_addr) {
             __softboundcets_metadata_store(addr_of_addr, next->ai_addr,
                                            ((char *)next->ai_addr) +
@@ -2173,9 +2172,9 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
 
         // ai_canonname is pointer to a name of unknown length
         void *addr_of_name = &(next->ai_canonname);
-        if (__SOFTBOUNDCETS_DEBUG) {
-            printf("[getaddrinfo] Store ai_canonname info\n");
-        }
+
+        __softboundcets_debug_printf("[getaddrinfo] Store ai_canonname info\n");
+
         if (next->ai_canonname) {
             __softboundcets_metadata_store_generic_wide_bounds(addr_of_name);
         } else {
@@ -2184,9 +2183,9 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
 
         // ai_next links to the next addrinfo struct
         void *addr_of_next_ptr = &(next->ai_next);
-        if (__SOFTBOUNDCETS_DEBUG) {
-            printf("[getaddrinfo] Store ai_next info\n");
-        }
+
+        __softboundcets_debug_printf("[getaddrinfo] Store ai_next info\n");
+
         if (next->ai_next) {
             __softboundcets_metadata_store(addr_of_next_ptr, next->ai_next,
                                            ((char *)next->ai_next) +

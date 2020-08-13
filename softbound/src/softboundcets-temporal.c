@@ -24,9 +24,6 @@ __softboundcets_temporal_load_dereference_check(void *pointer_lock,
 #if 0
   /* URGENT: I should think about removing this condition check */
   if(!pointer_lock){
-    if(__SOFTBOUNDCETS_DEBUG) {
-      __softboundcets_printf("Temporal lock null\n");
-    }
     __softboundcets_printf("Temporal lock null\n");
     __softboundcets_abort();
     return;
@@ -37,10 +34,6 @@ __softboundcets_temporal_load_dereference_check(void *pointer_lock,
     size_t temp = *((size_t *)pointer_lock);
 
     if (temp != key) {
-        if (__SOFTBOUNDCETS_DEBUG) {
-            __softboundcets_printf("[TLDC] Key mismatch key = %zx, *lock=%zx\n",
-                                   key, temp);
-        }
         __softboundcets_printf(
             "[TLDC] Key mismatch key = %zx, *lock=%zx, next_ptr =%zx\n", key,
             temp, __softboundcets_lock_next_location);
@@ -68,11 +61,6 @@ __softboundcets_temporal_store_dereference_check(void *pointer_lock,
     size_t temp = *((size_t *)pointer_lock);
 
     if (temp != key) {
-
-        if (__SOFTBOUNDCETS_DEBUG) {
-            __softboundcets_printf(
-                "[TSDC] Key mismatch, key = %zx, *lock=%zx\n", key, temp);
-        }
         __softboundcets_printf("[TSDC] Key mismatch, key = %zx, *lock=%zx\n",
                                key, temp);
         __softboundcets_abort();
@@ -138,11 +126,9 @@ __WEAK_INLINE void __softboundcets_stack_memory_deallocation(size_t ptr_key) {
 __WEAK_INLINE void __softboundcets_memory_deallocation(void *ptr_lock,
                                                        size_t ptr_key) {
 
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf(
-            "[Hdealloc] pointer_lock = %p, *pointer_lock=%zx\n", ptr_lock,
-            *((size_t *)ptr_lock));
-    }
+    __softboundcets_debug_printf(
+        "[Hdealloc] pointer_lock = %p, *pointer_lock=%zx\n", ptr_lock,
+        *((size_t *)ptr_lock));
 
 #if 0
   if(!ptr_lock)
@@ -158,27 +144,28 @@ __WEAK_INLINE void *__softboundcets_allocate_lock_location() {
 
     void *temp = NULL;
     if (__softboundcets_lock_next_location == NULL) {
-        if (__SOFTBOUNDCETS_DEBUG) {
-            __softboundcets_printf("[lock_allocate] new_lock_location=%p\n",
-                                   __softboundcets_lock_new_location);
 
-            if (__softboundcets_lock_new_location >
-                __softboundcets_temporal_space_begin +
-                    __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES) {
-                __softboundcets_printf(
-                    "[lock_allocate] out of temporal free entries \n");
-                __softboundcets_abort();
-            }
+#if __SOFTBOUNDCETS_DEBUG
+        // TODO not sure if all of this is only to be done when debugging
+        __softboundcets_printf("[lock_allocate] new_lock_location=%p\n",
+                               __softboundcets_lock_new_location);
+
+        if (__softboundcets_lock_new_location >
+            __softboundcets_temporal_space_begin +
+                __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES) {
+            __softboundcets_printf(
+                "[lock_allocate] out of temporal free entries \n");
+            __softboundcets_abort();
         }
+#endif
 
         return __softboundcets_lock_new_location++;
     } else {
 
         temp = __softboundcets_lock_next_location;
-        if (__SOFTBOUNDCETS_DEBUG) {
-            __softboundcets_printf("[lock_allocate] next_lock_location=%p\n",
-                                   temp);
-        }
+
+        __softboundcets_debug_printf("[lock_allocate] next_lock_location=%p\n",
+                                     temp);
 
         __softboundcets_lock_next_location =
             *((void **)__softboundcets_lock_next_location);
@@ -211,14 +198,11 @@ __WEAK_INLINE void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
     **((size_t **)ptr_lock) = temp_id;
 
     __softboundcets_add_to_free_map(temp_id, ptr);
-    //  printf("memory allocation ptr=%zx, ptr_key=%zx\n", ptr, temp_id);
     __softboundcets_allocation_secondary_trie_allocate(ptr);
 
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf(
-            "[mem_alloc] lock = %p, ptr_key = %p, key = %zx\n", ptr_lock,
-            ptr_key, temp_id);
-    }
+    __softboundcets_debug_printf(
+        "[mem_alloc] lock = %p, ptr_key = %p, key = %zx\n", ptr_lock, ptr_key,
+        temp_id);
 }
 
 __WEAK_INLINE void *__softboundcets_get_global_lock() {
@@ -240,8 +224,9 @@ __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
         size_t tag = *entry_ptr;
 
         if (tag == 0 || tag == 2) {
-            //      printf("entry_ptr=%zx, ptr=%zx, key=%zx\n", entry_ptr, ptr,
-            //      ptr_key);
+
+            __softboundcets_debug_printf("entry_ptr=%zx, ptr=%zx, key=%zx\n",
+                                         entry_ptr, ptr, ptr_key);
             *entry_ptr = (size_t)(ptr);
             return;
         }
@@ -279,7 +264,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
 
         if (tag == 0) {
 #ifndef __NOSIM_CHECKS
-            //      printf("free map does not have the key\n");
+            __softboundcets_printf("free map does not have the key\n");
             __softboundcets_abort();
 #else
             break;
@@ -292,9 +277,8 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
         }
 
         if (counter >= __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) {
-            //      printf("free map out of entries\n");
 #ifndef __NOSIM_CHECKS
-            printf("free map out of entries\n");
+            __softboundcets_printf("free map out of entries\n");
             __softboundcets_abort();
 #else
             break;

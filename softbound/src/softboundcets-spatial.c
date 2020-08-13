@@ -16,11 +16,11 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
             return;
         }
 #endif
-        if (__SOFTBOUNDCETS_DEBUG) {
-            __softboundcets_printf(
-                "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base,
-                bound, ptr);
-        }
+
+        __softboundcets_debug_printf(
+            "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base,
+            bound, ptr);
+
         __softboundcets_abort();
     }
 #endif
@@ -32,12 +32,11 @@ __softboundcets_spatial_load_dereference_check(void *base, void *bound,
 #if ENABLE_RT_STATS
     __rt_stat_inc_sb_access_check();
 #endif
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf("In Load Dereference Check, base=%p, bound=%p, "
-                               "ptr=%p, size_of_type=%zx, ptr+size=%p\n",
-                               base, bound, ptr, size_of_type,
-                               (char *)ptr + size_of_type);
-    }
+
+    __softboundcets_debug_printf(
+        "In Load Dereference Check, base=%p, bound=%p, "
+        "ptr=%p, size_of_type=%zx, ptr+size=%p\n",
+        base, bound, ptr, size_of_type, (char *)ptr + size_of_type);
 
     if ((ptr < base) || ((void *)((char *)ptr + size_of_type) > bound)) {
 #if NOERRORMISSINGBOUNDS
@@ -59,12 +58,11 @@ __WEAK_INLINE void __softboundcets_spatial_store_dereference_check(
 #if ENABLE_RT_STATS
     __rt_stat_inc_sb_access_check();
 #endif
-    if (__SOFTBOUNDCETS_DEBUG) {
-        __softboundcets_printf("In Store Dereference Check, base=%p, bound=%p, "
-                               "ptr=%p, size_of_type=%zx, ptr+size=%p\n",
-                               base, bound, ptr, size_of_type,
-                               (char *)ptr + size_of_type);
-    }
+
+    __softboundcets_debug_printf(
+        "In Store Dereference Check, base=%p, bound=%p, "
+        "ptr=%p, size_of_type=%zx, ptr+size=%p\n",
+        base, bound, ptr, size_of_type, (char *)ptr + size_of_type);
 
     if ((ptr < base) || ((void *)((char *)ptr + size_of_type) > bound)) {
 #if NOERRORMISSINGBOUNDS

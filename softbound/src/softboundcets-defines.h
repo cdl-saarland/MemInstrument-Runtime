@@ -86,6 +86,12 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
               "__SOFTBOUNDCETS_SPATIAL, __SOFTBOUNDCETS_TEMPORAL and "
               "__SOFTBOUNDCETS_SPATIAL_TEMPORAL.");
 
+// Option to generate debug output. Note that this can be very verbose if the
+// instrumented programs accesses a lot of memory.
+#ifndef __SOFTBOUNDCETS_DEBUG
+#define __SOFTBOUNDCETS_DEBUG 0
+#endif
+
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
 #define NOERRORS 0
@@ -190,12 +196,15 @@ void __rt_stat_inc_sb_mem_check(void);
 void __rt_stat_inc_external_check(void);
 #endif
 
-#ifdef __SOFTBOUNDCETS_DEBUG
-#undef __SOFTBOUNDCETS_DEBUG
-static const int __SOFTBOUNDCETS_DEBUG = 1;
+#if __SOFTBOUNDCETS_DEBUG
+#define __softboundcets_debug_printf(x) __softboundcets_printf(x)
+#else
+#define __softboundcets_debug_printf(x)
+#endif
+
+#if __SOFTBOUNDCETS_DEBUG
 #define __SOFTBOUNDCETS_NORETURN
 #else
-static const int __SOFTBOUNDCETS_DEBUG = 0;
 #define __SOFTBOUNDCETS_NORETURN __attribute__((__noreturn__))
 #endif
 
