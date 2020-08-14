@@ -65,8 +65,6 @@ __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 size_t *__softboundcets_shadow_stack_ptr = NULL;
 
-/* key 0 means not used, 1 is for  globals*/
-size_t __softboundcets_deref_check_count = 0;
 size_t *__softboundcets_global_lock = 0;
 
 void *malloc_address = NULL;
