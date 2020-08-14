@@ -6,6 +6,17 @@
 // All functions in this header are there to support temporal memory safety.
 // If the runtime is not configured to ensure temporal safety, these functions
 // are not available.
+
+// Define key and lock type for nicer usability of them
+typedef size_t key_type;
+typedef void *lock_type;
+
+// Key/Lock are (currently) frequently used as arguments to metadata propagation
+// functions. These always take four arguments independent of the configuration,
+// so we need to make this function available even when temporal safety is not
+// requested.
+__WEAK_INLINE lock_type __softboundcets_get_global_lock();
+
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 
 //===------------------- Data structure initialization --------------------===//
@@ -60,7 +71,7 @@ __WEAK_INLINE void __softboundcets_stack_memory_allocation(void **ptr_lock,
 __WEAK_INLINE void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
                                                      size_t *ptr_key);
 
-__WEAK_INLINE void *__softboundcets_get_global_lock();
+//===---------------------- Free map operations  --------------------------===//
 
 __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr);
 

@@ -65,8 +65,6 @@ __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 size_t *__softboundcets_shadow_stack_ptr = NULL;
 
-size_t *__softboundcets_global_lock = 0;
-
 void *malloc_address = NULL;
 
 const char *__get_prog_name(void) { return mi_prog_name; }
@@ -190,12 +188,12 @@ static void softboundcets_init_ctype() {
                                    ((char *)base_ptr + 256));
 
 #elif __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_metadata_store(ptr, 1, __softboundcets_global_lock);
+    __softboundcets_metadata_store(ptr, 1, __softboundcets_get_global_lock());
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
                                    ((char *)base_ptr + 256), 1,
-                                   __softboundcets_global_lock);
+                                   __softboundcets_get_global_lock());
 
 #endif
 

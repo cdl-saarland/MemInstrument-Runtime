@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
+lock_type __softboundcets_global_lock = 0;
+
+__WEAK_INLINE lock_type __softboundcets_get_global_lock() {
+    return __softboundcets_global_lock;
+}
+
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 
 static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
@@ -54,7 +60,7 @@ __WEAK_INLINE void __softboundcets_temporal_initialize_datastructures(void) {
     __softboundcets_global_lock =
         mmap(0, global_lock_size, PROT_READ | PROT_WRITE,
              SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-    assert(__softboundcets_global_lock != (void *)-1);
+    assert(__softboundcets_get_global_lock() != (lock_type)-1);
     //  __softboundcets_global_lock =  __softboundcets_lock_new_location++;
     *((size_t *)__softboundcets_global_lock) = 1;
 
@@ -237,7 +243,7 @@ __WEAK_INLINE void __softboundcets_stack_memory_allocation(void **ptr_lock,
 
 #ifdef __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
     *((size_t *)ptr_key) = 1;
-    *((size_t **)ptr_lock) = __softboundcets_global_lock;
+    *((size_t **)ptr_lock) = __softboundcets_get_global_lock();
 #else
     size_t temp_id = __softboundcets_key_id_counter++;
     *((size_t **)ptr_lock) =
@@ -264,9 +270,7 @@ __WEAK_INLINE void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
         temp_id);
 }
 
-__WEAK_INLINE void *__softboundcets_get_global_lock() {
-    return __softboundcets_global_lock;
-}
+//===---------------------- Free map operations  --------------------------===//
 
 __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
 

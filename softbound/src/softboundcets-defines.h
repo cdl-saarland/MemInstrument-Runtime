@@ -219,8 +219,6 @@ extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 extern size_t *__softboundcets_shadow_stack_ptr;
 
-extern size_t *__softboundcets_global_lock;
-
 #if NOERRORS
 extern void __softboundcets_abort();
 #else
