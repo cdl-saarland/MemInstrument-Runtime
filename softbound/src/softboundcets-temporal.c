@@ -1,7 +1,8 @@
 #include "softboundcets-temporal.h"
 
+#include "softboundcets-common.h"
+
 #include <assert.h>
-#include <stdio.h>
 #include <sys/mman.h>
 
 lock_type __softboundcets_global_lock = 0;

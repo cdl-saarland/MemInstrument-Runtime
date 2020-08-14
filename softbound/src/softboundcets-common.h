@@ -3,6 +3,17 @@
 
 #include "softboundcets-defines.h"
 
+// 2^23 entries each will be 8 bytes each
+static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =
+    ((size_t)8 * (size_t)1024 * (size_t)1024);
+
+static const size_t __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES =
+    ((size_t)128 * (size_t)32);
+
+// each secondary entry has 2^ 22 entries
+static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
+    ((size_t)4 * (size_t)1024 * (size_t)1024);
+
 /* Layout of the shadow stack
 
   1) size of the previous stack frame
@@ -32,6 +43,7 @@ void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
    spatial+temporal modes
 */
 
+extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 #if __SOFTBOUNDCETS_SPATIAL
 __WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
                                                  size_t size, void *dest_base,

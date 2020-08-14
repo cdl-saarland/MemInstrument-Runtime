@@ -144,10 +144,12 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 //                            Data structures
 //===----------------------------------------------------------------------===//
 
-/* Trie represented by the following by a structure with four fields
- * if both __SOFTBOUNDCETS_SPATIAL and __SOFTBOUNDCETS_TEMPORAL are
- * specified. It has key and lock with size_t
- */
+// Define key and lock type for nicer usability of them
+typedef size_t key_type;
+typedef void *lock_type;
+
+// Trie represented by the following by a structure with four fields if both
+// __SOFTBOUNDCETS_SPATIAL and __SOFTBOUNDCETS_TEMPORAL are specified.
 typedef struct {
 
 #if __SOFTBOUNDCETS_SPATIAL
@@ -161,8 +163,8 @@ typedef struct {
 #define __LOCK_INDEX 10000000
 
 #elif __SOFTBOUNDCETS_TEMPORAL
-    size_t key;
-    void *lock;
+    key_type key;
+    lock_type lock;
 #define __SOFTBOUNDCETS_METADATA_NUM_FIELDS 2
 #define __KEY_INDEX 0
 #define __LOCK_INDEX 1
@@ -173,8 +175,8 @@ typedef struct {
 
     void *base;
     void *bound;
-    size_t key;
-    void *lock;
+    key_type key;
+    lock_type lock;
 #define __SOFTBOUNDCETS_METADATA_NUM_FIELDS 4
 
 #define __BASE_INDEX 0
@@ -187,7 +189,7 @@ typedef struct {
 } __softboundcets_trie_entry_t;
 
 //===----------------------------------------------------------------------===//
-//                              TODO
+//                    Commonly used internal functions
 //===----------------------------------------------------------------------===//
 
 #if ENABLE_RT_STATS
@@ -198,26 +200,13 @@ void __rt_stat_inc_sb_mem_check(void);
 void __rt_stat_inc_external_check(void);
 #endif
 
+extern void __softboundcets_printf(const char *str, ...);
+
 #if __SOFTBOUNDCETS_DEBUG
 #define __softboundcets_debug_printf(...) __softboundcets_printf(__VA_ARGS__)
 #else
 #define __softboundcets_debug_printf(...)
 #endif
-
-// 2^23 entries each will be 8 bytes each
-static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =
-    ((size_t)8 * (size_t)1024 * (size_t)1024);
-
-static const size_t __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES =
-    ((size_t)128 * (size_t)32);
-
-// each secondary entry has 2^ 22 entries
-static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
-    ((size_t)4 * (size_t)1024 * (size_t)1024);
-
-extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
-
-extern size_t *__softboundcets_shadow_stack_ptr;
 
 #if NOERRORS
 extern void __softboundcets_abort();
@@ -225,9 +214,6 @@ extern void __softboundcets_abort();
 extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
 #endif
 
-extern void __softboundcets_printf(const char *str, ...);
-
-__WEAK_INLINE void
-__softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
+extern size_t *__softboundcets_shadow_stack_ptr;
 
 #endif

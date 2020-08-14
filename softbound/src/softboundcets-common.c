@@ -1,11 +1,10 @@
-
 #include "softboundcets-common.h"
+
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
 #include <assert.h>
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>

@@ -38,25 +38,23 @@
 // WITH THE SOFTWARE.
 //===---------------------------------------------------------------------===//
 
+#include "softboundcets-common.h"
+#include "softboundcets-defines.h"
+#include "softboundcets-spatial.h"
+#include "softboundcets-temporal.h"
+
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #if defined(__linux__)
 #include <malloc.h>
 #endif
 #include <ctype.h>
 #include <limits.h>
-#include <stdarg.h>
 #include <string.h>
 #include <sys/mman.h>
 #if !defined(__FreeBSD__)
 #include <execinfo.h>
 #endif
-
-#include "softboundcets-common.h"
-#include "softboundcets-defines.h"
-#include "softboundcets-spatial.h"
-#include "softboundcets-temporal.h"
 
 // Use meminstruments mechanism to get a useful stack trace
 static const char *mi_prog_name = NULL;

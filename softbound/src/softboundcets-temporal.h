@@ -7,10 +7,6 @@
 // If the runtime is not configured to ensure temporal safety, these functions
 // are not available.
 
-// Define key and lock type for nicer usability of them
-typedef size_t key_type;
-typedef void *lock_type;
-
 // Key/Lock are (currently) frequently used as arguments to metadata propagation
 // functions. These always take four arguments independent of the configuration,
 // so we need to make this function available even when temporal safety is not

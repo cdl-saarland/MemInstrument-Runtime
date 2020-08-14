@@ -38,6 +38,11 @@
 // WITH THE SOFTWARE.
 //===---------------------------------------------------------------------===//
 
+#include "softboundcets-common.h"
+#include "softboundcets-defines.h"
+#include "softboundcets-spatial.h"
+#include "softboundcets-temporal.h"
+
 #include <arpa/inet.h>
 
 #if defined(__linux__)
@@ -102,11 +107,6 @@
 
 #include <fcntl.h>
 #include <wctype.h>
-
-#include "softboundcets-common.h"
-#include "softboundcets-defines.h"
-#include "softboundcets-spatial.h"
-#include "softboundcets-temporal.h"
 
 typedef void (*sighandler_t)(int);
 typedef void (*void_func_ptr)(void);
