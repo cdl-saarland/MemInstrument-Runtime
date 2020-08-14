@@ -43,7 +43,6 @@
 
 #include <assert.h>
 #include <stddef.h>
-#include <unistd.h>
 
 // Ensure that we work on a 64bit system
 static_assert(__WORDSIZE == 64, "This library is coded for 64bit systems only");
