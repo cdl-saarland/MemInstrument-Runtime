@@ -12,6 +12,7 @@ def translate_to_CXX(feature_dict):
     """
     result = ""
     for key, bool_value in feature_dict.items():
+        key = key.strip()
         string_value = "0"
         if bool_value:
             string_value = "1"
@@ -82,7 +83,7 @@ def main():
 
     # Defines all features that should be communicated to the C++ Pass.
     # Extend this feature list to communicate more features.
-    features = ["__SOFTBOUNDCETS_SPATIAL",
+    features = ["__SOFTBOUNDCETS_SPATIAL ",
                 "__SOFTBOUNDCETS_TEMPORAL",
                 "__SOFTBOUNDCETS_SPATIAL_TEMPORAL"]
 
