@@ -3,8 +3,6 @@
 
 #include "softboundcets-defines.h"
 
-static __attribute__((__constructor__)) void __softboundcets_global_init();
-
 /* Layout of the shadow stack
 
   1) size of the previous stack frame
