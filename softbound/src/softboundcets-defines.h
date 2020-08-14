@@ -114,6 +114,19 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #endif
 
 // TODO add description of this option
+// #define __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+// TODO add description of this option
+// #define __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
+
+// TODO add description of this option
+// #define __NOSIM_CHECKS
+
+// The free map stores information on pointers that can be freed (those
+// dynamically allocated by malloc/calloc etc.). This should (always) be enabled
+// when using temporal safety.
+// TODO Unsure why this flag is necessary, I don't see a reason why someone
+// should disable the free map (apart from testing maybe?)
 #ifndef __SOFTBOUNDCETS_FREE_MAP
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 #define __SOFTBOUNDCETS_FREE_MAP 1
