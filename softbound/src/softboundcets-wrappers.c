@@ -126,16 +126,16 @@ __softboundcets_read_shadow_stack_metadata_store(char **endptr, int arg_num) {
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-    size_t nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
-    void *nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
+    key_type nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
+    lock_type *nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
 
     __softboundcets_metadata_store(endptr, nptr_key, nptr_lock);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     void *nptr_base = __softboundcets_load_base_shadow_stack(arg_num);
     void *nptr_bound = __softboundcets_load_bound_shadow_stack(arg_num);
-    size_t nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
-    void *nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
+    key_type nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
+    lock_type nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
     __softboundcets_metadata_store(endptr, nptr_base, nptr_bound, nptr_key,
                                    nptr_lock);
 
@@ -155,8 +155,8 @@ __softboundcets_propagate_metadata_shadow_stack_from(int from_argnum,
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-    size_t key = __softboundcets_load_key_shadow_stack(from_argnum);
-    void *lock = __softboundcets_load_lock_shadow_stack(from_argnum);
+    key_type key = __softboundcets_load_key_shadow_stack(from_argnum);
+    lock_type lock = __softboundcets_load_lock_shadow_stack(from_argnum);
     __softboundcets_store_key_shadow_stack(key, to_argnum);
     __softboundcets_store_lock_shadow_stack(lock, to_argnum);
 
@@ -164,8 +164,8 @@ __softboundcets_propagate_metadata_shadow_stack_from(int from_argnum,
 
     void *base = __softboundcets_load_base_shadow_stack(from_argnum);
     void *bound = __softboundcets_load_bound_shadow_stack(from_argnum);
-    size_t key = __softboundcets_load_key_shadow_stack(from_argnum);
-    void *lock = __softboundcets_load_lock_shadow_stack(from_argnum);
+    key_type key = __softboundcets_load_key_shadow_stack(from_argnum);
+    lock_type lock = __softboundcets_load_lock_shadow_stack(from_argnum);
 
     __softboundcets_store_base_shadow_stack(base, to_argnum);
     __softboundcets_store_bound_shadow_stack(bound, to_argnum);
@@ -1392,7 +1392,7 @@ __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
 
     void *ret_ptr = realloc(ptr, size);
     __softboundcets_allocation_secondary_trie_allocate(ret_ptr);
-    size_t ptr_key = 1;
+    key_type ptr_key = 1;
     lock_type ptr_lock = __softboundcets_get_global_lock();
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
@@ -1809,11 +1809,11 @@ static void exchange_elements_helper(void *base, size_t element_size, int idx1,
 #endif
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        size_t key_idx1 = 1;
-        size_t key_idx2 = 1;
+        key_type key_idx1 = 1;
+        key_type key_idx2 = 1;
 
-        void *lock_idx1 = NULL;
-        void *lock_idx2 = NULL;
+        lock_type lock_idx1 = NULL;
+        lock_type lock_idx2 = NULL;
 #endif
 
         char *addr_idx1 = &base_bytes[idx1 * element_size + i];
