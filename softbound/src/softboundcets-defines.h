@@ -38,8 +38,8 @@
 // WITH THE SOFTWARE.
 //===---------------------------------------------------------------------===//
 
-#ifndef __SOFTBOUNDCETS_H__
-#define __SOFTBOUNDCETS_H__
+#ifndef SOFTBOUNDCETS_DEFINES_H
+#define SOFTBOUNDCETS_DEFINES_H
 
 #include <assert.h>
 #include <stddef.h>
@@ -229,4 +229,4 @@ extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
 
 extern size_t *__softboundcets_shadow_stack_ptr;
 
-#endif
+#endif // SOFTBOUNDCETS_DEFINES_H

@@ -1,5 +1,5 @@
-#ifndef __SOFTBOUNDCETS_TWO_H__
-#define __SOFTBOUNDCETS_TWO_H__
+#ifndef SOFTBOUNDCETS_COMMON_H
+#define SOFTBOUNDCETS_COMMON_H
 
 #include "softboundcets-defines.h"
 
@@ -164,4 +164,4 @@ __softboundcets_metadata_store_vector(void *addr_of_ptr, void *base,
                                       int index);
 #endif
 
-#endif
+#endif // SOFTBOUNDCETS_COMMON_H

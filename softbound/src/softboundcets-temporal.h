@@ -1,5 +1,5 @@
-#ifndef TEMPORAL_H
-#define TEMPORAL_H
+#ifndef SOFTBOUNDCETS_TEMPORAL_H
+#define SOFTBOUNDCETS_TEMPORAL_H
 
 #include "softboundcets-defines.h"
 
@@ -76,4 +76,4 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
 
 #endif // Guard for temporal functions
 
-#endif // TEMPORAL_H
+#endif // SOFTBOUNDCETS_TEMPORAL_H

@@ -1,5 +1,5 @@
-#ifndef SPATIAL_H
-#define SPATIAL_H
+#ifndef SOFTBOUNDCETS_SPATIAL_H
+#define SOFTBOUNDCETS_SPATIAL_H
 
 #include "softboundcets-defines.h"
 
@@ -43,4 +43,4 @@ __softboundcets_shrink_bounds(void *new_base, void *new_bound, void *old_base,
 
 #endif // Guard for spatial functions
 
-#endif // SPATIAL_H
+#endif // SOFTBOUNDCETS_SPATIAL_H
