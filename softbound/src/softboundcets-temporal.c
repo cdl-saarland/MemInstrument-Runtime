@@ -2,12 +2,71 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <sys/mman.h>
 
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 
-extern size_t __softboundcets_key_id_counter;
-extern size_t *__softboundcets_lock_next_location;
-extern size_t *__softboundcets_lock_new_location;
+static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
+    ((size_t)64 * (size_t)1024 * (size_t)1024);
+
+static const size_t __SOFTBOUNDCETS_N_STACK_TEMPORAL_ENTRIES =
+    ((size_t)1024 * (size_t)64);
+static const size_t __SOFTBOUNDCETS_N_GLOBAL_LOCK_SIZE =
+    ((size_t)1024 * (size_t)32);
+
+// 256 Million simultaneous objects
+static const size_t __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES =
+    ((size_t)32 * (size_t)1024 * (size_t)1024);
+
+size_t *__softboundcets_free_map_table = NULL;
+
+size_t *__softboundcets_lock_next_location = NULL;
+size_t *__softboundcets_lock_new_location = NULL;
+size_t __softboundcets_key_id_counter = 2;
+
+size_t *__softboundcets_temporal_space_begin = 0;
+size_t *__softboundcets_stack_temporal_space_begin = NULL;
+
+//===------------------- Data structure initialization --------------------===//
+
+__WEAK_INLINE void __softboundcets_temporal_initialize_datastructures(void) {
+
+    size_t temporal_table_length =
+        (__SOFTBOUNDCETS_N_TEMPORAL_ENTRIES) * sizeof(void *);
+
+    __softboundcets_lock_new_location =
+        mmap(0, temporal_table_length, PROT_READ | PROT_WRITE,
+             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
+
+    assert(__softboundcets_lock_new_location != (void *)-1);
+    __softboundcets_temporal_space_begin =
+        (size_t *)__softboundcets_lock_new_location;
+
+    size_t stack_temporal_table_length =
+        (__SOFTBOUNDCETS_N_STACK_TEMPORAL_ENTRIES) * sizeof(void *);
+    __softboundcets_stack_temporal_space_begin =
+        mmap(0, stack_temporal_table_length, PROT_READ | PROT_WRITE,
+             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
+    assert(__softboundcets_stack_temporal_space_begin != (void *)-1);
+
+    size_t global_lock_size =
+        (__SOFTBOUNDCETS_N_GLOBAL_LOCK_SIZE) * sizeof(void *);
+    __softboundcets_global_lock =
+        mmap(0, global_lock_size, PROT_READ | PROT_WRITE,
+             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
+    assert(__softboundcets_global_lock != (void *)-1);
+    //  __softboundcets_global_lock =  __softboundcets_lock_new_location++;
+    *((size_t *)__softboundcets_global_lock) = 1;
+
+#if __SOFTBOUNDCETS_FREE_MAP
+    size_t length_free_map =
+        (__SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) * sizeof(size_t);
+    __softboundcets_free_map_table =
+        mmap(0, length_free_map, PROT_READ | PROT_WRITE,
+             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
+    assert(__softboundcets_free_map_table != (void *)-1);
+#endif
+}
 
 //===----------------------------- Checks ---------------------------------===//
 

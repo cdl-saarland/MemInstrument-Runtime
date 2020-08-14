@@ -63,20 +63,11 @@ static const char *mi_prog_name = NULL;
 
 __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
-size_t *__softboundcets_free_map_table = NULL;
-
 size_t *__softboundcets_shadow_stack_ptr = NULL;
-
-size_t *__softboundcets_lock_next_location = NULL;
-size_t *__softboundcets_lock_new_location = NULL;
-size_t __softboundcets_key_id_counter = 2;
 
 /* key 0 means not used, 1 is for  globals*/
 size_t __softboundcets_deref_check_count = 0;
 size_t *__softboundcets_global_lock = 0;
-
-size_t *__softboundcets_temporal_space_begin = 0;
-size_t *__softboundcets_stack_temporal_space_begin = NULL;
 
 void *malloc_address = NULL;
 
@@ -157,34 +148,10 @@ void __softboundcets_init(void) {
 
     assert(sizeof(__softboundcets_trie_entry_t) >= 16);
 
-    /* Allocating the temporal shadow space */
-
-    size_t temporal_table_length =
-        (__SOFTBOUNDCETS_N_TEMPORAL_ENTRIES) * sizeof(void *);
-
-    __softboundcets_lock_new_location =
-        mmap(0, temporal_table_length, PROT_READ | PROT_WRITE,
-             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-
-    assert(__softboundcets_lock_new_location != (void *)-1);
-    __softboundcets_temporal_space_begin =
-        (size_t *)__softboundcets_lock_new_location;
-
-    size_t stack_temporal_table_length =
-        (__SOFTBOUNDCETS_N_STACK_TEMPORAL_ENTRIES) * sizeof(void *);
-    __softboundcets_stack_temporal_space_begin =
-        mmap(0, stack_temporal_table_length, PROT_READ | PROT_WRITE,
-             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-    assert(__softboundcets_stack_temporal_space_begin != (void *)-1);
-
-    size_t global_lock_size =
-        (__SOFTBOUNDCETS_N_GLOBAL_LOCK_SIZE) * sizeof(void *);
-    __softboundcets_global_lock =
-        mmap(0, global_lock_size, PROT_READ | PROT_WRITE,
-             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-    assert(__softboundcets_global_lock != (void *)-1);
-    //  __softboundcets_global_lock =  __softboundcets_lock_new_location++;
-    *((size_t *)__softboundcets_global_lock) = 1;
+/* Allocating the temporal shadow space */
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_temporal_initialize_datastructures();
+#endif
 
     size_t shadow_stack_size =
         __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES * sizeof(size_t);
@@ -197,15 +164,6 @@ void __softboundcets_init(void) {
     size_t *current_size_shadow_stack_ptr =
         __softboundcets_shadow_stack_ptr + 1;
     *(current_size_shadow_stack_ptr) = 0;
-
-#if __SOFTBOUNDCETS_FREE_MAP
-    size_t length_free_map =
-        (__SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) * sizeof(size_t);
-    __softboundcets_free_map_table =
-        mmap(0, length_free_map, PROT_READ | PROT_WRITE,
-             SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
-    assert(__softboundcets_free_map_table != (void *)-1);
-#endif
 
     size_t length_trie = (__SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES) *
                          sizeof(__softboundcets_trie_entry_t *);

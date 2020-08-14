@@ -8,6 +8,10 @@
 // are not available.
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_TEMPORAL
 
+//===------------------- Data structure initialization --------------------===//
+
+__WEAK_INLINE void __softboundcets_temporal_initialize_datastructures(void);
+
 //===----------------------------- Checks ---------------------------------===//
 
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL

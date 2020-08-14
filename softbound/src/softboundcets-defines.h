@@ -204,15 +204,6 @@ void __rt_stat_inc_external_check(void);
 #define __softboundcets_debug_printf(...)
 #endif
 
-static const size_t __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES =
-    ((size_t)64 * (size_t)1024 * (size_t)1024);
-static const size_t __SOFTBOUNDCETS_LOWER_ZERO_POINTER_BITS = 3;
-
-static const size_t __SOFTBOUNDCETS_N_STACK_TEMPORAL_ENTRIES =
-    ((size_t)1024 * (size_t)64);
-static const size_t __SOFTBOUNDCETS_N_GLOBAL_LOCK_SIZE =
-    ((size_t)1024 * (size_t)32);
-
 // 2^23 entries each will be 8 bytes each
 static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =
     ((size_t)8 * (size_t)1024 * (size_t)1024);
@@ -220,9 +211,6 @@ static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =
 static const size_t __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES =
     ((size_t)128 * (size_t)32);
 
-/* 256 Million simultaneous objects */
-static const size_t __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES =
-    ((size_t)32 * (size_t)1024 * (size_t)1024);
 // each secondary entry has 2^ 22 entries
 static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
     ((size_t)4 * (size_t)1024 * (size_t)1024);
@@ -230,10 +218,6 @@ static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
 extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 extern size_t *__softboundcets_shadow_stack_ptr;
-extern size_t *__softboundcets_temporal_space_begin;
-
-extern size_t *__softboundcets_stack_temporal_space_begin;
-extern size_t *__softboundcets_free_map_table;
 
 extern size_t *__softboundcets_global_lock;
 
