@@ -90,7 +90,7 @@ def process_file(file_name, out_file_name, verbose):
                 continue
 
             # ignore helper functions
-            if (not line.startswith("softboundcets")):
+            if not line.startswith("softboundcets"):
                 if verbose:
                     print("Ignore softbound helper function:\t" + line)
                 continue
