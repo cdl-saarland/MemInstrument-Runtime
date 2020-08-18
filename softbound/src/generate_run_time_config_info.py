@@ -47,7 +47,7 @@ def generate_config_info(feature_file, features, out_file_name, verbose):
     defines = compute_defines(feature_file, features, verbose)
 
     include_guard = "SB_RT_CONFIG_INFO"
-    namespace = "sbmi"
+    namespace = ["meminstrument", "softbound"]
     short_description = "Run-Time Configuration Info"
     long_description = "Information on how the SoftBound run-time is configured."
 
@@ -76,10 +76,10 @@ def main():
 
     # Generate the directory where the auto-generated header is put
     # TODO change this out_dir when moving this to the meminstrument run-times
-    out_dir = os.path.join("include", "SBMI")
+    out_dir = os.path.join("include", "meminstrument")
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
-    out_file_name = os.path.join(out_dir, "SBRTConfigInfo.h")
+    out_file_name = os.path.join(out_dir, "SBRTInfo.h")
 
     # Defines all features that should be communicated to the C++ Pass.
     # Extend this feature list to communicate more features.

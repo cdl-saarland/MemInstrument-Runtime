@@ -14,7 +14,7 @@ def is_available(program_name):
     return shutil.which(program_name) is not None
 
 
-def generate_header(header_name, file_path, includes, namespace, content,
+def generate_header(header_name, file_path, includes, namespaces, content,
                     short_description, long_description):
     """
     Generate the content of an LLVM C++ header, given all non-generic details as arguments.
@@ -30,7 +30,24 @@ def generate_header(header_name, file_path, includes, namespace, content,
     minus_front = "-" * math.floor(fill_num / 2.0)
     minus_back = "-" * math.ceil(fill_num / 2.0)
 
-    header_text = textwrap.dedent(f"""\
+    namespaces_begin = ""
+    namespaces_end = ""
+    for namespace in namespaces:
+        namespaces_begin += textwrap.dedent(
+            f"""namespace {namespace} {{
+
+            """)
+        namespaces_end = textwrap.dedent(
+            f"""
+                    }} // end namespace {namespace}
+            """) + namespaces_end
+
+    long_description_lines = textwrap.wrap(long_description, 76)
+    long_description_wrapped = ""
+    for entry in long_description_lines:
+        long_description_wrapped += "/// " + entry + "\n"
+
+    header_text = (textwrap.dedent(f"""\
     //==={minus_front} {file_path} - {short_description} {minus_back}*- C++ -*-===//
     //
     //                     The LLVM Compiler Infrastructure
@@ -40,23 +57,23 @@ def generate_header(header_name, file_path, includes, namespace, content,
     //
     //===----------------------------------------------------------------------===//
     ///
-    /// {long_description}
+    """) + long_description_wrapped + textwrap.dedent(f"""\
     /// THIS FILE IS AUTO-GENERATED. DO NOT UPDATE IT MANUALLY.
     ///
     //===----------------------------------------------------------------------===//
 
     #ifndef {header_name}
     #define {header_name}
-    """) + includes + textwrap.dedent(
-    f"""
-    namespace {namespace} {{
 
-    """) + content + textwrap.dedent(
-        f"""
-        }} // end namespace {namespace}
-
-        #endif // {header_name}
-        """)
+    """) +
+                   includes +
+                   namespaces_begin +
+                   content +
+                   namespaces_end +
+                   textwrap.dedent(
+                       f"""
+                       #endif // {header_name}
+                       """))
     return header_text
 
 def surround_with_header_stuff(text, number_of_functions, file_path):
@@ -64,14 +81,14 @@ def surround_with_header_stuff(text, number_of_functions, file_path):
     Specify the header content and use it to instantiate the LLVM header template.
     """
     header_name = "SB_WRAPPER_H"
-    namespace = "sbmi"
+    namespaces = ["meminstrument", "softbound"]
     short_description = "Supported Wrapper Functions"
-    long_description = "Contains all wrapper functions available in the SBMI runtime."
-    includes = '\n#include "llvm/ADT/SmallVector.h"\n'
+    long_description = "Contains all (standard library) wrapper functions available in the SoftBound runtime."
+    includes = '#include "llvm/ADT/SmallVector.h"\n\n'
     content = "llvm::SmallVector<String, " + \
-        str(number_of_functions) + "> available_wrappers = {\n" + text + "}"
+        str(number_of_functions) + "> available_wrappers = {\n" + text + "}\n"
 
-    return generate_header(header_name, file_path, includes, namespace, content,
+    return generate_header(header_name, file_path, includes, namespaces, content,
                            short_description, long_description)
 
 def process_file(file_name, out_file_name, verbose):
@@ -147,7 +164,7 @@ def main():
 
     # Generate the directory where the auto-generated header is put
     # TODO change this out_dir when moving this to the meminstrument run-times
-    out_dir = os.path.join("include", "SBMI")
+    out_dir = os.path.join("include", "meminstrument")
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     out_file_name = os.path.join(out_dir, "SBWrapper.h")
