@@ -111,20 +111,6 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
 
 #endif
 
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-__WEAK_INLINE void *__softboundcets_metadata_map(void *addr_of_ptr);
-
-__WEAK_INLINE void *__softboundcets_metadata_load_base(void *address);
-
-__WEAK_INLINE void *__softboundcets_metadata_load_bound(void *address);
-
-__WEAK_INLINE size_t __softboundcets_metadata_load_key(void *address);
-
-__WEAK_INLINE void *__softboundcets_metadata_load_lock(void *address);
-
-#endif
-
 #if __SOFTBOUNDCETS_SPATIAL
 
 __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,

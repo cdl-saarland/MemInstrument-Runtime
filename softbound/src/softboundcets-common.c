@@ -433,62 +433,6 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
     return;
 }
 
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-__WEAK_INLINE void *__softboundcets_metadata_map(void *addr_of_ptr) {
-
-    size_t ptr = (size_t)addr_of_ptr;
-    __softboundcets_trie_entry_t *trie_secondary_table;
-    size_t primary_index = (ptr >> 25);
-    trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
-
-#if 0
-    /* unnecessary control flow causes performance overhead */
-    /* this can cause segfaults with uninitialized pointer reads from memory */
-    if(trie_secondary_table == NULL){
-      trie_secondary_table = __softboundcets_trie_allocate();
-      __softboundcets_trie_primary_table[primary_index] = trie_secondary_table;
-    }
-
-#endif
-
-    size_t secondary_index = ((ptr >> 3) & 0x3fffff);
-    __softboundcets_trie_entry_t *entry_ptr =
-        &trie_secondary_table[secondary_index];
-
-    return (void *)entry_ptr;
-}
-
-__WEAK_INLINE void *__softboundcets_metadata_load_base(void *address) {
-
-    __softboundcets_trie_entry_t *entry_ptr =
-        (__softboundcets_trie_entry_t *)address;
-    return entry_ptr->base;
-}
-
-__WEAK_INLINE void *__softboundcets_metadata_load_bound(void *address) {
-
-    __softboundcets_trie_entry_t *entry_ptr =
-        (__softboundcets_trie_entry_t *)address;
-    return entry_ptr->bound;
-}
-
-__WEAK_INLINE size_t __softboundcets_metadata_load_key(void *address) {
-
-    __softboundcets_trie_entry_t *entry_ptr =
-        (__softboundcets_trie_entry_t *)address;
-    return entry_ptr->key;
-}
-
-__WEAK_INLINE void *__softboundcets_metadata_load_lock(void *address) {
-
-    __softboundcets_trie_entry_t *entry_ptr =
-        (__softboundcets_trie_entry_t *)address;
-    return entry_ptr->lock;
-}
-
-#endif
-
 #if __SOFTBOUNDCETS_SPATIAL
 
 __METADATA_INLINE void
