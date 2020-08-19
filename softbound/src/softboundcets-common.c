@@ -469,13 +469,13 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
 
 #elif __SOFTBOUNDCETS_TEMPORAL
         *((size_t *)key) = 0;
-        *((size_t *)lock) = 0;
+        *((void **)lock) = 0;
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         *((void **)base) = 0;
         *((void **)bound) = 0;
         *((size_t *)key) = 0;
-        *((size_t *)lock) = 0;
+        *((void **)lock) = 0;
 
 #endif
         return;
