@@ -130,7 +130,6 @@ __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
 
 static int softboundcets_initialized = 0;
 
-__NO_INLINE void __softboundcets_stub(void) { return; }
 void __softboundcets_init(void) {
     if (softboundcets_initialized != 0) {
         return; // already initialized, do nothing

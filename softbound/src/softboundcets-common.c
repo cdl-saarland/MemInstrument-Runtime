@@ -9,14 +9,6 @@
 #include <string.h>
 #include <sys/mman.h>
 
-extern __NO_INLINE void __softboundcets_stub(void);
-extern void __softboundcets_init(void);
-
-void __softboundcets_global_init(void) {
-    __softboundcets_init();
-    __softboundcets_stub();
-}
-
 __WEAK_INLINE void
 __softboundcets_allocate_shadow_stack_space(int num_pointer_args) {
 
