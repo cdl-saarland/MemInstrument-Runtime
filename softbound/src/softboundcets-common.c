@@ -320,12 +320,6 @@ __WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
     __rt_stat_inc_sb_mem_check();
 #endif
 
-    if (size >= LONG_MAX)
-        __softboundcets_abort();
-
-    if (size >= LONG_MAX)
-        __softboundcets_abort();
-
     if (dest_key != *((size_t *)(dest_lock))) {
         __softboundcets_abort();
     }
