@@ -39,57 +39,6 @@ __WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
 __METADATA_INLINE
 void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
 
-/* Memcopy check, different variants based on spatial, temporal and
-   spatial+temporal modes
-*/
-
-extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
-#if __SOFTBOUNDCETS_SPATIAL
-__WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
-                                                 size_t size, void *dest_base,
-                                                 void *dest_bound,
-                                                 void *src_base,
-                                                 void *src_bound);
-#elif __SOFTBOUNDCETS_TEMPORAL
-
-__WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
-                                                 size_t size, key_type dest_key,
-                                                 lock_type dest_lock,
-                                                 key_type src_key,
-                                                 lock_type src_lock);
-
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-__WEAK_INLINE void __softboundcets_memcopy_check(
-    void *dest, void *src, size_t size, void *dest_base, void *dest_bound,
-    void *src_base, void *src_bound, key_type dest_key, lock_type dest_lock,
-    key_type src_key, lock_type src_lock);
-
-#endif
-
-/* Memset check, different variants based on spatial, temporal and
-   spatial+temporal modes */
-
-#if __SOFTBOUNDCETS_SPATIAL
-__WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
-                                                void *dest_base,
-                                                void *dest_bound);
-#elif __SOFTBOUNDCETS_TEMPORAL
-
-__WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
-                                                key_type dest_key,
-                                                lock_type dest_lock);
-
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-__WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
-                                                void *dest_base,
-                                                void *dest_bound,
-                                                key_type dest_key,
-                                                lock_type dest_lock);
-
-#endif
-
 /* Metadata store parameterized by the mode of checking */
 
 #if __SOFTBOUNDCETS_SPATIAL

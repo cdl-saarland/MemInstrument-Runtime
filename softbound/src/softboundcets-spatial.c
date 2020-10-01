@@ -31,13 +31,13 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
 }
 
 __WEAK_INLINE void
-__softboundcets_spatial_load_dereference_check(void *base, void *bound,
-                                               void *ptr, size_t size_of_type) {
+__softboundcets_spatial_dereference_check(void *base, void *bound, void *ptr,
+                                          size_t size_of_type) {
 #if ENABLE_RT_STATS
     __rt_stat_inc_sb_access_check();
 #endif
 
-    __softboundcets_debug_printf("In Load Dereference Check, base=%p, "
+    __softboundcets_debug_printf("In Dereference Check, base=%p, "
                                  "bound=%p, ptr=%p, size_of_type=%zx\n",
                                  base, bound, ptr, size_of_type);
 
@@ -55,38 +55,7 @@ __softboundcets_spatial_load_dereference_check(void *base, void *bound,
             return;
         }
 #endif
-        __softboundcets_printf("Error in Load Dereference Check, base=%p, "
-                               "bound=%p, ptr=%p, size_of_type=%zx\n",
-                               base, bound, ptr, size_of_type);
-        __softboundcets_abort();
-    }
-}
-
-__WEAK_INLINE void __softboundcets_spatial_store_dereference_check(
-    void *base, void *bound, void *ptr, size_t size_of_type) {
-#if ENABLE_RT_STATS
-    __rt_stat_inc_sb_access_check();
-#endif
-
-    __softboundcets_debug_printf("In Store Dereference Check, base=%p, "
-                                 "bound=%p, ptr=%p, size_of_type=%zx\n",
-                                 base, bound, ptr, size_of_type);
-
-    // Convert all pointers to uintptr_t, such that no undefined behavior
-    // occurs in case `ptr` happens not to point to the same object as `base`
-    // and `bound` do.
-    // If size is larger than our bound, the access width is certainly larger
-    // than the allocation and therefore invalid. This also ensures that the
-    // subtraction will result in a meaningful value.
-    if ((uintptr_t)size_of_type > (uintptr_t)bound ||
-        (uintptr_t)ptr < (uintptr_t)base ||
-        (uintptr_t)ptr > ((uintptr_t)bound - (uintptr_t)size_of_type)) {
-#if NOERRORMISSINGBOUNDS
-        if (base == NULL) {
-            return;
-        }
-#endif
-        __softboundcets_printf("Error in Store Dereference Check, base=%p, "
+        __softboundcets_printf("Error in Dereference Check, base=%p, "
                                "bound=%p, ptr=%p, size_of_type=%zx\n",
                                base, bound, ptr, size_of_type);
         __softboundcets_abort();
