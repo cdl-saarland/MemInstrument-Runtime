@@ -204,11 +204,19 @@ __WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
     __rt_stat_inc_sb_mem_check();
 #endif
 
-    if (size >= LONG_MAX)
-        __softboundcets_abort();
-
-    if (dest < dest_base || (char *)dest > ((char *)dest_bound - size) ||
-        (size > (size_t)dest_bound)) {
+    // For both, destination and source, make sure that...
+    //  * the size is not larger than the upper bound, otherwise the given size
+    //  is certainly larger than the allocation and we can report an error (note
+    //  that this also ensures that the subtraction later results in something
+    //  meaningful)
+    //  * the dest pointer is not smaller than the the lower bound
+    //  * the width of the copy stays within bounds of the allocation
+    // All values are converted to `unintptr_t`s, such that we don't produce
+    // undefined behavior in case that the given pointer does not point to the
+    // object delimited by base and bound.
+    if (((uintptr_t)size > (uintptr_t)dest_bound) ||
+        (uintptr_t)dest < (uintptr_t)dest_base ||
+        ((uintptr_t)dest > (uintptr_t)dest_bound - (uintptr_t)size)) {
 #if NOERRORMISSINGBOUNDS
         if (dest_bound == NULL) {
             return;
@@ -220,8 +228,9 @@ __WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
         __softboundcets_abort();
     }
 
-    if (src < src_base || (char *)src > ((char *)src_bound - size) ||
-        (size > (size_t)src_bound)) {
+    if (((uintptr_t)size > (uintptr_t)src_bound) ||
+        (uintptr_t)src < (uintptr_t)src_base ||
+        ((uintptr_t)src > (uintptr_t)src_bound - (uintptr_t)size)) {
 #if NOERRORMISSINGBOUNDS
         if (src_bound == NULL) {
             return;
@@ -244,9 +253,6 @@ __WEAK_INLINE void __softboundcets_memcopy_check(void *dest, void *src,
     __rt_stat_inc_sb_mem_check();
 #endif
 
-    if (size >= LONG_MAX)
-        __softboundcets_abort();
-
     if (dest_key != *((size_t *)(dest_lock))) {
         __softboundcets_abort();
     }
@@ -268,18 +274,46 @@ __WEAK_INLINE void __softboundcets_memcopy_check(
 
 #ifndef __NOSIM_CHECKS
 
-    __softboundcets_debug_printf("dest=%zx, src=%zx, size=%zx, ulong_max=%zx\n",
-                                 dest, src, size, ULONG_MAX);
-    if (size >= LONG_MAX)
-        __softboundcets_abort();
+    __softboundcets_debug_printf("dest=%zx, src=%zx, size=%zx\n", dest, src,
+                                 size);
 
-    if (dest < dest_base || (char *)dest > ((char *)dest_bound - size) ||
-        (size > (size_t)dest_bound))
+    // For both, destination and source, make sure that...
+    //  * the size is not bigger than the upper bound, otherwise the given size
+    //  is certainly bigger than the allocation and we can report an error (note
+    //  that this also ensures that the subtraction later results in something
+    //  meaningful)
+    //  * the dest pointer is not smaller than the the lower bound
+    //  * the width of the copy stays within bounds of the allocation
+    // All values are converted to `unintptr_t`s, such that we don't produce
+    // undefined behavior in case that the given pointer does not point to the
+    // object delimited by base and bound.
+    if (((uintptr_t)size > (uintptr_t)dest_bound) ||
+        (uintptr_t)dest < (uintptr_t)dest_base ||
+        ((uintptr_t)dest > (uintptr_t)dest_bound - (uintptr_t)size)) {
+#if NOERRORMISSINGBOUNDS
+        if (dest_bound == NULL) {
+            return;
+        }
+#endif
+        __softboundcets_printf(
+            "In MemCopy Dest Check, base=%p, bound=%p, size=%zx\n", dest_base,
+            dest_bound, size);
         __softboundcets_abort();
+    }
 
-    if (src < src_base || (char *)src > ((char *)src_bound - size) ||
-        (size > (size_t)dest_bound))
+    if (((uintptr_t)size > (uintptr_t)src_bound) ||
+        (uintptr_t)src < (uintptr_t)src_base ||
+        ((uintptr_t)src > (uintptr_t)src_bound - (uintptr_t)size)) {
+#if NOERRORMISSINGBOUNDS
+        if (src_bound == NULL) {
+            return;
+        }
+#endif
+        __softboundcets_printf(
+            "In MemCopy Src Check, base=%p, bound=%p, size=%zx\n", src_base,
+            src_bound, size);
         __softboundcets_abort();
+    }
 
     if (dest_key != *((size_t *)(dest_lock))) {
         __softboundcets_abort();
@@ -304,12 +338,21 @@ __WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
     __rt_stat_inc_sb_mem_check();
 #endif
 
-    if (size >= LONG_MAX)
+    // Make sure that...
+    //  * the size is not bigger than the upper bound, otherwise the given size
+    //  is certainly bigger than the allocation and we can report an error (note
+    //  that this also ensures that the subtraction later results in something
+    //  meaningful)
+    //  * the dest pointer is not smaller than the the lower bound
+    //  * the width of the memset stays within bounds of the allocation
+    // All values are converted to `unintptr_t`s, such that we don't produce
+    // undefined behavior in case that `dest` does not point to the object
+    // delimited by `dest_base` and `dest_bound`.
+    if (((uintptr_t)size > (uintptr_t)dest_bound) ||
+        (uintptr_t)dest < (uintptr_t)dest_base ||
+        ((uintptr_t)dest > (uintptr_t)dest_bound - (uintptr_t)size)) {
         __softboundcets_abort();
-
-    if (dest < dest_base || (char *)dest > ((char *)dest_bound - size) ||
-        (size > (size_t)dest_bound))
-        __softboundcets_abort();
+    }
 }
 #elif __SOFTBOUNDCETS_TEMPORAL
 
@@ -336,12 +379,21 @@ __WEAK_INLINE void __softboundcets_memset_check(void *dest, size_t size,
     __rt_stat_inc_sb_mem_check();
 #endif
 
-    if (size >= LONG_MAX)
+    // Make sure that...
+    //  * the size is not bigger than the upper bound, otherwise the given size
+    //  is certainly bigger than the allocation and we can report an error (note
+    //  that this also ensures that the subtraction later results in something
+    //  meaningful)
+    //  * the dest pointer is not smaller than the the lower bound
+    //  * the width of the memset stays within bounds of the allocation
+    // All values are converted to `unintptr_t`s, such that we don't produce
+    // undefined behavior in case that `dest` does not point to the object
+    // delimited by `dest_base` and `dest_bound`.
+    if (((uintptr_t)size > (uintptr_t)dest_bound) ||
+        (uintptr_t)dest < (uintptr_t)dest_base ||
+        ((uintptr_t)dest > (uintptr_t)dest_bound - (uintptr_t)size)) {
         __softboundcets_abort();
-
-    if (dest < dest_base || (char *)dest > ((char *)dest_bound - size) ||
-        (size > (size_t)dest_bound))
-        __softboundcets_abort();
+    }
 
     if (dest_key != *((size_t *)(dest_lock))) {
         __softboundcets_abort();

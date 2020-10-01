@@ -43,9 +43,17 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Ensure that we work on a 64bit system
 static_assert(__WORDSIZE == 64, "This library is coded for 64bit systems only");
+
+// Make sure that our comparisons are sound
+static_assert(sizeof(uintptr_t) >= sizeof(size_t),
+              "This library might compare objects of size_t with pointer "
+              "values before applying arithmetic and therefore cast from "
+              "size_t to uintptr_t, if unintptr_t is smaller than size_t, the "
+              "program will not work as expected.");
 
 //===----------------------------------------------------------------------===//
 //                       Configuration options
