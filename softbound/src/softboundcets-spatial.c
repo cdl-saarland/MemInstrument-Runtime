@@ -13,7 +13,7 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
         "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base, bound,
         ptr);
 #ifndef __NOSIM_CHECKS
-    if ((uintptr_t)base != (uintptr_t)bound &&
+    if ((uintptr_t)base != (uintptr_t)bound ||
         (uintptr_t)ptr != (uintptr_t)base) {
 #if NOERRORMISSINGBOUNDS
         if (base == NULL) {
