@@ -85,8 +85,8 @@ def surround_with_header_stuff(text, number_of_functions, file_path):
     short_description = "Supported Wrapper Functions"
     long_description = "Contains all (standard library) wrapper functions available in the SoftBound runtime."
     includes = '#include "llvm/ADT/SmallVector.h"\n\n'
-    content = "llvm::SmallVector<String, " + \
-        str(number_of_functions) + "> available_wrappers = {\n" + text + "}\n"
+    content = "static llvm::SmallVector<std::string, " + \
+        str(number_of_functions) + "> availableWrappers({\n" + text + "});\n"
 
     return generate_header(header_name, file_path, includes, namespaces, content,
                            short_description, long_description)
