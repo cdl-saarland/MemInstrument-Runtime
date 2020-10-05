@@ -524,6 +524,15 @@ __WEAK_INLINE int softboundcets_fputc(int c, FILE *stream) {
     return fputc(c, stream);
 }
 
+__WEAK_INLINE int softboundcets_printf(const char *str, ...) {
+    va_list args;
+
+    va_start(args, str);
+    int ret = printf(str, args);
+    va_end(args);
+    return ret;
+}
+
 __WEAK_INLINE int softboundcets_fileno(FILE *stream) { return fileno(stream); }
 
 __WEAK_INLINE int softboundcets_fgetc(FILE *stream) { return fgetc(stream); }
