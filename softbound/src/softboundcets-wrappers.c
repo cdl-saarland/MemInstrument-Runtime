@@ -1455,17 +1455,19 @@ __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
 __WEAK_INLINE void *softboundcets_mmap(void *addr, size_t length, int prot,
                                        int flags, int fd, off_t offset) {
 
-    key_type ptr_key = 1;
-    lock_type ptr_lock = __softboundcets_get_global_lock();
-    char *ret_ptr = mmap(addr, length, prot, flags, fd, offset);
+    void *ret_ptr = mmap(addr, length, prot, flags, fd, offset);
     if (ret_ptr == (void *)-1) {
         __softboundcets_store_null_return_metadata();
     } else {
 
-        char *ret_bound = ret_ptr + length;
+        char *ret_bound = (char *)ret_ptr + length;
+        key_type ptr_key = 1;
+        lock_type ptr_lock = __softboundcets_get_global_lock();
+
         __softboundcets_store_return_metadata(ret_ptr, ret_bound, ptr_key,
                                               ptr_lock);
     }
+
     return ret_ptr;
 }
 
@@ -2327,6 +2329,7 @@ int softboundcets_munmap(void *addr, size_t length) {
 //                             UUID Wrappers
 //===----------------------------------------------------------------------===//
 
+__WEAK_INLINE
 void softboundcets_uuid_generate(uuid_t out) { uuid_generate(out); }
 
 #endif
