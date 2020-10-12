@@ -91,6 +91,9 @@ __pycache__
 # Sublime text
 *.sublime-*
 
+# VS Code
+.vscode/
+
 # Apple
 .DS_Store
 .AppleDouble
