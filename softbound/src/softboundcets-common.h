@@ -26,79 +26,67 @@ static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
   new current stack size field; Deallocation: read the previous size,
   and decrement the shadow_stack_ptr */
 
-__WEAK_INLINE void
-__softboundcets_allocate_shadow_stack_space(int num_pointer_args);
+void __softboundcets_allocate_shadow_stack_space(int num_pointer_args);
 
-__WEAK_INLINE void __softboundcets_deallocate_shadow_stack_space();
+void __softboundcets_deallocate_shadow_stack_space();
 
-__WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate();
+__softboundcets_trie_entry_t *__softboundcets_trie_allocate();
 
-__WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
-                                                       void *bound, int arg_no);
+void __softboundcets_introspect_metadata(void *ptr, void *base, void *bound,
+                                         int arg_no);
 
-__METADATA_INLINE
 void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
 
 /* Metadata store parameterized by the mode of checking */
 
 #if __SOFTBOUNDCETS_SPATIAL
 
-__METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
-                                                      void *base, void *bound);
+void __softboundcets_metadata_store(void *addr_of_ptr, void *base, void *bound);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-__METADATA_INLINE void
-__softboundcets_metadata_store(void *addr_of_ptr, key_type key, lock_type lock);
+void __softboundcets_metadata_store(void *addr_of_ptr, key_type key,
+                                    lock_type lock);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
-                                                      void *base, void *bound,
-                                                      key_type key,
-                                                      lock_type lock);
+void __softboundcets_metadata_store(void *addr_of_ptr, void *base, void *bound,
+                                    key_type key, lock_type lock);
 
 #endif
 
 #if __SOFTBOUNDCETS_SPATIAL
 
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
-                                                     void **base, void **bound);
+void __softboundcets_metadata_load(void *addr_of_ptr, void **base,
+                                   void **bound);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
-                                                     key_type *key,
-                                                     lock_type *lock);
+void __softboundcets_metadata_load(void *addr_of_ptr, key_type *key,
+                                   lock_type *lock);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
-                                                     void **base, void **bound,
-                                                     key_type *key,
-                                                     lock_type *lock);
+void __softboundcets_metadata_load(void *addr_of_ptr, void **base, void **bound,
+                                   key_type *key, lock_type *lock);
 
 #endif
 
 /******************************************************************************/
 
-__WEAK_INLINE void
-__softboundcets_allocation_secondary_trie_allocate_range(void *initial_ptr,
-                                                         size_t size);
-__WEAK_INLINE void
-__softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
+void __softboundcets_allocation_secondary_trie_allocate_range(void *initial_ptr,
+                                                              size_t size);
+void __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
 
 // Vector load/store support
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-__METADATA_INLINE void
-__softboundcets_metadata_load_vector(void *addr_of_ptr, void **base,
-                                     void **bound, key_type *key,
-                                     lock_type *lock, int index);
+void __softboundcets_metadata_load_vector(void *addr_of_ptr, void **base,
+                                          void **bound, key_type *key,
+                                          lock_type *lock, int index);
 
-__METADATA_INLINE void
-__softboundcets_metadata_store_vector(void *addr_of_ptr, void *base,
-                                      void *bound, key_type key, lock_type lock,
-                                      int index);
+void __softboundcets_metadata_store_vector(void *addr_of_ptr, void *base,
+                                           void *bound, key_type key,
+                                           lock_type lock, int index);
 #endif
 
 #endif // SOFTBOUNDCETS_COMMON_H
