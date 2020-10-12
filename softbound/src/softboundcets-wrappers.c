@@ -528,7 +528,7 @@ __WEAK_INLINE int softboundcets_printf(const char *str, ...) {
     va_list args;
 
     va_start(args, str);
-    int ret = printf(str, args);
+    int ret = vprintf(str, args);
     va_end(args);
     return ret;
 }
