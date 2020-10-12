@@ -99,6 +99,14 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define __SOFTBOUNDCETS_DEBUG 0
 #endif
 
+// Option to allow running in the llvm test-suite framework. The test-suite
+// unfortunately builds its utils with the compiler under test, which will not
+// work with this instrumentation. Enabling this option allows you to skip the
+// `timeit` module, which avoids crashing all tests at run-time.
+#ifndef LLVM_TESTSUITE
+#define LLVM_TESTSUITE 0
+#endif
+
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
 #define NOERRORS 0

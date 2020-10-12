@@ -227,6 +227,14 @@ int main(int argc, char **argv) {
     // Setup for backtrace recovery
     set_prog_name(argv[0]);
 
+#if LLVM_TESTSUITE
+    char *sub = strstr(argv[0], "timeit");
+    if (sub) {
+        int retval = softboundcets_pseudo_main(argc, argv);
+        return retval;
+    }
+#endif
+
 #if ENABLE_RT_STATS
     if (atexit(__print_stats) != 0) {
         fprintf(stderr, "sb(hacked): Failed to register statistics printer!\n");
