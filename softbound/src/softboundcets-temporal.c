@@ -77,15 +77,9 @@ __WEAK_INLINE void __softboundcets_temporal_initialize_datastructures(void) {
 
 //===----------------------------- Checks ---------------------------------===//
 
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 __WEAK_INLINE void
-__softboundcets_temporal_load_dereference_check(void *pointer_lock, size_t key,
-                                                void *base, void *bound) {
-#else
-__WEAK_INLINE void
-__softboundcets_temporal_load_dereference_check(void *pointer_lock,
-                                                size_t key) {
-#endif
+__softboundcets_temporal_dereference_check(lock_type pointer_lock,
+                                           key_type key) {
 
 #if 0
   /* URGENT: I should think about removing this condition check */
@@ -97,7 +91,7 @@ __softboundcets_temporal_load_dereference_check(void *pointer_lock,
 
 #endif
 
-    size_t temp = *((size_t *)pointer_lock);
+    key_type temp = *((key_type *)pointer_lock);
 
     if (temp != key) {
         __softboundcets_printf(
@@ -107,77 +101,53 @@ __softboundcets_temporal_load_dereference_check(void *pointer_lock,
     }
 }
 
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-__WEAK_INLINE void
-__softboundcets_temporal_store_dereference_check(void *pointer_lock, size_t key,
-                                                 void *base, void *bound) {
-#else
-__WEAK_INLINE void
-__softboundcets_temporal_store_dereference_check(void *pointer_lock,
-                                                 size_t key) {
-#endif
-
-#if 0
-  if(!pointer_lock){
-    __softboundcets_printf("lock null?");
-    __softboundcets_abort();
-  }
-#endif
-
-    size_t temp = *((size_t *)pointer_lock);
-
-    if (temp != key) {
-        __softboundcets_printf("[TSDC] Key mismatch, key = %zx, *lock=%zx\n",
-                               key, temp);
-        __softboundcets_abort();
-    }
-}
-
 //===-------------------- Shadow Stack Manipulation -----------------------===//
 
-__WEAK_INLINE size_t __softboundcets_load_key_shadow_stack(int arg_no) {
+__WEAK_INLINE key_type __softboundcets_load_key_shadow_stack(int arg_no) {
 
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __KEY_INDEX;
-    size_t *key_ptr = (__softboundcets_shadow_stack_ptr + count);
-    size_t key = *key_ptr;
+    key_type *key_ptr = (__softboundcets_shadow_stack_ptr + count);
+    key_type key = *key_ptr;
     return key;
 }
 
-__WEAK_INLINE void *__softboundcets_load_lock_shadow_stack(int arg_no) {
+__WEAK_INLINE lock_type __softboundcets_load_lock_shadow_stack(int arg_no) {
 
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __LOCK_INDEX;
     size_t *lock_ptr = (__softboundcets_shadow_stack_ptr + count);
-    void *lock = *((void **)lock_ptr);
+    lock_type lock = *((lock_type *)lock_ptr);
     return lock;
 }
 
-__WEAK_INLINE void __softboundcets_store_key_shadow_stack(size_t key,
+__WEAK_INLINE void __softboundcets_store_key_shadow_stack(key_type key,
                                                           int arg_no) {
+
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __KEY_INDEX;
-    size_t *key_ptr = (__softboundcets_shadow_stack_ptr + count);
+    key_type *key_ptr = (__softboundcets_shadow_stack_ptr + count);
 
     *(key_ptr) = key;
 }
 
-__WEAK_INLINE void __softboundcets_store_lock_shadow_stack(void *lock,
+__WEAK_INLINE void __softboundcets_store_lock_shadow_stack(lock_type lock,
                                                            int arg_no) {
+
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __LOCK_INDEX;
-    void **lock_ptr = (void **)(__softboundcets_shadow_stack_ptr + count);
+    lock_type *lock_ptr = (void **)(__softboundcets_shadow_stack_ptr + count);
 
     *(lock_ptr) = lock;
 }
 
 //===----------------------- Allocation related  --------------------------===//
 
-__WEAK_INLINE void __softboundcets_stack_memory_deallocation(size_t ptr_key) {
+__WEAK_INLINE void __softboundcets_stack_memory_deallocation(key_type ptr_key) {
 
 #ifndef __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
 
@@ -189,8 +159,10 @@ __WEAK_INLINE void __softboundcets_stack_memory_deallocation(size_t ptr_key) {
     return;
 }
 
-__WEAK_INLINE void __softboundcets_memory_deallocation(void *ptr_lock,
-                                                       size_t ptr_key) {
+// TODO: this function is currently unused (and might contain undefined
+// behavior?)
+__WEAK_INLINE void __softboundcets_memory_deallocation(lock_type ptr_lock,
+                                                       key_type ptr_key) {
 
     __softboundcets_debug_printf(
         "[Hdealloc] pointer_lock = %p, *pointer_lock=%zx\n", ptr_lock,
@@ -239,29 +211,31 @@ __WEAK_INLINE void *__softboundcets_allocate_lock_location() {
     }
 }
 
-__WEAK_INLINE void __softboundcets_stack_memory_allocation(void **ptr_lock,
-                                                           size_t *ptr_key) {
+__WEAK_INLINE void __softboundcets_stack_memory_allocation(lock_type *ptr_lock,
+                                                           key_type *ptr_key) {
 
 #ifdef __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
-    *((size_t *)ptr_key) = 1;
+    *ptr_key = 1;
     *((size_t **)ptr_lock) = __softboundcets_get_global_lock();
 #else
-    size_t temp_id = __softboundcets_key_id_counter++;
+    key_type temp_id = __softboundcets_key_id_counter++;
     *((size_t **)ptr_lock) =
         (size_t *)__softboundcets_stack_temporal_space_begin++;
-    *((size_t *)ptr_key) = temp_id;
+    *ptr_key = temp_id;
     **((size_t **)ptr_lock) = temp_id;
 #endif
 }
 
-__WEAK_INLINE void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
-                                                     size_t *ptr_key) {
+__WEAK_INLINE void __softboundcets_memory_allocation(void *ptr,
+                                                     lock_type *ptr_lock,
+                                                     key_type *ptr_key) {
 
-    size_t temp_id = __softboundcets_key_id_counter++;
+    key_type temp_id = __softboundcets_key_id_counter++;
 
-    *((size_t **)ptr_lock) = (size_t *)__softboundcets_allocate_lock_location();
-    *((size_t *)ptr_key) = temp_id;
-    **((size_t **)ptr_lock) = temp_id;
+    *((key_type **)ptr_lock) =
+        (key_type *)__softboundcets_allocate_lock_location();
+    *ptr_key = temp_id;
+    **((key_type **)ptr_lock) = temp_id;
 
     __softboundcets_add_to_free_map(temp_id, ptr);
     __softboundcets_allocation_secondary_trie_allocate(ptr);
@@ -273,7 +247,8 @@ __WEAK_INLINE void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
 
 //===---------------------- Free map operations  --------------------------===//
 
-__WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
+__WEAK_INLINE void __softboundcets_add_to_free_map(key_type ptr_key,
+                                                   void *ptr) {
 
 #if !__SOFTBOUNDCETS_FREE_MAP
     return;
@@ -306,7 +281,7 @@ __WEAK_INLINE void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr) {
     return;
 }
 
-__WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
+__WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
                                                               void *ptr) {
 
 #if !__SOFTBOUNDCETS_FREE_MAP
@@ -320,11 +295,12 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
   }
 #endif
 
-    size_t counter = 0;
+    key_type counter = 0;
     while (1) {
-        size_t index = (ptr_key + counter) % __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES;
-        size_t *entry_ptr = &__softboundcets_free_map_table[index];
-        size_t tag = *entry_ptr;
+        key_type index =
+            (ptr_key + counter) % __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES;
+        key_type *entry_ptr = &__softboundcets_free_map_table[index];
+        key_type tag = *entry_ptr;
 
         if (tag == 0) {
 #ifndef __NOSIM_CHECKS
@@ -335,7 +311,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(size_t ptr_key,
 #endif
         }
 
-        if (tag == (size_t)ptr) {
+        if (tag == (key_type)ptr) {
             *entry_ptr = 2;
             return;
         }

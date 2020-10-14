@@ -19,54 +19,40 @@ lock_type __softboundcets_get_global_lock();
 
 void __softboundcets_temporal_initialize_datastructures(void);
 
-//===----------------------------- Checks ---------------------------------===//
+//===----------------------------- Check ----------------------------------===//
 
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-void __softboundcets_temporal_load_dereference_check(void *pointer_lock,
-                                                     size_t key, void *base,
-                                                     void *bound);
-#else
-void __softboundcets_temporal_load_dereference_check(void *pointer_lock,
-                                                     size_t key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-void __softboundcets_temporal_store_dereference_check(void *pointer_lock,
-                                                      size_t key, void *base,
-                                                      void *bound);
-#else
-void __softboundcets_temporal_store_dereference_check(void *pointer_lock,
-                                                      size_t key);
-#endif
+void __softboundcets_temporal_dereference_check(lock_type pointer_lock,
+                                                key_type key);
 
 //===-------------------- Shadow Stack Manipulation -----------------------===//
 
-size_t __softboundcets_load_key_shadow_stack(int arg_no);
+key_type __softboundcets_load_key_shadow_stack(int arg_no);
 
-void *__softboundcets_load_lock_shadow_stack(int arg_no);
+lock_type __softboundcets_load_lock_shadow_stack(int arg_no);
 
-void __softboundcets_store_key_shadow_stack(size_t key, int arg_no);
+void __softboundcets_store_key_shadow_stack(key_type key, int arg_no);
 
-void __softboundcets_store_lock_shadow_stack(void *lock, int arg_no);
+void __softboundcets_store_lock_shadow_stack(lock_type lock, int arg_no);
 
 //===----------------------- Allocation related  --------------------------===//
 
-void __softboundcets_stack_memory_deallocation(size_t ptr_key);
+void __softboundcets_stack_memory_deallocation(key_type ptr_key);
 
-void __softboundcets_memory_deallocation(void *ptr_lock, size_t ptr_key);
+void __softboundcets_memory_deallocation(lock_type ptr_lock, key_type ptr_key);
 
 void *__softboundcets_allocate_lock_location();
 
-void __softboundcets_stack_memory_allocation(void **ptr_lock, size_t *ptr_key);
+void __softboundcets_stack_memory_allocation(lock_type *ptr_lock,
+                                             key_type *ptr_key);
 
-void __softboundcets_memory_allocation(void *ptr, void **ptr_lock,
-                                       size_t *ptr_key);
+void __softboundcets_memory_allocation(void *ptr, lock_type *ptr_lock,
+                                       key_type *ptr_key);
 
 //===---------------------- Free map operations  --------------------------===//
 
-void __softboundcets_add_to_free_map(size_t ptr_key, void *ptr);
+void __softboundcets_add_to_free_map(key_type ptr_key, void *ptr);
 
-void __softboundcets_check_remove_from_free_map(size_t ptr_key, void *ptr);
+void __softboundcets_check_remove_from_free_map(key_type ptr_key, void *ptr);
 
 #endif // Guard for temporal functions
 
