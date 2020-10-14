@@ -246,8 +246,8 @@ int main(int argc, char **argv) {
     char *temp_ptr;
     int return_value;
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    size_t argv_key;
-    void *argv_loc;
+    key_type argv_key;
+    lock_type argv_loc;
 #endif
 
     int *temp = malloc(1);
@@ -292,24 +292,24 @@ int main(int argc, char **argv) {
 
     /* &new_argv[0], temp_ptr, argv_key, argv_loc * the metadata */
 
-    __softboundcets_allocate_shadow_stack_space(2);
+    __softboundcets_allocate_shadow_stack_space(1);
 
 #if __SOFTBOUNDCETS_SPATIAL
 
-    __softboundcets_store_base_shadow_stack(&new_argv[0], 1);
-    __softboundcets_store_bound_shadow_stack(temp_ptr, 1);
+    __softboundcets_store_base_shadow_stack(&new_argv[0], 0);
+    __softboundcets_store_bound_shadow_stack(temp_ptr, 0);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-    __softboundcets_store_key_shadow_stack(argv_key, 1);
-    __softboundcets_store_lock_shadow_stack(argv_loc, 1);
+    __softboundcets_store_key_shadow_stack(argv_key, 0);
+    __softboundcets_store_lock_shadow_stack(argv_loc, 0);
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-    __softboundcets_store_base_shadow_stack(&new_argv[0], 1);
-    __softboundcets_store_bound_shadow_stack(temp_ptr, 1);
-    __softboundcets_store_key_shadow_stack(argv_key, 1);
-    __softboundcets_store_lock_shadow_stack(argv_loc, 1);
+    __softboundcets_store_base_shadow_stack(&new_argv[0], 0);
+    __softboundcets_store_bound_shadow_stack(temp_ptr, 0);
+    __softboundcets_store_key_shadow_stack(argv_key, 0);
+    __softboundcets_store_lock_shadow_stack(argv_loc, 0);
 
 #endif
 
