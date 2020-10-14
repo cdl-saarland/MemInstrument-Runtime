@@ -22,7 +22,7 @@ static const size_t __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES =
 
   Allocation: read the current stack frames size, increment the
   shadow_stack_ptr by current_size + 2, store the previous size into
-  the new prev value, calcuate the allocation size and store in the
+  the new prev value, calculate the allocation size and store in the
   new current stack size field; Deallocation: read the previous size,
   and decrement the shadow_stack_ptr */
 
