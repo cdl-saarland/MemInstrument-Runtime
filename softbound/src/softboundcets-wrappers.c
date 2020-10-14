@@ -678,22 +678,38 @@ __WEAK_INLINE int softboundcets_renameat(int olddirfd, const char *oldpath,
 __WEAK_INLINE ssize_t softboundcets___getdelim(char **lineptr, size_t *n,
                                                int delim, FILE *stream) {
 
-    int metadata_prop = 1;
-    if (*lineptr == NULL) {
-        metadata_prop = 0;
-    }
+    // TODO
+    // This should be checked:
+    // Temporal:
+    // The application shall ensure that *lineptr is a valid argument that could
+    // be passed to the free() function.
+    // Spatial:
+    // If *n is non-zero, the application shall ensure that *lineptr either
+    // points to an object of size at least *n bytes, or is a null pointer.
 
-    ssize_t ret_val = getdelim(lineptr, n, delim, stream);
+    ssize_t ret_val = __getdelim(lineptr, n, delim, stream);
 
-    if (metadata_prop) {
-        __softboundcets_read_shadow_stack_metadata_store(lineptr, 1);
-    } else {
-        __softboundcets_store_return_metadata(
-            *lineptr, (*lineptr) + strlen(*lineptr), 1,
-            __softboundcets_get_global_lock());
+    if (ret_val != -1) {
+#if __SOFTBOUNDCETS_SPATIAL
+        // TODO maybe the upper bound is max(*oldn, strlen(*lineptr))?
+        // The lower pointer should be correct, as there is a constraint on it
+        // to be freeable (or it is allocated by the function).
+        __softboundcets_metadata_store(lineptr, *lineptr,
+                                       (*lineptr) + strlen(*lineptr));
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __softboundcets_metadata_store(1, __softboundcets_get_global_lock());
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __softboundcets_metadata_store(*lineptr, (*lineptr) + strlen(*lineptr),
+                                       1, __softboundcets_get_global_lock());
+#endif
     }
 
     return ret_val;
+}
+
+__WEAK_INLINE ssize_t softboundcets_getdelim(char **lineptr, size_t *n,
+                                             int delim, FILE *stream) {
+    return softboundcets___getdelim(lineptr, n, delim, stream);
 }
 
 //===----------------------------------------------------------------------===//
