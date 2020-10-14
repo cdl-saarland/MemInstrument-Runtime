@@ -127,7 +127,7 @@ __softboundcets_read_shadow_stack_metadata_store(char **endptr, int arg_num) {
 #elif __SOFTBOUNDCETS_TEMPORAL
 
     key_type nptr_key = __softboundcets_load_key_shadow_stack(arg_num);
-    lock_type *nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
+    lock_type nptr_lock = __softboundcets_load_lock_shadow_stack(arg_num);
 
     __softboundcets_metadata_store(endptr, nptr_key, nptr_lock);
 
@@ -316,7 +316,7 @@ __WEAK_INLINE long softboundcets_strtol(const char *nptr, char **endptr,
 
     long temp = strtol(nptr, endptr, base);
     if (endptr != NULL) {
-        //    __softboundcets_printf("*endptr=%p\n", *endptr);
+        __softboundcets_debug_printf("[strtol] *endptr=%p\n", *endptr);
         __softboundcets_read_shadow_stack_metadata_store(endptr, 1);
     }
     return temp;
