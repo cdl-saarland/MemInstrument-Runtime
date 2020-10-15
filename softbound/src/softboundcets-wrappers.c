@@ -222,6 +222,61 @@ __WEAK_INLINE void __softboundcets_store_return_metadata(void *base,
 #endif
 }
 
+#if __SOFTBOUNDCETS_SPATIAL
+
+// TODO those are written with only spatial safety in mind.
+// Find out which generalize, make them available to configurations that include
+// temporal safety.
+
+//===----------------------------------------------------------------------===//
+//                  Generic Wrappers for frequent cases
+//===----------------------------------------------------------------------===//
+
+// The location the returned pointer points to can be dereferenced, but
+// neither can elements before or after it.
+__WEAK_INLINE
+void __softboundcets_generic_pointer_width_bounds(void *ret_ptr) {
+    __softboundcets_store_return_metadata(
+        ret_ptr, (void *)((char *)ret_ptr + sizeof(ret_ptr)), 1,
+        __softboundcets_get_global_lock());
+}
+
+// DISCLAIMER: These methods should ideally not be needed. They limit the
+// bug finding capabilities, but honestly reflect the execution time
+// behavior of SoftBound checks and metadata propagation.
+
+// There is no information on the allocation size, we only know that
+// accessing it in a positive fashion is valid.
+__WEAK_INLINE
+void __softboundcets_generic_wide_upper_bound_return(void *ret_ptr) {
+    __softboundcets_store_return_metadata(
+        ret_ptr, (void *)((char *)ret_ptr + 1024 * 1024), 1,
+        __softboundcets_get_global_lock());
+}
+
+// There is no information on the allocation size, we need to assume all
+// memory is readable through this pointer.
+__WEAK_INLINE
+void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
+    __softboundcets_store_return_metadata(
+        0, (void *)((char *)ret_ptr + 1024 * 1024), 1,
+        __softboundcets_get_global_lock());
+}
+
+// This function is a similar convenience function to the one above, just
+// for metadata stores instead of returned pointers.
+__WEAK_INLINE
+void __softboundcets_metadata_store_generic_wide_bounds(void *addr_of_ptr) {
+    __softboundcets_metadata_store(addr_of_ptr, NULL,
+                                   (void *)((char *)addr_of_ptr + 1024 * 1024));
+}
+
+__WEAK_INLINE
+void __softboundcets_metadata_store_generic_null_bounds(void *addr_of_ptr) {
+    __softboundcets_metadata_store(addr_of_ptr, NULL, NULL);
+}
+#endif
+
 //===----------------------------------------------------------------------===//
 //                           stdlib.h Wrappers
 //===----------------------------------------------------------------------===//
@@ -590,9 +645,11 @@ __WEAK_INLINE void softboundcets_setbuf(FILE *stream, char *buf) {
 __WEAK_INLINE FILE *softboundcets_tmpfile(void) {
 
     void *ret_ptr = tmpfile();
-    void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
+    if (ret_ptr) {
+        void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
+        __softboundcets_store_return_metadata(
+            ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
+    }
     return ret_ptr;
 }
 
@@ -602,23 +659,26 @@ __WEAK_INLINE long softboundcets_ftell(FILE *stream) { return ftell(stream); }
 
 __WEAK_INLINE FILE *softboundcets_fopen(const char *path, const char *mode) {
 
-    void *ret_ptr = (void *)fopen(path, mode);
-    void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
+    FILE *ret_ptr = fopen(path, mode);
+    if (ret_ptr) {
+        void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
 
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
+        __softboundcets_store_return_metadata(
+            ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
+    }
 
     return (FILE *)ret_ptr;
 }
 
 __WEAK_INLINE FILE *softboundcets_fdopen(int fildes, const char *mode) {
 
-    void *ret_ptr = (void *)fdopen(fildes, mode);
-    void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
-
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
-    return (FILE *)ret_ptr;
+    FILE *ret_ptr = fdopen(fildes, mode);
+    if (ret_ptr) {
+        void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
+        __softboundcets_store_return_metadata(
+            ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
+    }
+    return ret_ptr;
 }
 
 __WEAK_INLINE int softboundcets_fseek(FILE *stream, long offset, int whence) {
@@ -628,12 +688,13 @@ __WEAK_INLINE int softboundcets_fseek(FILE *stream, long offset, int whence) {
 
 __WEAK_INLINE FILE *softboundcets_popen(const char *command, const char *type) {
 
-    void *ret_ptr = (void *)popen(command, type);
-    void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
-
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
-    return (FILE *)ret_ptr;
+    FILE *ret_ptr = popen(command, type);
+    if (ret_ptr) {
+        void *ret_ptr_bound = (char *)ret_ptr + sizeof(FILE);
+        __softboundcets_store_return_metadata(
+            ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
+    }
+    return ret_ptr;
 }
 
 __WEAK_INLINE int softboundcets_fclose(FILE *fp) { return fclose(fp); }
@@ -739,37 +800,34 @@ __WEAK_INLINE wint_t softboundcets_towlower(wint_t wc) { return towlower(wc); }
 
 __WEAK_INLINE DIR *softboundcets_fdopendir(int fd) {
 
-    void *ret_ptr = (void *)fdopendir(fd);
-    void *ret_ptr_bound = (char *)ret_ptr + 1024 * 1024;
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
-    return (DIR *)ret_ptr;
+    DIR *ret_ptr = fdopendir(fd);
+    if (ret_ptr) {
+        __softboundcets_generic_wide_bounds_return(ret_ptr);
+    }
+    return ret_ptr;
 }
 
 __WEAK_INLINE int softboundcets_dirfd(DIR *dirp) { return dirfd(dirp); }
 
 __WEAK_INLINE struct dirent *softboundcets_readdir(DIR *dir) {
 
-    void *ret_ptr = (void *)readdir(dir);
-    void *ret_ptr_bound = (char *)ret_ptr + sizeof(struct dirent);
+    struct dirent *ret_ptr = readdir(dir);
+    if (ret_ptr) {
+        void *ret_ptr_bound = (char *)ret_ptr + sizeof(struct dirent);
+        __softboundcets_store_return_metadata(
+            ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
+    }
 
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
-
-    return (struct dirent *)ret_ptr;
+    return ret_ptr;
 }
 
 __WEAK_INLINE DIR *softboundcets_opendir(const char *name) {
 
-    void *ret_ptr = opendir(name);
-
-    /* FIX Required, don't know the sizeof(DIR) */
-    void *ret_ptr_bound = (char *)ret_ptr + 1024 * 1024;
-
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr_bound, 1,
-                                          __softboundcets_get_global_lock());
-
-    return (DIR *)ret_ptr;
+    DIR *ret_ptr = opendir(name);
+    if (ret_ptr) {
+        __softboundcets_generic_wide_bounds_return(ret_ptr);
+    }
+    return ret_ptr;
 }
 
 __WEAK_INLINE int softboundcets_closedir(DIR *dir) { return closedir(dir); }
@@ -848,20 +906,23 @@ iconv_t softboundcets_iconv_open(const char *tocode, const char *fromcode) {
 
 __WEAK_INLINE
 struct passwd *softboundcets_getpwnam(const char *name) {
-    void *ret_ptr = getpwnam(name);
-    __softboundcets_store_return_metadata(ret_ptr,
-                                          (char *)ret_ptr + 1024 * 1024, 1,
-                                          __softboundcets_get_global_lock());
+    struct passwd *ret_ptr = getpwnam(name);
+    if (ret_ptr) {
+        __softboundcets_store_return_metadata(
+            ret_ptr, (char *)ret_ptr + sizeof(struct passwd), 1,
+            __softboundcets_get_global_lock());
+    }
 
     return ret_ptr;
 }
 
 __WEAK_INLINE struct passwd *softboundcets_getpwuid(uid_t uid) {
-    void *ret_ptr = getpwuid(uid);
-
-    __softboundcets_store_return_metadata(ret_ptr,
-                                          (char *)ret_ptr + 1024 * 1024, 1,
-                                          __softboundcets_get_global_lock());
+    struct passwd *ret_ptr = getpwuid(uid);
+    if (ret_ptr) {
+        __softboundcets_store_return_metadata(
+            ret_ptr, (char *)ret_ptr + sizeof(struct passwd), 1,
+            __softboundcets_get_global_lock());
+    }
 
     return ret_ptr;
 }
@@ -872,20 +933,23 @@ __WEAK_INLINE struct passwd *softboundcets_getpwuid(uid_t uid) {
 
 __WEAK_INLINE
 struct group *softboundcets_getgrnam(const char *name) {
-    void *ret_ptr = getgrnam(name);
-    __softboundcets_store_return_metadata(ret_ptr,
-                                          (char *)ret_ptr + 1024 * 1024, 1,
-                                          __softboundcets_get_global_lock());
-
+    struct group *ret_ptr = getgrnam(name);
+    if (ret_ptr) {
+        __softboundcets_store_return_metadata(
+            ret_ptr, (char *)ret_ptr + sizeof(struct group), 1,
+            __softboundcets_get_global_lock());
+    }
     return ret_ptr;
 }
 
 __WEAK_INLINE struct group *softboundcets_getgrgid(gid_t gid) {
 
-    void *ret_ptr = getgrgid(gid);
-    __softboundcets_store_return_metadata(ret_ptr,
-                                          (char *)ret_ptr + 1024 * 1024, 1,
-                                          __softboundcets_get_global_lock());
+    struct group *ret_ptr = getgrgid(gid);
+    if (ret_ptr) {
+        __softboundcets_store_return_metadata(
+            ret_ptr, (char *)ret_ptr + sizeof(struct group), 1,
+            __softboundcets_get_global_lock());
+    }
 
     return ret_ptr;
 }
@@ -1298,7 +1362,8 @@ __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
 
 __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
-#if __SOFTBOUNDCETS_SPATIAL
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#ifdef __SOFTBOUNDCETS_WRAPPER_CHECKS
 
     // Make sure that dest is large enough to store n elements
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
@@ -1316,28 +1381,6 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
     //  if(src < src_base || (src > src_bound -n) || (n > (size_t) src_bound)){
     //    __softboundcets_abort();
     //  }
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-#ifdef __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-    char *dest_base = __softboundcets_load_base_shadow_stack(1);
-    char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-
-    char *src_base = __softboundcets_load_base_shadow_stack(2);
-    char *src_bound = __softboundcets_load_bound_shadow_stack(2);
-
-    /* Can either (dest + n) or (src + n) overflow? */
-    if (dest < dest_base || dest + n > dest_bound) {
-        __softboundcets_printf("[strncpy] overflow in dest\n");
-        __softboundcets_abort();
-    }
-    if (src < src_base || src + n > src_bound) {
-           __softboundcets_printf("[strncpy] overflow in src, src=%zx,
-           src_base=%zx, src_bound=%zx\n", src, src_base, src_bound);
-        __softboundcets_abort();
-    }
 #endif
 #endif
 
@@ -1941,8 +1984,8 @@ __WEAK_INLINE
 char *softboundcets_nl_langinfo(nl_item item) {
 
     char *ret_ptr = nl_langinfo(item);
-
-    __softboundcets_store_return_metadata(ret_ptr, ret_ptr + 1024 * 1024, 1,
+    __softboundcets_store_return_metadata(ret_ptr,
+                                          ret_ptr + strlen(ret_ptr) + 1, 1,
                                           __softboundcets_get_global_lock());
 
     return ret_ptr;
@@ -1955,54 +1998,6 @@ char *softboundcets_nl_langinfo(nl_item item) {
 // TODO those are written with only spatial safety in mind.
 // Find out which generalize, make them available to configurations that include
 // temporal safety.
-
-//===----------------------------------------------------------------------===//
-//                  Generic Wrappers for frequent cases
-//===----------------------------------------------------------------------===//
-
-// The location the returned pointer points to can be dereferenced, but
-// neither can elements before or after it.
-__WEAK_INLINE
-void __softboundcets_generic_pointer_width_bounds(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        ret_ptr, (void *)((char *)ret_ptr + sizeof(ret_ptr)), 1,
-        __softboundcets_get_global_lock());
-}
-
-// DISCLAIMER: These methods should ideally not be needed. They limit the
-// bug finding capabilities, but honestly reflect the execution time
-// behavior of SoftBound checks and metadata propagation.
-
-// There is no information on the allocation size, we only know that
-// accessing it in a positive fashion is valid.
-__WEAK_INLINE
-void __softboundcets_generic_wide_upper_bound_return(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        ret_ptr, (void *)((char *)ret_ptr + 1024 * 1024), 1,
-        __softboundcets_get_global_lock());
-}
-
-// There is no information on the allocation size, we need to assume all
-// memory is readable through this pointer.
-__WEAK_INLINE
-void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        0, (void *)((char *)ret_ptr + 1024 * 1024), 1,
-        __softboundcets_get_global_lock());
-}
-
-// This function is a similar convenience function to the one above, just
-// for metadata stores instead of returned pointers.
-__WEAK_INLINE
-void __softboundcets_metadata_store_generic_wide_bounds(void *addr_of_ptr) {
-    __softboundcets_metadata_store(addr_of_ptr, NULL,
-                                   (void *)((char *)addr_of_ptr + 1024 * 1024));
-}
-
-__WEAK_INLINE
-void __softboundcets_metadata_store_generic_null_bounds(void *addr_of_ptr) {
-    __softboundcets_metadata_store(addr_of_ptr, NULL, NULL);
-}
 
 //===----------------------------------------------------------------------===//
 //                             GLIBC Wrappers
@@ -2156,14 +2151,9 @@ key_t softboundcets_ftok(const char *pathname, int proj_id) {
 __WEAK_INLINE
 int softboundcets_gethostname(char *name, size_t len) {
 
-    char *base = (char *)__softboundcets_load_base_shadow_stack(1);
-    char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
-
-    if (name < base || name + len > bound) {
-        __softboundcets_printf(
-            "[gethostname] 'name' buffer is accessed out of bounds\n");
-        __softboundcets_abort();
-    }
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, name, len);
 
     return gethostname(name, len);
 }
@@ -2247,14 +2237,11 @@ __WEAK_INLINE
 int softboundcets_setsockopt(int sockfd, int level, int optname,
                              const void *optval, socklen_t optlen) {
 
-    char *base = (char *)__softboundcets_load_base_shadow_stack(1);
-    char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
-    if ((char *)optval < base || ((char *)optval) + optlen > bound) {
-        __softboundcets_printf(
-            "[setsocketopt] 'optval' buffer size is smaller than optlen\n");
-        __softboundcets_abort();
+    if (optval) {
+        void *base = __softboundcets_load_base_shadow_stack(0);
+        void *bound = __softboundcets_load_bound_shadow_stack(0);
+        __softboundcets_spatial_dereference_check(base, bound, optval, optlen);
     }
-
     int ret = setsockopt(sockfd, level, optname, optval, optlen);
     return ret;
 }
@@ -2263,12 +2250,10 @@ __WEAK_INLINE
 int softboundcets_getsockname(int sockfd, struct sockaddr *addr,
                               socklen_t *addrlen) {
 
-    char *base = (char *)__softboundcets_load_base_shadow_stack(1);
-    char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
-    if ((char *)addr < base || ((char *)addr) + *addrlen > bound) {
-        __softboundcets_printf(
-            "[getsockname] 'addr' buffer size is smaller than addrlen\n");
-        __softboundcets_abort();
+    if (addr) {
+        void *base = __softboundcets_load_base_shadow_stack(0);
+        void *bound = __softboundcets_load_bound_shadow_stack(0);
+        __softboundcets_spatial_dereference_check(base, bound, addr, *addrlen);
     }
 
     int ret = getsockname(sockfd, addr, addrlen);
@@ -2286,23 +2271,15 @@ int softboundcets_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     // hostlen (or servlen) argument.
 
     if (hostlen && host) {
-        char *base = (char *)__softboundcets_load_base_shadow_stack(2);
-        char *bound = (char *)__softboundcets_load_bound_shadow_stack(2);
-        if (host < base || host + hostlen > bound) {
-            __softboundcets_printf("[getnameinfo] 'host' buffer size is "
-                                   "smaller than hostlen\n");
-            __softboundcets_abort();
-        }
+        void *base = __softboundcets_load_base_shadow_stack(1);
+        void *bound = __softboundcets_load_bound_shadow_stack(1);
+        __softboundcets_spatial_dereference_check(base, bound, host, hostlen);
     }
 
     if (serv && servlen) {
-        char *base = (char *)__softboundcets_load_base_shadow_stack(3);
-        char *bound = (char *)__softboundcets_load_bound_shadow_stack(3);
-        if (serv < base || serv + servlen > bound) {
-            __softboundcets_printf("[getnameinfo] 'serv' buffer size is "
-                                   "smaller than servlen\n");
-            __softboundcets_abort();
-        }
+        void *base = __softboundcets_load_base_shadow_stack(2);
+        void *bound = __softboundcets_load_bound_shadow_stack(2);
+        __softboundcets_spatial_dereference_check(base, bound, serv, servlen);
     }
 
     int ret = getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
@@ -2336,13 +2313,9 @@ char *softboundcets_getpass(const char *prompt) {
 
 __WEAK_INLINE
 int softboundcets_madvise(void *addr, size_t length, int advice) {
-    void *base = __softboundcets_load_base_shadow_stack(1);
-    void *bound = __softboundcets_load_bound_shadow_stack(1);
-    if (addr < base || ((char *)addr) + length > (char *)bound) {
-        __softboundcets_printf("[madvise] 'addr' buffer size is smaller than "
-                               "length (bad advice given to kernel)\n");
-        __softboundcets_abort();
-    }
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, addr, length);
 
     int ret = madvise(addr, length, advice);
     return ret;
