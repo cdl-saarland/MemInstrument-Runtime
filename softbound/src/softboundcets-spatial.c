@@ -5,9 +5,8 @@
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL || __SOFTBOUNDCETS_SPATIAL
 //===----------------------------- Checks ---------------------------------===//
 
-__WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
-                                                                  void *bound,
-                                                                  void *ptr) {
+__WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
+    const void *base, const void *bound, const void *ptr) {
 
     __softboundcets_debug_printf(
         "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base, bound,
@@ -30,9 +29,8 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(void *base,
 #endif
 }
 
-__WEAK_INLINE void
-__softboundcets_spatial_dereference_check(void *base, void *bound, void *ptr,
-                                          size_t size_of_type) {
+__WEAK_INLINE void __softboundcets_spatial_dereference_check(
+    const void *base, const void *bound, const void *ptr, size_t size_of_type) {
 #if ENABLE_RT_STATS
     __rt_stat_inc_sb_access_check();
 #endif
@@ -65,6 +63,7 @@ __softboundcets_spatial_dereference_check(void *base, void *bound, void *ptr,
 //===-------------------- Shadow Stack Manipulation -----------------------===//
 
 __WEAK_INLINE void *__softboundcets_load_base_shadow_stack(int arg_no) {
+
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BASE_INDEX;

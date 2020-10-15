@@ -10,13 +10,16 @@
 
 //===----------------------------- Checks ---------------------------------===//
 
-void __softboundcets_spatial_call_dereference_check(void *base, void *bound,
-                                                    void *ptr);
+void __softboundcets_spatial_call_dereference_check(const void *base,
+                                                    const void *bound,
+                                                    const void *ptr);
 
 // A dereference check makes sure that the given pointer (+ width) is in between
 // base and bound.
-void __softboundcets_spatial_dereference_check(void *base, void *bound,
-                                               void *ptr, size_t size_of_type);
+void __softboundcets_spatial_dereference_check(const void *base,
+                                               const void *bound,
+                                               const void *ptr,
+                                               size_t size_of_type);
 
 //===-------------------- Shadow Stack Manipulation -----------------------===//
 

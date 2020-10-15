@@ -295,7 +295,7 @@ __WEAK_INLINE unsigned long int softboundcets_strtoul(const char *nptr,
 
     unsigned long temp = strtoul(nptr, endptr, base);
     if (endptr != NULL) {
-        __softboundcets_read_shadow_stack_metadata_store(endptr, 1);
+        __softboundcets_read_shadow_stack_metadata_store(endptr, 0);
     }
 
     return temp;
@@ -306,7 +306,7 @@ __WEAK_INLINE double softboundcets_strtod(const char *nptr, char **endptr) {
     double temp = strtod(nptr, endptr);
 
     if (endptr != NULL) {
-        __softboundcets_read_shadow_stack_metadata_store(endptr, 1);
+        __softboundcets_read_shadow_stack_metadata_store(endptr, 0);
     }
     return temp;
 }
@@ -317,7 +317,7 @@ __WEAK_INLINE long softboundcets_strtol(const char *nptr, char **endptr,
     long temp = strtol(nptr, endptr, base);
     if (endptr != NULL) {
         __softboundcets_debug_printf("[strtol] *endptr=%p\n", *endptr);
-        __softboundcets_read_shadow_stack_metadata_store(endptr, 1);
+        __softboundcets_read_shadow_stack_metadata_store(endptr, 0);
     }
     return temp;
 }
@@ -340,7 +340,11 @@ softboundcets_bsearch(const void *key, const void *base, size_t nmemb,
 
     void *ret_ptr = bsearch(key, base, nmemb, size, compar);
 
-    __softboundcets_propagate_metadata_shadow_stack_from(2, 0);
+    if (ret_ptr) {
+        __softboundcets_propagate_metadata_shadow_stack_from(2, 0);
+    } else {
+        __softboundcets_store_null_return_metadata();
+    }
     return ret_ptr;
 }
 
@@ -989,14 +993,10 @@ __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
 
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-    char *base = (char *)__softboundcets_load_base_shadow_stack(1);
-    char *bound = (char *)__softboundcets_load_bound_shadow_stack(1);
+    void *base = __softboundcets_load_base_shadow_stack(1);
+    void *bound = __softboundcets_load_bound_shadow_stack(1);
 
-    if (buf < base || buf + size > bound) {
-        __softboundcets_printf("[getcwd] Overflow in the buffer argument\n");
-        __softboundcets_abort();
-    }
-
+    __softboundcets_spatial_dereference_check(base, bound, buf, size);
 #endif
 
     char *ret_ptr = getcwd(buf, size);
@@ -1077,13 +1077,16 @@ __WEAK_INLINE int softboundcets_strncasecmp(const char *s1, const char *s2,
     return strncasecmp(s1, s2, n);
 }
 
-__WEAK_INLINE size_t softboundcets_strlen(const char *s) { return strlen(s); }
+__WEAK_INLINE size_t softboundcets_strlen(const char *s) {
+    // TODO This should probably check that no memory beyond the bounds of s is
+    // read...
+    return strlen(s);
+}
 
 __WEAK_INLINE char *softboundcets_strpbrk(const char *s, const char *accept) {
 
     char *ret_ptr = strpbrk(s, accept);
     if (ret_ptr != NULL) {
-
         __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     } else {
 
@@ -1134,6 +1137,13 @@ __WEAK_INLINE void *softboundcets_memchr(const void *s, int c, size_t n) {
     return ret_ptr;
 }
 
+__WEAK_INLINE char *softboundcets_index(char *s, int c) {
+
+    char *ret_ptr = index(s, c);
+    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    return ret_ptr;
+}
+
 __WEAK_INLINE char *softboundcets_rindex(char *s, int c) {
 
     char *ret_ptr = rindex(s, c);
@@ -1174,54 +1184,28 @@ __WEAK_INLINE char *softboundcets_stpcpy(char *dest, char *src) {
 
 __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
 
-#if __SOFTBOUNDCETS_SPATIAL
-    char *dest_base = __softboundcets_load_base_shadow_stack(1);
-    char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-    char *src_base = __softboundcets_load_base_shadow_stack(2);
-    char *src_bound = __softboundcets_load_bound_shadow_stack(2);
-
-    /* There will be an out-of-bound read before we trigger an error as
-       we currently use strlen. Can either (dest + size) or (src + size)
-       overflow?
-    */
-    size_t size = strlen(src);
-    if (dest < dest_base || (dest > dest_bound - size - 1) ||
-        (size > (size_t)dest_bound)) {
-        __softboundcets_printf("[strcpy] overflow in dest\n");
-        __softboundcets_abort();
-    }
-    if (src < src_base || (src > src_bound - size - 1) ||
-        (size > (size_t)src_bound)) {
-        __softboundcets_printf("[strcpy] overflow in src\n");
-        __softboundcets_abort();
-    }
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    char *dest_base = __softboundcets_load_base_shadow_stack(1);
-    char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-
-    char *src_base = __softboundcets_load_base_shadow_stack(2);
-    char *src_bound = __softboundcets_load_bound_shadow_stack(2);
-
-    /* There will be an out-of-bound read before we trigger an error as
-       we currently use strlen. Can either (dest + size) or (src + size)
-       overflow?
-    */
 #ifndef __NOSIM_CHECKS
-    size_t size = strlen(src);
-    if (dest < dest_base || (dest > dest_bound - size - 1) ||
-        (size > (size_t)dest_bound)) {
-        __softboundcets_printf("[strcpy] overflow in dest\n");
-        __softboundcets_abort();
-    }
-    if (src < src_base || (src > src_bound - size - 1) ||
-        (size > (size_t)src_bound)) {
-        __softboundcets_printf("[strcpy] overflow in src\n");
-        __softboundcets_abort();
-    }
+    void *src_base = __softboundcets_load_base_shadow_stack(2);
+    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
+
+    // TODO it might be reasonable to have an internal safe version of strlen
+    // that gets base and bound as arguments, such that the shadow stack does
+    // not need to be used (this would likely be more run-time efficient and
+    // require less code in the wrappers that use it)
+
+    // The amount of bytes copied is the length of the string + null terminator.
+    __softboundcets_allocate_shadow_stack_space(1);
+    __softboundcets_store_base_shadow_stack(src_base, 0);
+    __softboundcets_store_bound_shadow_stack(src_bound, 0);
+    size_t size = softboundcets_strlen(src) + 1;
+    __softboundcets_deallocate_shadow_stack_space();
+
+    void *dest_base = __softboundcets_load_base_shadow_stack(1);
+    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
+    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest,
+                                              size);
 #endif
 #endif
 
@@ -1286,6 +1270,10 @@ __WEAK_INLINE char *softboundcets___strdup(const char *s) {
 
 __WEAK_INLINE char *softboundcets_strcat(char *dest, const char *src) {
 
+    // TODO this should again use softboundcets_strlen for both, dest and src,
+    // to determine how many bytes will be written to dest. Make sure to not add
+    // the lengths without overflow checks. Check that dest is large enough to
+    // hold the concatenated strings (use the dereference check function).
 #if 0
   if(dest + strlen(dest) + strlen(src) > dest_bound){
     __softboundcets_printf("overflow with strcat, dest = %p, strlen(dest)=%d,
@@ -1302,7 +1290,7 @@ __WEAK_INLINE char *softboundcets_strcat(char *dest, const char *src) {
 
 __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
                                           size_t n) {
-
+    // TODO missing checks (see also strcat)
     char *ret_ptr = strncat(dest, src, n);
     __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     return ret_ptr;
@@ -1311,15 +1299,14 @@ __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
 __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
 #if __SOFTBOUNDCETS_SPATIAL
+
+    // Make sure that dest is large enough to store n elements
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
     char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
+    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
 
-    /* Can either (dest + n) or (src + n) overflow? */
-    if (dest < dest_base || (dest > dest_bound - n) ||
-        (n > (size_t)dest_bound)) {
-        __softboundcets_printf("[strncpy] overflow in dest\n");
-        __softboundcets_abort();
-    }
+    // TODO add check for src: either its size is at least n elements, or
+    // safe_strlen(src) + 1 < n holds
 
     // This is more strict than the definition of strncpy.
     // n < src_bound - src is valid and defined as long as the src buffer is
@@ -1521,15 +1508,32 @@ __WEAK_INLINE void *softboundcets_malloc(size_t size) {
 __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
                                           size_t n) {
 
-    // IMP: need to copy the metadata
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+
+    void *dest_base = __softboundcets_load_base_shadow_stack(1);
+    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
+    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
+
+    void *src_base = __softboundcets_load_base_shadow_stack(2);
+    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
+    __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
+#endif
+
     void *ret_ptr = mempcpy(dest, src, n);
+    // TODO this copy discards the const src qualifier
+    // __softboundcets_copy_metadata(dest, src, n);
+    __softboundcets_abort();
     __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     return ret_ptr;
 }
 
 #endif
 
-__WEAK_INLINE void softboundcets_free(void *ptr) { free(ptr); }
+__WEAK_INLINE void softboundcets_free(void *ptr) {
+    // TODO shouldn't this make sure that the object is freeable and update the
+    // list of freeable objects such that double frees can be avoided?
+    free(ptr);
+}
 
 //===----------------------------------------------------------------------===//
 //                      Time Related Library Wrappers
@@ -2056,7 +2060,11 @@ __WEAK_INLINE
 char *softboundcets_crypt_r(const char *key, const char *salt,
                             struct crypt_data *data) {
     char *ret_ptr = crypt_r(key, salt, data);
-    __softboundcets_propagate_metadata_shadow_stack_from(3, 0);
+    if (ret_ptr) {
+        __softboundcets_propagate_metadata_shadow_stack_from(3, 0);
+    } else {
+        __softboundcets_store_null_return_metadata();
+    }
     return ret_ptr;
 }
 #endif
@@ -2132,7 +2140,11 @@ int softboundcets_execvp(const char *file, char *const argv[]) {
 __WEAK_INLINE
 FILE *softboundcets_freopen(const char *path, const char *mode, FILE *stream) {
     FILE *ret_ptr = freopen(path, mode, stream);
-    __softboundcets_propagate_metadata_shadow_stack_from(3, 0);
+    if (ret_ptr) {
+        __softboundcets_propagate_metadata_shadow_stack_from(3, 0);
+    } else {
+        __softboundcets_store_null_return_metadata();
+    }
     return ret_ptr;
 }
 
