@@ -1471,30 +1471,32 @@ __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
 
 __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
 
+    void *ret_ptr = calloc(nmemb, size);
+
+    if (!ret_ptr) {
+        __softboundcets_store_null_return_metadata();
+        return ret_ptr;
+    }
+
     key_type ptr_key = 1;
     lock_type ptr_lock = NULL;
 
-    void *ret_ptr = calloc(nmemb, size);
-    if (ret_ptr != NULL) {
-
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
+    __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
 #endif
-
-        __softboundcets_store_return_metadata(
-            ret_ptr, ((char *)(ret_ptr) + (nmemb * size)), ptr_key, ptr_lock);
 
 #if __SOFTBOUNDCETS_FREE_MAP
-        // TODO The comment looks like it should be executed when using the free
-        // map...
-        __softboundcets_debug_printf("[calloc] ptr=%p, ptr_key=%zx\n", ret_ptr,
-                                     ptr_key);
+    // TODO The comment looks like it should be executed when using the free
+    // map...
+    __softboundcets_debug_printf("[calloc] ptr=%p, ptr_key=%zx\n", ret_ptr,
+                                 ptr_key);
 
-        // __softboundcets_add_to_free_map(ptr_key, ret_ptr);
-#else
-        __softboundcets_store_null_return_metadata();
+    // __softboundcets_add_to_free_map(ptr_key, ret_ptr);
 #endif
-    }
+
+    __softboundcets_store_return_metadata(
+        ret_ptr, ((char *)(ret_ptr) + (nmemb * size)), ptr_key, ptr_lock);
+
     return ret_ptr;
 }
 
