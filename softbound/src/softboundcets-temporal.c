@@ -237,7 +237,9 @@ __WEAK_INLINE void __softboundcets_memory_allocation(void *ptr,
     *ptr_key = temp_id;
     **((key_type **)ptr_lock) = temp_id;
 
+#if __SOFTBOUNDCETS_FREE_MAP
     __softboundcets_add_to_free_map(temp_id, ptr);
+#endif
     __softboundcets_allocation_secondary_trie_allocate(ptr);
 
     __softboundcets_debug_printf(

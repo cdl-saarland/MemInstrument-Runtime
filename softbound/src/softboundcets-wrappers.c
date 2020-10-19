@@ -80,6 +80,7 @@
 #include <glob.h>
 #include <grp.h>
 #include <limits.h>
+#include <malloc.h>
 #include <math.h>
 #include <netdb.h>
 #include <pwd.h>
@@ -1469,13 +1470,15 @@ __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
     return ret_ptr;
 }
 
-__WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
+// Generic helper for allocation functions that return a pointer to the
+// allocated memory. It will store appropriate pointer metadata information to
+// the shadow stack.
+__WEAK_INLINE void *__softboundcets_generic_alloc(void *alloced_ptr,
+                                                  size_t size) {
 
-    void *ret_ptr = calloc(nmemb, size);
-
-    if (!ret_ptr) {
+    if (!alloced_ptr) {
         __softboundcets_store_null_return_metadata();
-        return ret_ptr;
+        return alloced_ptr;
     }
 
     key_type ptr_key = 1;
@@ -1485,19 +1488,60 @@ __WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
     __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
 #endif
 
-#if __SOFTBOUNDCETS_FREE_MAP
-    // TODO The comment looks like it should be executed when using the free
-    // map...
-    __softboundcets_debug_printf("[calloc] ptr=%p, ptr_key=%zx\n", ret_ptr,
-                                 ptr_key);
-
-    // __softboundcets_add_to_free_map(ptr_key, ret_ptr);
-#endif
-
     __softboundcets_store_return_metadata(
-        ret_ptr, ((char *)(ret_ptr) + (nmemb * size)), ptr_key, ptr_lock);
+        alloced_ptr, (char *)alloced_ptr + size, ptr_key, ptr_lock);
 
-    return ret_ptr;
+    return alloced_ptr;
+}
+
+__WEAK_INLINE void *softboundcets_calloc(size_t nmemb, size_t size) {
+
+    void *ret_ptr = calloc(nmemb, size);
+
+    return __softboundcets_generic_alloc(ret_ptr, nmemb * size);
+}
+
+__WEAK_INLINE void *softboundcets_malloc(size_t size) {
+
+    void *ret_ptr = malloc(size);
+
+    return __softboundcets_generic_alloc(ret_ptr, size);
+}
+
+__WEAK_INLINE void *softboundcets_memalign(size_t alignment, size_t size) {
+
+    void *ret_ptr = memalign(alignment, size);
+
+    return __softboundcets_generic_alloc(ret_ptr, size);
+}
+
+__WEAK_INLINE void *softboundcets_aligned_alloc(size_t alignment, size_t size) {
+
+    void *ret_ptr = aligned_alloc(alignment, size);
+
+    return __softboundcets_generic_alloc(ret_ptr, size);
+}
+
+__WEAK_INLINE void *softboundcets_valloc(size_t size) {
+
+    void *ret_ptr = valloc(size);
+
+    return __softboundcets_generic_alloc(ret_ptr, size);
+}
+
+__WEAK_INLINE void *softboundcets_pvalloc(size_t size) {
+
+    void *ret_ptr = pvalloc(size);
+
+    // "The obsolete function pvalloc() is similar to valloc(), but rounds the
+    // size of the allocation up to the next multiple of the system page size."
+    if (size % sysconf(_SC_PAGESIZE)) {
+        __softboundcets_debug_printf("[pvalloc] Adapted size from %zu", size);
+        size = ((size / sysconf(_SC_PAGESIZE)) + 1) * sysconf(_SC_PAGESIZE);
+        __softboundcets_debug_printf(" to %zu.\n", size);
+    }
+
+    return __softboundcets_generic_alloc(ret_ptr, size);
 }
 
 __WEAK_INLINE void *softboundcets_mmap(void *addr, size_t length, int prot,
@@ -1506,46 +1550,38 @@ __WEAK_INLINE void *softboundcets_mmap(void *addr, size_t length, int prot,
     void *ret_ptr = mmap(addr, length, prot, flags, fd, offset);
     if (ret_ptr == (void *)-1) {
         __softboundcets_store_null_return_metadata();
-    } else {
-
-        char *ret_bound = (char *)ret_ptr + length;
-        key_type ptr_key = 1;
-        lock_type ptr_lock = __softboundcets_get_global_lock();
-
-        __softboundcets_store_return_metadata(ret_ptr, ret_bound, ptr_key,
-                                              ptr_lock);
+        return ret_ptr;
     }
 
-    return ret_ptr;
+    return __softboundcets_generic_alloc(ret_ptr, length);
 }
 
-__WEAK_INLINE void *softboundcets_malloc(size_t size) {
+__WEAK_INLINE int softboundcets_posix_memalign(void **memptr, size_t alignment,
+                                               size_t size) {
 
-    key_type ptr_key = 1;
-    lock_type ptr_lock = NULL;
+    int ret = posix_memalign(memptr, alignment, size);
 
-    char *ret_ptr = (char *)malloc(size);
-    if (ret_ptr == NULL) {
-        __softboundcets_store_null_return_metadata();
-    } else {
+    if (ret) {
+        __softboundcets_metadata_store(memptr, NULL, NULL);
+        return ret;
+    }
 
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
+#if __SOFTBOUNDCETS_SPATIAL
+    __softboundcets_metadata_store(memptr, *memptr, ((char *)*memptr) + size);
+#elif __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_abort_with_msg("posix_memalign wrapper: metadata store for "
+                                   "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("posix_memalign metadata store for "
+                                   "temporal+spatial safety not implemented");
 #endif
-
-        char *ret_bound = ret_ptr + size;
-        __softboundcets_store_return_metadata(ret_ptr, ret_bound, ptr_key,
-                                              ptr_lock);
 
 #if __SOFTBOUNDCETS_FREE_MAP
-        // TODO The comment looks like it should be executed when using the free
-        // map...
-        __softboundcets_debug_printf("[malloc] ptr=%p, ptr_key=%zx\n", ret_ptr,
-                                     ptr_key);
-        //__softboundcets_add_to_free_map(ptr_key, ret_ptr);
+    __softboundcets_abort_with_msg(
+        "posix_memalign wrapper: free map entry setting not implemented");
 #endif
-    }
-    return ret_ptr;
+
+    return ret;
 }
 
 #ifdef _GNU_SOURCE
