@@ -238,8 +238,11 @@ extern void __softboundcets_printf(const char *str, ...);
 
 #if NOERRORS
 extern void __softboundcets_abort();
+extern void __softboundcets_abort_with_msg(const char *str);
 #else
 extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
+extern __SOFTBOUNDCETS_NORETURN void
+__softboundcets_abort_with_msg(const char *str);
 #endif
 
 extern size_t *__softboundcets_shadow_stack_ptr;

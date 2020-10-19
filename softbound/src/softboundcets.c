@@ -103,6 +103,7 @@ static void __print_stats(void) {
 
 #if NOERRORS
 void __softboundcets_abort() {}
+void __softboundcets_abort_with_msg(const char *) {}
 #else
 __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
     fprintf(
@@ -125,6 +126,11 @@ __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
     fprintf(stderr, "\n\n");
 
     abort();
+}
+
+void __softboundcets_abort_with_msg(const char *str) {
+    __softboundcets_printf(str);
+    __softboundcets_abort();
 }
 #endif
 
@@ -312,7 +318,7 @@ int main(int argc, char **argv) {
     __softboundcets_store_lock_shadow_stack(argv_loc, 0);
 
 #endif
-
+    __softboundcets_debug_printf("Call actual main...\n");
     return_value = softboundcets_pseudo_main(argc, new_argv);
     __softboundcets_deallocate_shadow_stack_space();
 

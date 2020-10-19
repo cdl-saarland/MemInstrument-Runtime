@@ -21,8 +21,8 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
 #endif
 
         __softboundcets_printf(
-            "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base,
-            bound, ptr);
+            "Error in Call Dereference Check, base=%p, bound=%p, ptr=%p\n",
+            base, bound, ptr);
 
         __softboundcets_abort();
     }
@@ -69,6 +69,8 @@ __WEAK_INLINE void *__softboundcets_load_base_shadow_stack(int arg_no) {
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BASE_INDEX;
     size_t *base_ptr = (__softboundcets_shadow_stack_ptr + count);
     void *base = *((void **)base_ptr);
+    __softboundcets_debug_printf(
+        "Base loaded from shadow stack (location %i): %p\n", arg_no, base);
     return base;
 }
 
@@ -78,8 +80,9 @@ __WEAK_INLINE void *__softboundcets_load_bound_shadow_stack(int arg_no) {
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BOUND_INDEX;
     size_t *bound_ptr = (__softboundcets_shadow_stack_ptr + count);
-
     void *bound = *((void **)bound_ptr);
+    __softboundcets_debug_printf(
+        "Bound loaded from shadow stack (location %i): %p\n", arg_no, bound);
     return bound;
 }
 
@@ -87,6 +90,8 @@ __WEAK_INLINE void __softboundcets_store_base_shadow_stack(void *base,
                                                            int arg_no) {
 
     assert(arg_no >= 0);
+    __softboundcets_debug_printf(
+        "Base to store to shadow stack (location %i): %p\n", arg_no, base);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BASE_INDEX;
     void **base_ptr = (void **)(__softboundcets_shadow_stack_ptr + count);
@@ -98,6 +103,8 @@ __WEAK_INLINE void __softboundcets_store_bound_shadow_stack(void *bound,
                                                             int arg_no) {
 
     assert(arg_no >= 0);
+    __softboundcets_debug_printf(
+        "Bound to store to shadow stack (location %i): %p\n", arg_no, bound);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BOUND_INDEX;
     void **bound_ptr = (void **)(__softboundcets_shadow_stack_ptr + count);

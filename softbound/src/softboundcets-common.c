@@ -227,7 +227,8 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
             trie_secondary_table;
     }
     __softboundcets_debug_printf(
-        "addr_of_ptr=%zx, primary_index =%zx, trie_secondary_table =% p\n ",
+        "\t[metadata_store not prealloced] addr_of_ptr=%zx, primary_index=%zx, "
+        "trie_secondary_table=%p\n ",
         addr_of_ptr, primary_index, trie_secondary_table);
     assert(trie_secondary_table != NULL);
 #endif
@@ -315,6 +316,12 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *((void **)base) = entry_ptr->base;
     *((void **)bound) = entry_ptr->bound;
+
+    __softboundcets_debug_printf(
+        "\t[metadata_load] addr_of_ptr=%p, base=%p, bound=%p, "
+        "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
+        addr_of_ptr, *base, *bound, primary_index, secondary_index, entry_ptr);
+
 #endif
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *((key_type *)key) = entry_ptr->key;
