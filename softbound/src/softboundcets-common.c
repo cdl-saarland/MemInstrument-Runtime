@@ -48,28 +48,10 @@ __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate() {
     secondary_entry = mmap(0, length, PROT_READ | PROT_WRITE,
                            SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
     // assert(secondary_entry != (void*)-1);
-    // __softboundcets_printf("snd trie table %p %lx\n", secondary_entry,
-    // length);
+    __softboundcets_debug_printf("snd trie table %p %lx\n", secondary_entry,
+                                 length);
     return secondary_entry;
 }
-
-#if 0
-
-//These are primary used to test and introspect  metadata during testing
-
-__WEAK_INLINE void __softboundcets_print_metadata(void* base, void* bound, void* ptr, key_type key, lock_type lock){
-
-  __softboundcets_printf("[print metadata] ptr = %p, base=%p, bound=%p, key = %zd, lock = %p, *lock = %zd\n", ptr, base, bound, key, lock, *lock);
-
-}
-
-__WEAK_INLINE void __softboundcets_intermediate(char cmp1, char cmp2, char cmp3, lock_type loaded_lock){
-
-  __softboundcets_printf("cmp = %d, cmp2 =%d cmp=%d, loaded_lock=%zd\n", cmp1, cmp2, cmp3, loaded_lock);
-
-}
-
-#endif
 
 __WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
                                                        void *bound,
