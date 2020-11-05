@@ -17,13 +17,23 @@ __softboundcets_allocate_shadow_stack_space(int num_pointer_args) {
     size_t *prev_stack_size_ptr = __softboundcets_shadow_stack_ptr + 1;
     size_t prev_stack_size = *((size_t *)prev_stack_size_ptr);
 
+    ssize_t size = num_pointer_args * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
+
+    // Make sure to not overflow the shadow stack
+    // TODO this should rather extend the size of the shadow stack than throwing
+    // an assertion
+    assert(((uintptr_t)__softboundcets_shadow_stack_ptr <
+            (uintptr_t)(__softboundcets_shadow_stack_max - prev_stack_size - 2 -
+                        size)) &&
+           "Shadow stack size exceeded. Try a larger value for "
+           "__SOFTBOUNDCETS_SHADOW_STACK_ENTRIES.");
+
     __softboundcets_shadow_stack_ptr =
         __softboundcets_shadow_stack_ptr + prev_stack_size + 2;
 
     *((size_t *)__softboundcets_shadow_stack_ptr) = prev_stack_size;
     size_t *current_stack_size_ptr = __softboundcets_shadow_stack_ptr + 1;
 
-    ssize_t size = num_pointer_args * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
     *((size_t *)current_stack_size_ptr) = size;
 }
 
@@ -33,8 +43,8 @@ __WEAK_INLINE void __softboundcets_deallocate_shadow_stack_space() {
 
     size_t read_value = *((size_t *)reserved_space_ptr);
 
-    assert((read_value >= 0 &&
-            read_value <= __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES));
+    assert(read_value >= 0 &&
+           read_value <= __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES);
 
     __softboundcets_shadow_stack_ptr =
         __softboundcets_shadow_stack_ptr - read_value - 2;

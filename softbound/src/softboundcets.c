@@ -63,6 +63,8 @@ __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
 size_t *__softboundcets_shadow_stack_ptr = NULL;
 
+size_t *__softboundcets_shadow_stack_max = NULL;
+
 void *malloc_address = NULL;
 
 const char *__get_prog_name(void) { return mi_prog_name; }
@@ -158,6 +160,10 @@ void __softboundcets_init(void) {
         mmap(0, shadow_stack_size, PROT_READ | PROT_WRITE,
              SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
     assert(__softboundcets_shadow_stack_ptr != (void *)-1);
+
+    // Keep track of the limit of the shadow stack
+    __softboundcets_shadow_stack_max =
+        __softboundcets_shadow_stack_ptr + __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES;
 
     *((size_t *)__softboundcets_shadow_stack_ptr) = 0; /* prev stack size */
     size_t *current_size_shadow_stack_ptr =
