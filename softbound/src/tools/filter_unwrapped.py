@@ -91,25 +91,23 @@ def get_undefined_symbols(execs, verbose):
     return undefined_symbols_per_file
 
 
-def filter_known_lib_functions(undefined_symbols):
+def filter_lib_functions(undefined_symbols):
     """
     Generate a list of all functions in libraries and a mapping from library to
     all encountered functions that belong to that library.
     """
-    known_lib_functions = set()
-    known_functions_per_lib = defaultdict(list)
+    lib_functions = set()
+    functions_per_lib = defaultdict(list)
 
     for symbols in undefined_symbols.values():
         for symbol in symbols:
             fun_name, lib_name = split_into_lib_and_name(symbol)
             if not lib_name:
                 continue
-            for known_lib in KnownLibs:
-                if known_lib in lib_name:
-                    known_lib_functions.add(fun_name)
-                    known_functions_per_lib[known_lib].append(fun_name)
+            lib_functions.add(fun_name)
+            functions_per_lib[lib_name].append(fun_name)
 
-    return known_lib_functions, known_functions_per_lib
+    return lib_functions, functions_per_lib
 
 
 def filter_ignored_functions(to_filter, verbose):
@@ -140,40 +138,38 @@ def check_for_unknown_libs(undefined_symbols):
     return unknown_libs_used
 
 
-def add_lib_name_to_functions(unwrapped_functions, known_functions_per_lib):
+def add_lib_name_to_functions(unwrapped_functions, functions_per_lib):
     """Add the library name to the function that are not wrapped."""
     unwrapped_functions_with_lib_names = set()
-    for unwrapped_function in unwrapped_functions:
-        for lib in KnownLibs:
-            if unwrapped_function in known_functions_per_lib[lib]:
-                unwrapped_function = lib + ":" + unwrapped_function
-                unwrapped_functions_with_lib_names.add(unwrapped_function)
-    unwrapped_functions = unwrapped_functions_with_lib_names
-    return unwrapped_functions
+    for lib_name, functions in functions_per_lib.items():
+        for unwrapped_function in unwrapped_functions:
+            if not unwrapped_function in functions:
+                continue
+            unwrapped_function = lib_name + ":\t\t" + unwrapped_function
+            unwrapped_functions_with_lib_names.add(unwrapped_function)
+    return unwrapped_functions_with_lib_names
 
 
 def get_unwrapped_functions(execs, show_lib_names, verbose):
     """
     Compute the unwrapped function for all given executables, remove duplicates
     and filter those that should be ignored.
-    Abort in case that a unknown library is used.
     """
     undefined_symbols = get_undefined_symbols(execs, verbose)
 
     unknown_lib_prefixes = check_for_unknown_libs(undefined_symbols)
     if len(unknown_lib_prefixes) != 0:
         print("Libraries not listed as known library: " +
-              " ".join(unknown_lib_prefixes))
-        sys.exit(1)
+              " ".join(unknown_lib_prefixes) + "\nNo wrappers for these libraries are available.\n")
 
-    unwrapped_functions, known_functions_per_lib = filter_known_lib_functions(
+    unwrapped_functions, functions_per_lib = filter_lib_functions(
         undefined_symbols)
     unwrapped_functions = filter_ignored_functions(
         unwrapped_functions, verbose)
 
     if show_lib_names:
         unwrapped_functions = add_lib_name_to_functions(
-            unwrapped_functions, known_functions_per_lib)
+            unwrapped_functions, functions_per_lib)
     return unwrapped_functions
 
 
@@ -200,8 +196,9 @@ def main():
 
     parser = argparse.ArgumentParser(
         description=des, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument(
-        'BIN', help='The binary file (or a folder containing them) to filter the unwrapped functions from')
+    parser.add_argument('BIN',
+                        help='The binary file (or a folder containing them) to '
+                        'filter the unwrapped functions from')
     parser.add_argument('--show-lib-names', action='store_true',
                         help='Show the library where the functions comes from')
     # parser.add_argument('--all', action='store_true',
