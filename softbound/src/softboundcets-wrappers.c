@@ -584,13 +584,31 @@ __WEAK_INLINE int softboundcets_fputc(int c, FILE *stream) {
     return fputc(c, stream);
 }
 
-__WEAK_INLINE int softboundcets_printf(const char *str, ...) {
+__WEAK_INLINE int softboundcets_printf(const char *format, ...) {
     va_list args;
 
-    va_start(args, str);
-    int ret = vprintf(str, args);
+    va_start(args, format);
+    int ret = vprintf(format, args);
     va_end(args);
     return ret;
+}
+
+__WEAK_INLINE int softboundcets_vprintf(const char *format, va_list ap) {
+    return vprintf(format, ap);
+}
+
+__WEAK_INLINE int softboundcets_fprintf(FILE *stream, const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    int ret = vfprintf(stream, format, args);
+    va_end(args);
+    return ret;
+}
+
+__WEAK_INLINE int softboundcets_vfprintf(FILE *stream, const char *format,
+                                         va_list ap) {
+    return vfprintf(stream, format, ap);
 }
 
 __WEAK_INLINE int softboundcets_fileno(FILE *stream) { return fileno(stream); }
