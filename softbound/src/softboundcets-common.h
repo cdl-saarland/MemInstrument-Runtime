@@ -35,7 +35,7 @@ __softboundcets_trie_entry_t *__softboundcets_trie_allocate();
 void __softboundcets_introspect_metadata(void *ptr, void *base, void *bound,
                                          int arg_no);
 
-void __softboundcets_copy_metadata(void *dest, void *from, size_t size);
+void __softboundcets_copy_metadata(void *dest, const void *from, size_t size);
 
 /* Metadata store parameterized by the mode of checking */
 

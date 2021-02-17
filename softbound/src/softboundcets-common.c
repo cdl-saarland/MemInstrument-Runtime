@@ -73,7 +73,7 @@ __WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
 }
 
 __METADATA_INLINE
-void __softboundcets_copy_metadata(void *dest, void *from, size_t size) {
+void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
 
     __softboundcets_debug_printf("[Copy metadata] dest=%p, from=%p, size=%zx\n",
                                  dest, from, size);
