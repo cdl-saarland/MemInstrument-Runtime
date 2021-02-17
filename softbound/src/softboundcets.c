@@ -182,33 +182,6 @@ void __softboundcets_init(void) {
     __softboundcets_allocation_secondary_trie_allocate_range(0, (size_t)temp);
 }
 
-static void softboundcets_init_ctype() {
-#if defined(__linux__)
-
-    char *ptr;
-    char *base_ptr;
-
-    ptr = (void *)__ctype_b_loc();
-    base_ptr = (void *)(*(__ctype_b_loc()));
-    __softboundcets_allocation_secondary_trie_allocate(base_ptr);
-
-#if __SOFTBOUNDCETS_SPATIAL
-    __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
-                                   ((char *)base_ptr + 256));
-
-#elif __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_metadata_store(ptr, 1, __softboundcets_get_global_lock());
-
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_metadata_store(ptr, ((char *)base_ptr - 129),
-                                   ((char *)base_ptr + 256), 1,
-                                   __softboundcets_get_global_lock());
-
-#endif
-
-#endif // __linux ends
-}
-
 void __softboundcets_printf(const char *str, ...) {
 #if NOERRORS
 #else
@@ -293,8 +266,6 @@ int main(int argc, char **argv) {
 
 #endif
     }
-
-    softboundcets_init_ctype();
 
     /* Santosh: Real Nasty hack because C programmers assume argv[argc]
      * to be NULL. Also this NUll is a pointer, doing + 1 will make the

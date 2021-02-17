@@ -1718,61 +1718,64 @@ __WEAK_INLINE unsigned short const **softboundcets___ctype_b_loc(void) {
     unsigned short const **ret_ptr = __ctype_b_loc();
 
     // Exactly this pointer is dereferenceable
-    __softboundcets_store_return_metadata(
-        (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(ret_ptr)), 1,
-        __softboundcets_get_global_lock());
+    __softboundcets_store_return_metadata((void *)ret_ptr,
+                                          (void *)(ret_ptr + 1), 1,
+                                          __softboundcets_get_global_lock());
 #if __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
     // From the definition of __ctype_to_upper:
     // "The array shall contain a total of 384 characters, and can be
     // indexed with any signed or unsigned char (i.e. with an index value
     // between -128 and 255)"
-    __softboundcets_metadata_store(
-        (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
-        (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
+    __softboundcets_metadata_store(ret_ptr, (void *)(*ret_ptr - 128),
+                                   (void *)(*ret_ptr + 256));
+#elif __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_metadata_store(ret_ptr, 1,
+                                   __softboundcets_get_global_lock());
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_metadata_store(ret_ptr, (void *)(*ret_ptr - 128),
+                                   (void *)(*ret_ptr + 256), 1,
+                                   __softboundcets_get_global_lock());
+    L
 #endif
     return ret_ptr;
 }
 
-__WEAK_INLINE int const **softboundcets___ctype_toupper_loc(void) {
-
-    int const **ret_ptr = __ctype_toupper_loc();
+void __softboundcets_handle_ctype_upper_lower(const int **ptr) {
 
     // Exactly this pointer is dereferenceable
-    __softboundcets_store_return_metadata(
-        (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(int32_t *)), 1,
-        __softboundcets_get_global_lock());
+    __softboundcets_store_return_metadata((void *)ptr, (void *)(ptr + 1), 1,
+                                          __softboundcets_get_global_lock());
 #if __SOFTBOUNDCETS_SPATIAL
     // Store metadata for the pointer that ret_ptr points to.
-    // From the definition of __ctype_to_upper:
+    // From the definition of __ctype_to_upper/__ctype_to_lower:
     // "The array shall contain a total of 384 characters, and can be
     // indexed with any signed or unsigned char (i.e. with an index value
     // between -128 and 255)"
-    __softboundcets_metadata_store(
-        (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
-        (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
+    __softboundcets_metadata_store(ptr, (void *)(*ptr - 128),
+                                   (void *)(*ptr + 256));
+#elif __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_metadata_store(ptr, 1, __softboundcets_get_global_lock());
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_metadata_store(ptr, (void *)(*ptr - 128),
+                                   (void *)(*ptr + 256), 1,
+                                   __softboundcets_get_global_lock());
 #endif
+}
+
+__WEAK_INLINE const int **softboundcets___ctype_toupper_loc(void) {
+
+    const int **ret_ptr = __ctype_toupper_loc();
+    __softboundcets_handle_ctype_upper_lower(ret_ptr);
+
     return ret_ptr;
 }
 
-__WEAK_INLINE int const **softboundcets___ctype_tolower_loc(void) {
+__WEAK_INLINE const int **softboundcets___ctype_tolower_loc(void) {
 
-    int const **ret_ptr = __ctype_tolower_loc();
+    const int **ret_ptr = __ctype_tolower_loc();
+    __softboundcets_handle_ctype_upper_lower(ret_ptr);
 
-    // Exactly this pointer is dereferenceable
-    __softboundcets_store_return_metadata(
-        (void *)ret_ptr, (void *)((char *)ret_ptr + sizeof(int32_t *)), 1,
-        __softboundcets_get_global_lock());
-#if __SOFTBOUNDCETS_SPATIAL
-    // Store metadata for the pointer that ret_ptr points to.
-    // From the definition of __ctype_to_lower:
-    // "The array shall contain a total of 384 characters, and can be
-    // indexed with any signed or unsigned char (i.e. with an index value
-    // between -128 and 255)"
-    __softboundcets_metadata_store(
-        (void *)ret_ptr, (void *)((*ret_ptr) - (128 * sizeof(int32_t))),
-        (void *)((*ret_ptr) + (255 * sizeof(int32_t))));
-#endif
     return ret_ptr;
 }
 #endif
