@@ -1961,8 +1961,24 @@ compare_elements_helper(void *base, size_t element_size, int idx1, int idx2,
                         int (*comparer)(const void *, const void *)) {
 
     char *base_bytes = base;
-    return comparer(&base_bytes[idx1 * element_size],
-                    &base_bytes[idx2 * element_size]);
+
+    // Make sure the bounds for the pointer arguments of the comparator are
+    // stored on the shadow stack
+    void *ptr_base = __softboundcets_load_base_shadow_stack(0);
+    void *ptr_bound = __softboundcets_load_bound_shadow_stack(0);
+
+    __softboundcets_allocate_shadow_stack_space(2);
+    __softboundcets_store_base_shadow_stack(ptr_base, 0);
+    __softboundcets_store_bound_shadow_stack(ptr_bound, 0);
+    __softboundcets_store_base_shadow_stack(ptr_base, 1);
+    __softboundcets_store_bound_shadow_stack(ptr_bound, 1);
+
+    int res = comparer(&base_bytes[idx1 * element_size],
+                       &base_bytes[idx2 * element_size]);
+
+    __softboundcets_deallocate_shadow_stack_space();
+
+    return res;
 }
 
 #define element_less_than(i, j)                                                \
