@@ -515,6 +515,8 @@ __WEAK_INLINE double softboundcets_log(double x) { return log(x); }
 
 __WEAK_INLINE double softboundcets_acos(double x) { return acos(x); }
 
+__WEAK_INLINE double softboundcets_atan(double x) { return atan(x); }
+
 __WEAK_INLINE double softboundcets_atan2(double y, double x) {
     return atan2(y, x);
 }
@@ -611,6 +613,72 @@ __WEAK_INLINE int softboundcets_vfprintf(FILE *stream, const char *format,
     return vfprintf(stream, format, ap);
 }
 
+// TODO The functions (v)sprintf printing to _str_ are tricky to check as the
+// length to be written to _str_ depends on the length of _format_ with the
+// format specifiers replaced...
+__WEAK_INLINE int softboundcets_sprintf(char *str, const char *format, ...) {
+
+    va_list args;
+
+    va_start(args, format);
+    int ret = vsprintf(str, format, args);
+    va_end(args);
+    return ret;
+}
+
+__WEAK_INLINE int softboundcets_vsprintf(char *str, const char *format,
+                                         va_list ap) {
+    return vsprintf(str, format, ap);
+}
+
+__WEAK_INLINE int softboundcets_snprintf(char *str, size_t size,
+                                         const char *format, ...) {
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    // At most `size` bytes are written to str
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, str, size);
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_abort_with_msg("snprintf wrapper: temporal check
+    missing");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("snprintf wrapper: temporal check
+    missing");
+#endif
+
+    va_list args;
+
+    va_start(args, format);
+    int ret = vsnprintf(str, size, format, args);
+    va_end(args);
+    return ret;
+}
+
+__WEAK_INLINE int softboundcets_vsnprintf(char *str, size_t size,
+                                          const char *format, va_list ap) {
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, str, size);
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check
+    missing");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check
+    missing");
+#endif
+
+    int ret = vsnprintf(str, size, format, ap);
+
+    return ret;
+}
+
 __WEAK_INLINE int softboundcets_fileno(FILE *stream) { return fileno(stream); }
 
 __WEAK_INLINE int softboundcets_fgetc(FILE *stream) { return fgetc(stream); }
@@ -686,7 +754,7 @@ __WEAK_INLINE FILE *softboundcets_fopen(const char *path, const char *mode) {
             ret_ptr, ret_ptr_bound, 1, __softboundcets_get_global_lock());
     }
 
-    return (FILE *)ret_ptr;
+    return ret_ptr;
 }
 
 __WEAK_INLINE FILE *softboundcets_fdopen(int fildes, const char *mode) {
