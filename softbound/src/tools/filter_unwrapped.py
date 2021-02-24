@@ -10,6 +10,7 @@ import os
 import subprocess
 import shutil
 import sys
+from pathlib import Path
 from collections import defaultdict
 
 # Function names that contain the WrappedMarker are considered wrapped, they
@@ -62,17 +63,18 @@ def get_symbols(binary_file, verbose):
     return [sym.strip()[2:] for sym in test if sym.strip()]
 
 
-def get_undefined_symbols(execs, verbose):
+def get_undefined_symbols(execs, no_recurse, verbose):
     """
     Get all function symbols from the given binary file or all binary files in
     the folder, that are not defined within the binaries themselves.
     """
     to_check = []
-    if os.path.isdir(execs):
-        for root, _, files in os.walk(execs):
-            for file in files:
-                full_path = os.path.join(root, file)
-                to_check.append(full_path)
+    execs_path = Path(execs)
+    if execs_path.is_dir():
+        if no_recurse:
+            to_check = [str(f.resolve()) for f in execs_path.iterdir() if f.is_file()]
+        else:
+            to_check = [str(f.resolve()) for f in execs_path.rglob("*") if f.is_file()]
     else:
         to_check.append(execs)
 
@@ -150,12 +152,12 @@ def add_lib_name_to_functions(unwrapped_functions, functions_per_lib):
     return unwrapped_functions_with_lib_names
 
 
-def get_unwrapped_functions(execs, show_lib_names, verbose):
+def get_unwrapped_functions(execs, no_recurse, show_lib_names, verbose):
     """
     Compute the unwrapped function for all given executables, remove duplicates
     and filter those that should be ignored.
     """
-    undefined_symbols = get_undefined_symbols(execs, verbose)
+    undefined_symbols = get_undefined_symbols(execs, no_recurse, verbose)
 
     unknown_lib_prefixes = check_for_unknown_libs(undefined_symbols)
     if len(unknown_lib_prefixes) != 0:
@@ -199,6 +201,8 @@ def main():
     parser.add_argument('BIN',
                         help='The binary file (or a folder containing them) to '
                         'filter the unwrapped functions from')
+    parser.add_argument('--no-recurse', action='store_true',
+                        help='Only search the given folder for binary files, not its subdirectories. Has no effect if a binary is given instead of a folder.')
     parser.add_argument('--show-lib-names', action='store_true',
                         help='Show the library where the functions comes from')
     # parser.add_argument('--all', action='store_true',
@@ -215,7 +219,7 @@ def main():
         sys.exit(1)
 
     unwrapped_functions = get_unwrapped_functions(
-        args.BIN, args.show_lib_names, args.verbose)
+        args.BIN, args.no_recurse, args.show_lib_names, args.verbose)
     pretty_print_unwrapped(unwrapped_functions,
                            "Number of functions that are unwrapped")
 
