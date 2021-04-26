@@ -45,6 +45,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
 #if defined(__linux__)
 #include <malloc.h>
 #endif
@@ -55,6 +56,8 @@
 #if !defined(__FreeBSD__)
 #include <execinfo.h>
 #endif
+
+extern char **environ;
 
 // Use meminstruments mechanism to get a useful stack trace
 static const char *mi_prog_name = NULL;
@@ -205,6 +208,38 @@ static void set_prog_name(const char *n) {
     }
 }
 
+void __softboundcets_update_environment_metadata() {
+    char *const *envPtr = environ;
+    while (*envPtr != NULL) {
+        // Store the length for individual environment variable
+#if __SOFTBOUNDCETS_SPATIAL
+        __softboundcets_metadata_store(envPtr, *envPtr,
+                                       *envPtr + strlen(*envPtr) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __softboundcets_abort_with_msg(
+            "Missing implementation for enviornment variable access");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __softboundcets_abort_with_msg(
+            "Missing implementation for enviornment variable access");
+#endif
+        envPtr++;
+    }
+    // Determine the address one past the terminating NULL
+    envPtr++;
+
+#if __SOFTBOUNDCETS_SPATIAL
+    // Store the valid range of the environment
+    __softboundcets_metadata_store(&environ, environ,
+                                   environ + (envPtr - environ));
+#elif __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_abort_with_msg(
+        "Missing implementation for enviornment variable access");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg(
+        "Missing implementation for enviornment variable access");
+#endif
+}
+
 extern int softboundcets_pseudo_main(int argc, char **argv);
 
 int main(int argc, char **argv) {
@@ -246,6 +281,8 @@ int main(int argc, char **argv) {
 #if defined(__linux__)
     mallopt(M_MMAP_MAX, 0);
 #endif
+
+    __softboundcets_update_environment_metadata();
 
     for (i = 0; i < argc; i++) {
 

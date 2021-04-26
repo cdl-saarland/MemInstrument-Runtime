@@ -32,6 +32,9 @@ void __softboundcets_deallocate_shadow_stack_space();
 
 __softboundcets_trie_entry_t *__softboundcets_trie_allocate();
 
+// Store metadata about the `environ` variable
+void __softboundcets_update_environment_metadata();
+
 void __softboundcets_introspect_metadata(void *ptr, void *base, void *bound,
                                          int arg_no);
 
