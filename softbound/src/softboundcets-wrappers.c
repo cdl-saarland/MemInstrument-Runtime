@@ -103,7 +103,6 @@
 #endif
 
 #include <locale.h>
-#include <math.h>
 #include <utime.h>
 
 #include <fcntl.h>
