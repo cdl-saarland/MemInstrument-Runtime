@@ -53,6 +53,11 @@ __WEAK_INLINE void __softboundcets_spatial_dereference_check(
             return;
         }
 #endif
+#if ALWAYSALLOWWIDTHZEROACCESS
+        if (size_of_type == 0) {
+            return;
+        }
+#endif
         __softboundcets_printf("Error in Dereference Check, base=%p, "
                                "bound=%p, ptr=%p, size_of_type=%zx\n",
                                base, bound, ptr, size_of_type);

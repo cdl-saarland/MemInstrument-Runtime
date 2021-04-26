@@ -107,6 +107,12 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define LLVM_TESTSUITE 0
 #endif
 
+// In case zero bytes should be accessed, ignore the fact that the accessed
+// pointer is not within valid allocation bounds or a nullptr.
+#ifndef ALWAYSALLOWWIDTHZEROACCESS
+#define ALWAYSALLOWWIDTHZEROACCESS 0
+#endif
+
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
 #define NOERRORS 0
