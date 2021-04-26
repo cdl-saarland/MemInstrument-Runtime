@@ -41,7 +41,8 @@ void __softboundcets_copy_metadata(void *dest, const void *from, size_t size);
 
 #if __SOFTBOUNDCETS_SPATIAL
 
-void __softboundcets_metadata_store(void *addr_of_ptr, void *base, void *bound);
+void __softboundcets_metadata_store(const void *addr_of_ptr, void *base,
+                                    void *bound);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
