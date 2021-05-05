@@ -316,14 +316,24 @@ __WEAK_INLINE int softboundcets_atexit(void_func_ptr function) {
     return atexit(function);
 }
 
+__WEAK_INLINE int softboundcets_putenv(char *string) {
+    int ret = putenv(string);
+    __softboundcets_update_environment_metadata();
+    return ret;
+}
+
 __WEAK_INLINE int softboundcets_setenv(const char *name, const char *value,
                                        int overwrite) {
 
-    return setenv(name, value, overwrite);
+    int ret = setenv(name, value, overwrite);
+    __softboundcets_update_environment_metadata();
+    return ret;
 }
 
 __WEAK_INLINE int softboundcets_unsetenv(const char *name) {
-    return unsetenv(name);
+    int ret = unsetenv(name);
+    __softboundcets_update_environment_metadata();
+    return ret;
 }
 
 __WEAK_INLINE int softboundcets_system(char *ptr) { return system(ptr); }
