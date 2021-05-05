@@ -285,7 +285,13 @@ __WEAK_INLINE void softboundcets_abort() { abort(); }
 
 __WEAK_INLINE int softboundcets_rand() { return rand(); }
 
-__WEAK_INLINE void softboundcets_exit(int status) { exit(status); }
+__WEAK_INLINE __SOFTBOUNDCETS_NORETURN void softboundcets_exit(int status) {
+    exit(status);
+}
+
+__WEAK_INLINE __SOFTBOUNDCETS_NORETURN void softboundcets__Exit(int status) {
+    _Exit(status);
+}
 
 __WEAK_INLINE double softboundcets_drand48() { return drand48(); }
 
@@ -1071,6 +1077,10 @@ __WEAK_INLINE int softboundcets_fnmatch(const char *pattern, const char *string,
 //===----------------------------------------------------------------------===//
 //                           unistd.h Wrappers
 //===----------------------------------------------------------------------===//
+
+__WEAK_INLINE __SOFTBOUNDCETS_NORETURN void softboundcets__exit(int status) {
+    _exit(status);
+}
 
 __WEAK_INLINE ssize_t softboundcets_read(int fd, void *buf, size_t count) {
     return read(fd, buf, count);
