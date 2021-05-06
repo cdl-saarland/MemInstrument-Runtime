@@ -528,6 +528,12 @@ __WEAK_INLINE int softboundcets_mkfifoat(int dirfd, const char *pathname,
 
 __WEAK_INLINE double softboundcets_log(double x) { return log(x); }
 
+__WEAK_INLINE float softboundcets_logf(float arg) { return logf(arg); }
+
+__WEAK_INLINE long double softboundcets_logl(long double arg) {
+    return logl(arg);
+}
+
 __WEAK_INLINE double softboundcets_acos(double x) { return acos(x); }
 
 __WEAK_INLINE double softboundcets_atan(double x) { return atan(x); }
@@ -536,21 +542,46 @@ __WEAK_INLINE double softboundcets_atan2(double y, double x) {
     return atan2(y, x);
 }
 
+__WEAK_INLINE float softboundcets_atan2f(float y, float x) {
+    return atan2f(y, x);
+}
+
+__WEAK_INLINE long double softboundcets_atan2l(long double y, long double x) {
+    return atan2l(y, x);
+}
+
+__WEAK_INLINE double softboundcets_sqrt(double arg) { return sqrt(arg); }
+
 __WEAK_INLINE float softboundcets_sqrtf(float x) { return sqrtf(x); }
+
+__WEAK_INLINE long double softboundcets_sqrtl(long double arg) {
+    return sqrtl(arg);
+}
+
+__WEAK_INLINE double softboundcets_exp(double arg) { return exp(arg); }
 
 __WEAK_INLINE float softboundcets_expf(float x) { return expf(x); }
 
-__WEAK_INLINE double softboundcets_exp2(double x) { return exp2(x); }
+__WEAK_INLINE long double softboundcets_expl(long double arg) {
+    return expl(arg);
+}
 
-__WEAK_INLINE float softboundcets_floorf(float x) { return floorf(x); }
+__WEAK_INLINE double softboundcets_exp2(double x) { return exp2(x); }
 
 __WEAK_INLINE double softboundcets_ceil(double x) { return ceil(x); }
 
 __WEAK_INLINE float softboundcets_ceilf(float x) { return ceilf(x); }
 
+__WEAK_INLINE long double softboundcets_ceill(long double arg) {
+    return ceill(arg);
+}
 __WEAK_INLINE double softboundcets_floor(double x) { return floor(x); }
 
-__WEAK_INLINE double softboundcets_sqrt(double x) { return sqrt(x); }
+__WEAK_INLINE float softboundcets_floorf(float x) { return floorf(x); }
+
+__WEAK_INLINE long double softboundcets_floorl(long double x) {
+    return floorl(x);
+}
 
 __WEAK_INLINE double softboundcets_fabs(double x) { return fabs(x); }
 
@@ -561,6 +592,15 @@ __WEAK_INLINE void softboundcets_srand(unsigned int seed) { srand(seed); }
 __WEAK_INLINE void softboundcets_srand48(long int seed) { srand48(seed); }
 
 __WEAK_INLINE double softboundcets_pow(double x, double y) { return pow(x, y); }
+
+__WEAK_INLINE float softboundcets_powf(float base, float exponent) {
+    return powf(base, exponent);
+}
+
+__WEAK_INLINE long double softboundcets_powl(long double base,
+                                             long double exponent) {
+    return powl(base, exponent);
+}
 
 __WEAK_INLINE float softboundcets_fabsf(float x) { return fabsf(x); }
 
@@ -584,10 +624,105 @@ __WEAK_INLINE float softboundcets_cosf(float x) { return cosf(x); }
 
 __WEAK_INLINE long double softboundcets_cosl(long double x) { return cosl(x); }
 
-__WEAK_INLINE double softboundcets_exp(double x) { return exp(x); }
-
 __WEAK_INLINE double softboundcets_ldexp(double x, int exp) {
     return ldexp(x, exp);
+}
+
+__WEAK_INLINE double softboundcets_modf(double x, double *intpart) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type key = __softboundcets_load_key_shadow_stack(0);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, intpart,
+                                              sizeof(*intpart));
+#endif
+
+#endif
+
+    return modf(x, intpart);
+}
+
+__WEAK_INLINE float softboundcets_modff(float x, float *intpart) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type key = __softboundcets_load_key_shadow_stack(0);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, intpart,
+                                              sizeof(*intpart));
+#endif
+
+#endif
+
+    return modff(x, intpart);
+}
+
+__WEAK_INLINE long double softboundcets_modfl(long double x,
+                                              long double *intpart) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type key = __softboundcets_load_key_shadow_stack(0);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, intpart,
+                                              sizeof(*intpart));
+#endif
+
+#endif
+
+    return modfl(x, intpart);
+}
+
+__WEAK_INLINE double softboundcets_fmod(double x, double y) {
+    return fmod(x, y);
+}
+
+__WEAK_INLINE float softboundcets_fmodf(float x, float y) {
+    return fmodf(x, y);
+}
+
+__WEAK_INLINE long double softboundcets_fmodl(long double x, long double y) {
+    return fmodl(x, y);
+}
+
+__WEAK_INLINE double softboundcets_frexp(double x, int *exponent) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type key = __softboundcets_load_key_shadow_stack(0);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, exponent,
+                                              sizeof(*exponent));
+#endif
+
+#endif
+
+    return frexp(x, exponent);
 }
 
 //===----------------------------------------------------------------------===//
