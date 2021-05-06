@@ -1469,7 +1469,7 @@ __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
 __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-#ifdef __SOFTBOUNDCETS_WRAPPER_CHECKS
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
 
     // Make sure that dest is large enough to store n elements
     char *dest_base = __softboundcets_load_base_shadow_stack(1);

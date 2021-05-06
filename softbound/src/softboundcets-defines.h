@@ -113,6 +113,23 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define ALWAYSALLOWWIDTHZEROACCESS 0
 #endif
 
+// The standard library wrappers have two purposes:
+// First, they make sure to properly propagate metadata. If a standard library
+// function returns a pointer, we need the metadata information of this pointer
+// to properly check accesses to this pointer afterwards.
+// Second, we can make sure that the calls to standard library functions will
+// not result in undefined behavior. For example, we can check that the
+// destination of a memcpy is large enough to store the bytes that should be
+// copied to it.
+//
+// This flag allows you to enable/disable the checks on the arguments for
+// standard library functions. Disabling them will result in finding less bugs.
+// However, it might be useful for a fair run-time comparision against
+// approaches that do not offer these checks.
+#ifndef __SOFTBOUNDCETS_WRAPPER_CHECKS
+#define __SOFTBOUNDCETS_WRAPPER_CHECKS 0
+#endif
+
 // Option to not report errors at all [testing only]
 #ifndef NOERRORS
 #define NOERRORS 0
@@ -133,9 +150,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #ifndef __SOFTBOUNDCETS_PREALLOCATE_TRIE
 #define __SOFTBOUNDCETS_PREALLOCATE_TRIE 0
 #endif
-
-// TODO add description of this option
-// #define __SOFTBOUNDCETS_WRAPPER_CHECKS
 
 // TODO add description of this option
 // #define __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
