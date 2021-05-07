@@ -2148,6 +2148,31 @@ __WEAK_INLINE clock_t softboundcets_times(struct tms *buf) {
     return times(buf);
 }
 
+//===---------------------------- utime.h ---------------------------------===//
+
+__WEAK_INLINE
+int softboundcets_utime(const char *filename, const struct utimbuf *times) {
+
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    if (times) {
+        lock_type times_lock = __softboundcets_load_lock_shadow_stack(1);
+        key_type times_key = __softboundcets_load_key_shadow_stack(1);
+        __softboundcets_temporal_dereference_check(times_lock, times_key);
+    }
+#endif
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    if (times) {
+        void *times_base = __softboundcets_load_base_shadow_stack(1);
+        void *times_bound = __softboundcets_load_bound_shadow_stack(1);
+        __softboundcets_spatial_dereference_check(times_base, times_bound,
+                                                  times, sizeof(*times));
+    }
+#endif
+#endif
+    return utime(filename, times);
+}
+
 //===----------------------------------------------------------------------===//
 //                          ctype.h Wrappers
 //===----------------------------------------------------------------------===//
