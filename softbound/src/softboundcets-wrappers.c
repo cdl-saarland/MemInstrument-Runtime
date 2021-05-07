@@ -2848,3 +2848,103 @@ __WEAK_INLINE
 void softboundcets_uuid_generate(uuid_t out) { uuid_generate(out); }
 
 #endif
+
+//===----------------------------------------------------------------------===//
+//                          sys/wait.h Wrappers
+//===----------------------------------------------------------------------===//
+
+__WEAK_INLINE
+pid_t softboundcets_wait(int *status) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+    if (status) {
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+        key_type key = __softboundcets_load_key_shadow_stack(0);
+        __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        void *base = __softboundcets_load_base_shadow_stack(0);
+        void *bound = __softboundcets_load_bound_shadow_stack(0);
+        __softboundcets_spatial_dereference_check(base, bound, status,
+                                                  sizeof(*status));
+#endif
+    }
+#endif
+    return wait(status);
+}
+
+__WEAK_INLINE
+pid_t softboundcets_waitpid(pid_t pid, int *status, int options) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+    if (status) {
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+        key_type key = __softboundcets_load_key_shadow_stack(0);
+        __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        void *base = __softboundcets_load_base_shadow_stack(0);
+        void *bound = __softboundcets_load_bound_shadow_stack(0);
+        __softboundcets_spatial_dereference_check(base, bound, status,
+                                                  sizeof(*status));
+#endif
+    }
+#endif
+    return waitpid(pid, status, options);
+}
+
+__WEAK_INLINE
+int softboundcets_waitid(idtype_t idtype, id_t id, siginfo_t *infop,
+                         int options) {
+
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+    // https://man7.org/linux/man-pages/man2/wait.2.html (BUGS section):
+    // According to POSIX.1-2008, an application calling waitid() must
+    // ensure that infop points to a siginfo_t structure (i.e., that it
+    // is a non-null pointer).  On Linux, if infop is NULL, waitid()
+    // succeeds, and returns the process ID of the waited-for child.
+    // Applications should avoid relying on this inconsistent,
+    // nonstandard, and unnecessary feature.
+    if (!infop) {
+        __softboundcets_abort_with_msg(
+            "Calling `waitid` with a null pointer is invalid.");
+    }
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type key = __softboundcets_load_key_shadow_stack(0);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(0);
+    void *bound = __softboundcets_load_bound_shadow_stack(0);
+    __softboundcets_spatial_dereference_check(base, bound, infop,
+                                              sizeof(*infop));
+#endif
+#endif
+    return waitid(idtype, id, infop, options);
+}
+
+//===----------------------------------------------------------------------===//
+//                           setjmp.h Wrappers
+//===----------------------------------------------------------------------===//
+
+__WEAK_INLINE int softboundcets_setjmp(jmp_buf env) { return setjmp(env); }
+
+__WEAK_INLINE __SOFTBOUNDCETS_NORETURN void softboundcets_longjmp(jmp_buf env,
+                                                                  int val) {
+    longjmp(env, val);
+}
+
+#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_C_SOURCE
+__WEAK_INLINE int softboundcets_sigsetjmp(sigjmp_buf env, int savesigs) {
+    return sigsetjmp(env, savesigs);
+}
+
+__WEAK_INLINE __SOFTBOUNDCETS_NORETURN void
+softboundcets_siglongjmp(sigjmp_buf env, int val) {
+    siglongjmp(env, val);
+}
+#endif
