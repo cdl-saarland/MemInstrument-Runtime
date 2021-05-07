@@ -1,8 +1,8 @@
-CLANG := /home/tina/Build/softbound_debug_gold/bin/betterclang
-CLANG_FORMAT := /home/tina/Build/llvm9_debug_meminstrument/bin/clang-format
+CLANG := clang
+CLANG_FORMAT := clang-format
 
 # Use spatial checks only
-CFLAGS := -Wall -pedantic -fPIC -O3 -D__SOFTBOUNDCETS_SPATIAL -D_GNU_SOURCE -D__SOFTBOUNDCETS_WRAPPER_CHECKS -DLLVM_TESTSUITE -g
+CFLAGS := -Wall -pedantic -fPIC -O3 -D__SOFTBOUNDCETS_SPATIAL -D_GNU_SOURCE -D__SOFTBOUNDCETS_WRAPPER_CHECKS
 ARFLAGS := -rcs
 LINK_LIBS := -luuid -ldl -lcrypt
 
