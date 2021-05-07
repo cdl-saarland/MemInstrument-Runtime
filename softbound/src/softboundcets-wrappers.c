@@ -403,6 +403,15 @@ __WEAK_INLINE int softboundcets_atoi(const char *ptr) {
 
 __WEAK_INLINE long softboundcets_atol(const char *nptr) { return atol(nptr); }
 
+__WEAK_INLINE char *softboundcets_gcvt(double number, int ndigit, char *buf) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+    // __softboundcets_abort_with_msg("Missing wrapper check for gcvt.");
+#endif
+    char *res = gcvt(number, ndigit, buf);
+    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    return res;
+}
+
 //===------------------------ stdlib-bsearch.h ----------------------------===//
 
 __WEAK_INLINE void *
