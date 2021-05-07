@@ -1939,6 +1939,8 @@ __WEAK_INLINE int softboundcets_posix_memalign(void **memptr, size_t alignment,
 __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
                                          size_t n) {
 
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
     void *dest_base = __softboundcets_load_base_shadow_stack(1);
@@ -1950,15 +1952,17 @@ __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
     __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
 #endif
 
-#if __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("memcpy wrapper: temporal check missing");
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_abort_with_msg("memcpy wrapper: temporal check missing");
 #endif
 
+#endif
+
     void *ret_ptr = memcpy(dest, src, n);
-    __softboundcets_copy_metadata(dest, src, n);
-    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    if (n > 0) {
+        __softboundcets_copy_metadata(dest, src, n);
+        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    }
     return ret_ptr;
 }
 
@@ -1967,6 +1971,8 @@ __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
 __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
                                           size_t n) {
 
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
     void *dest_base = __softboundcets_load_base_shadow_stack(1);
@@ -1978,21 +1984,55 @@ __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
     __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
 #endif
 
-#if __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("mempcpy wrapper: temporal check missing");
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_abort_with_msg("mempcpy wrapper: temporal check missing");
 #endif
 
+#endif
+
     void *ret_ptr = mempcpy(dest, src, n);
-    __softboundcets_copy_metadata(dest, src, n);
-    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    if (n > 0) {
+        __softboundcets_copy_metadata(dest, src, n);
+        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    }
     return ret_ptr;
 }
 
 #endif
 
+__WEAK_INLINE void *softboundcets_memmove(void *dest, const void *src,
+                                          size_t n) {
+
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+
+    void *dest_base = __softboundcets_load_base_shadow_stack(1);
+    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
+    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
+
+    void *src_base = __softboundcets_load_base_shadow_stack(2);
+    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
+    __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("memmove wrapper: temporal check missing");
+#endif
+
+#endif
+
+    void *ret_ptr = memmove(dest, src, n);
+    if (n > 0) {
+        __softboundcets_copy_metadata(dest, src, n);
+        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+    }
+    return ret_ptr;
+}
+
 __WEAK_INLINE void *softboundcets_memset(void *s, int c, size_t n) {
+
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
 
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
@@ -2005,6 +2045,8 @@ __WEAK_INLINE void *softboundcets_memset(void *s, int c, size_t n) {
     __softboundcets_abort_with_msg("memset wrapper: temporal check missing");
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_abort_with_msg("memset wrapper: temporal check missing");
+#endif
+
 #endif
 
     void *ret_ptr = memset(s, c, n);
