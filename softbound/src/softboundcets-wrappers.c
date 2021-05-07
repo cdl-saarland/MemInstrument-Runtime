@@ -222,6 +222,32 @@ __WEAK_INLINE void __softboundcets_store_return_metadata(void *base,
 #endif
 }
 
+// Helper function to do basic checks on an argument from the shadow stack.
+// Note that this should only be used for wrapper checks. Find information on
+// them in the description of __SOFTBOUNDCETS_WRAPPER_CHECKS.
+__WEAK_INLINE
+void __softboundcets_wrapper_check_shadow_stack_ptr(int stack_slot,
+                                                    const char *ptr,
+                                                    size_t width) {
+
+// We should only ensure that the arguments passed over to a standard library
+// function are valid, do nothing if these kinds of checks are disabled.
+#if !__SOFTBOUNDCETS_WRAPPER_CHECKS
+    return;
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type lock = __softboundcets_load_lock_shadow_stack(stack_slot);
+    key_type key = __softboundcets_load_key_shadow_stack(stack_slot);
+    __softboundcets_temporal_dereference_check(lock, key);
+#endif
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    void *base = __softboundcets_load_base_shadow_stack(stack_slot);
+    void *bound = __softboundcets_load_bound_shadow_stack(stack_slot);
+    __softboundcets_spatial_dereference_check(base, bound, ptr, width);
+#endif
+}
+
 //===----------------------------------------------------------------------===//
 //                  Generic Wrappers for frequent cases
 //===----------------------------------------------------------------------===//
@@ -616,66 +642,21 @@ __WEAK_INLINE double softboundcets_ldexp(double x, int exp) {
 }
 
 __WEAK_INLINE double softboundcets_modf(double x, double *intpart) {
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-    key_type key = __softboundcets_load_key_shadow_stack(0);
-    __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, intpart,
-                                              sizeof(*intpart));
-#endif
-
-#endif
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)intpart,
+                                                   sizeof(*intpart));
     return modf(x, intpart);
 }
 
 __WEAK_INLINE float softboundcets_modff(float x, float *intpart) {
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-    key_type key = __softboundcets_load_key_shadow_stack(0);
-    __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, intpart,
-                                              sizeof(*intpart));
-#endif
-
-#endif
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)intpart,
+                                                   sizeof(*intpart));
     return modff(x, intpart);
 }
 
 __WEAK_INLINE long double softboundcets_modfl(long double x,
                                               long double *intpart) {
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-    key_type key = __softboundcets_load_key_shadow_stack(0);
-    __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, intpart,
-                                              sizeof(*intpart));
-#endif
-
-#endif
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)intpart,
+                                                   sizeof(*intpart));
     return modfl(x, intpart);
 }
 
@@ -692,23 +673,8 @@ __WEAK_INLINE long double softboundcets_fmodl(long double x, long double y) {
 }
 
 __WEAK_INLINE double softboundcets_frexp(double x, int *exponent) {
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-    key_type key = __softboundcets_load_key_shadow_stack(0);
-    __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, exponent,
-                                              sizeof(*exponent));
-#endif
-
-#endif
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)exponent,
+                                                   sizeof(*exponent));
     return frexp(x, exponent);
 }
 
@@ -774,17 +740,7 @@ __WEAK_INLINE int softboundcets_vsprintf(char *str, const char *format,
 
 __WEAK_INLINE int softboundcets_snprintf(char *str, size_t size,
                                          const char *format, ...) {
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    // At most `size` bytes are written to str
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, str, size);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("snprintf wrapper: temporal check missing");
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, str, size);
 
     va_list args;
 
@@ -796,16 +752,7 @@ __WEAK_INLINE int softboundcets_snprintf(char *str, size_t size,
 
 __WEAK_INLINE int softboundcets_vsnprintf(char *str, size_t size,
                                           const char *format, va_list ap) {
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, str, size);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check missing");
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, str, size);
 
     int ret = vsnprintf(str, size, format, ap);
 
@@ -826,14 +773,8 @@ __WEAK_INLINE int softboundcets_putchar(int c) { return putchar(c); }
 
 __WEAK_INLINE char *softboundcets_gets(char *s) {
 
-    __softboundcets_printf("[Error] gets used and should not be used\n");
-    __softboundcets_abort();
-#if 0
-  __softboundcets_printf("[Warning] Should not use gets\n");
-  char* ret_ptr = gets(s);
-  __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
-  return ret_ptr;
-#endif
+    __softboundcets_abort_with_msg(
+        "[Error] gets used and should not be used\n");
     return NULL;
 }
 
@@ -1007,23 +948,10 @@ __WEAK_INLINE int softboundcets_setvbuf(FILE *restrict stream,
                                         char *restrict buf, int mode,
                                         size_t size) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
     // TODO Checks on stream?
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     if (buf && mode != _IONBF) {
-        void *buf_base = __softboundcets_load_base_shadow_stack(1);
-        void *buf_bound = __softboundcets_load_bound_shadow_stack(1);
-        __softboundcets_spatial_dereference_check(buf_base, buf_bound, buf,
-                                                  size);
+        __softboundcets_wrapper_check_shadow_stack_ptr(1, buf, size);
     }
-#endif
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    if (buf && mode != _IONBF) {
-        lock_type buf_lock = __softboundcets_load_lock_shadow_stack(1);
-        key_type buf_key = __softboundcets_load_key_shadow_stack(1);
-        __softboundcets_temporal_dereference_check(buf_lock, buf_key);
-    }
-#endif
 #endif
     // TODO Under some complicated conditions, the internal buffer in stream (fp
     // below) is set to the buffer handed over here. If one can get the buffer
@@ -1313,17 +1241,10 @@ __WEAK_INLINE unsigned int softboundcets_sleep(unsigned int seconds) {
 __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
 
     if (buf == NULL) {
-        __softboundcets_printf("[getcwd] The given buffer is null.\n");
-        __softboundcets_abort();
+        __softboundcets_abort_with_msg("[getcwd] The given buffer is null.\n");
     }
 
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *base = __softboundcets_load_base_shadow_stack(1);
-    void *bound = __softboundcets_load_bound_shadow_stack(1);
-
-    __softboundcets_spatial_dereference_check(base, bound, buf, size);
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, buf, size);
 
     char *ret_ptr = getcwd(buf, size);
 
@@ -1569,6 +1490,7 @@ __WEAK_INLINE char *softboundcets_stpcpy(char *dest, char *src) {
 
 __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
 
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
 #ifndef __NOSIM_CHECKS
@@ -1591,6 +1513,7 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
     void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
     __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest,
                                               size);
+#endif
 #endif
 #endif
 
@@ -1683,9 +1606,8 @@ __WEAK_INLINE char *softboundcets_strncat(char *dest, const char *src,
 
 __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     // Make sure that dest is large enough to store n elements
     char *dest_base = __softboundcets_load_base_shadow_stack(1);
     char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
@@ -1910,24 +1832,8 @@ __WEAK_INLINE int softboundcets_posix_memalign(void **memptr, size_t alignment,
 __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
                                          size_t n) {
 
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *dest_base = __softboundcets_load_base_shadow_stack(1);
-    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
-
-    void *src_base = __softboundcets_load_base_shadow_stack(2);
-    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
-    __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("memcpy wrapper: temporal check missing");
-#endif
-
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, (char *)dest, n);
+    __softboundcets_wrapper_check_shadow_stack_ptr(2, (char *)src, n);
 
     void *ret_ptr = memcpy(dest, src, n);
     if (n > 0) {
@@ -1942,24 +1848,8 @@ __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
 __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
                                           size_t n) {
 
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *dest_base = __softboundcets_load_base_shadow_stack(1);
-    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
-
-    void *src_base = __softboundcets_load_base_shadow_stack(2);
-    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
-    __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("mempcpy wrapper: temporal check missing");
-#endif
-
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, (char *)dest, n);
+    __softboundcets_wrapper_check_shadow_stack_ptr(2, (char *)src, n);
 
     void *ret_ptr = mempcpy(dest, src, n);
     if (n > 0) {
@@ -1974,24 +1864,8 @@ __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
 __WEAK_INLINE void *softboundcets_memmove(void *dest, const void *src,
                                           size_t n) {
 
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *dest_base = __softboundcets_load_base_shadow_stack(1);
-    void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
-
-    void *src_base = __softboundcets_load_base_shadow_stack(2);
-    void *src_bound = __softboundcets_load_bound_shadow_stack(2);
-    __softboundcets_spatial_dereference_check(src_base, src_bound, src, n);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("memmove wrapper: temporal check missing");
-#endif
-
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, (char *)dest, n);
+    __softboundcets_wrapper_check_shadow_stack_ptr(2, (char *)src, n);
 
     void *ret_ptr = memmove(dest, src, n);
     if (n > 0) {
@@ -2003,22 +1877,7 @@ __WEAK_INLINE void *softboundcets_memmove(void *dest, const void *src,
 
 __WEAK_INLINE void *softboundcets_memset(void *s, int c, size_t n) {
 
-#if __SOFTBOUNDCETS_WRAPPER_CHECKS
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-
-    void *s_base = __softboundcets_load_base_shadow_stack(1);
-    void *s_bound = __softboundcets_load_bound_shadow_stack(1);
-    __softboundcets_spatial_dereference_check(s_base, s_bound, s, n);
-#endif
-
-#if __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("memset wrapper: temporal check missing");
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("memset wrapper: temporal check missing");
-#endif
-
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, (char *)s, n);
 
     void *ret_ptr = memset(s, c, n);
     __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
@@ -2125,22 +1984,12 @@ __WEAK_INLINE
 int softboundcets_utime(const char *filename, const struct utimbuf *times) {
 
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     if (times) {
-        lock_type times_lock = __softboundcets_load_lock_shadow_stack(1);
-        key_type times_key = __softboundcets_load_key_shadow_stack(1);
-        __softboundcets_temporal_dereference_check(times_lock, times_key);
+        __softboundcets_wrapper_check_shadow_stack_ptr(1, (char *)times,
+                                                       sizeof(*times));
     }
 #endif
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    if (times) {
-        void *times_base = __softboundcets_load_base_shadow_stack(1);
-        void *times_bound = __softboundcets_load_bound_shadow_stack(1);
-        __softboundcets_spatial_dereference_check(times_base, times_bound,
-                                                  times, sizeof(*times));
-    }
-#endif
-#endif
+
     return utime(filename, times);
 }
 
@@ -2652,11 +2501,7 @@ key_t softboundcets_ftok(const char *pathname, int proj_id) {
 
 __WEAK_INLINE
 int softboundcets_gethostname(char *name, size_t len) {
-
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, name, len);
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, name, len);
     return gethostname(name, len);
 }
 
@@ -2845,18 +2690,8 @@ __WEAK_INLINE
 pid_t softboundcets_wait(int *status) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
     if (status) {
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-        key_type key = __softboundcets_load_key_shadow_stack(0);
-        __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        void *base = __softboundcets_load_base_shadow_stack(0);
-        void *bound = __softboundcets_load_bound_shadow_stack(0);
-        __softboundcets_spatial_dereference_check(base, bound, status,
-                                                  sizeof(*status));
-#endif
+        __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)status,
+                                                       sizeof(*status));
     }
 #endif
     return wait(status);
@@ -2866,18 +2701,8 @@ __WEAK_INLINE
 pid_t softboundcets_waitpid(pid_t pid, int *status, int options) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
     if (status) {
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-        key_type key = __softboundcets_load_key_shadow_stack(0);
-        __softboundcets_temporal_dereference_check(lock, key);
-#endif
-
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        void *base = __softboundcets_load_base_shadow_stack(0);
-        void *bound = __softboundcets_load_bound_shadow_stack(0);
-        __softboundcets_spatial_dereference_check(base, bound, status,
-                                                  sizeof(*status));
-#endif
+        __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)status,
+                                                       sizeof(*status));
     }
 #endif
     return waitpid(pid, status, options);
@@ -2899,18 +2724,9 @@ int softboundcets_waitid(idtype_t idtype, id_t id, siginfo_t *infop,
         __softboundcets_abort_with_msg(
             "Calling `waitid` with a null pointer is invalid.");
     }
-#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    lock_type lock = __softboundcets_load_lock_shadow_stack(0);
-    key_type key = __softboundcets_load_key_shadow_stack(0);
-    __softboundcets_temporal_dereference_check(lock, key);
-#endif
 
-#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, infop,
-                                              sizeof(*infop));
-#endif
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)infop,
+                                                   sizeof(*infop));
 #endif
     return waitid(idtype, id, infop, options);
 }

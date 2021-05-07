@@ -133,7 +133,7 @@ __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
     abort();
 }
 
-void __softboundcets_abort_with_msg(const char *str) {
+__SOFTBOUNDCETS_NORETURN void __softboundcets_abort_with_msg(const char *str) {
     __softboundcets_printf(str);
     __softboundcets_abort();
 }
