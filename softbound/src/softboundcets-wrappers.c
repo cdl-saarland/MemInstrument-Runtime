@@ -745,6 +745,10 @@ __WEAK_INLINE int softboundcets_fputc(int c, FILE *stream) {
     return fputc(c, stream);
 }
 
+__WEAK_INLINE int softboundcets_putc(int c, FILE *stream) {
+    return putc(c, stream);
+}
+
 __WEAK_INLINE int softboundcets_printf(const char *format, ...) {
     va_list args;
 
@@ -842,6 +846,8 @@ __WEAK_INLINE int softboundcets_fileno(FILE *stream) { return fileno(stream); }
 
 __WEAK_INLINE int softboundcets_fgetc(FILE *stream) { return fgetc(stream); }
 
+__WEAK_INLINE int softboundcets_getc(FILE *stream) { return getc(stream); }
+
 __WEAK_INLINE int softboundcets_ungetc(int c, FILE *stream) {
     return ungetc(c, stream);
 }
@@ -898,6 +904,8 @@ __WEAK_INLINE FILE *softboundcets_tmpfile(void) {
     }
     return ret_ptr;
 }
+
+__WEAK_INLINE void softboundcets_clearerr(FILE *stream) { clearerr(stream); }
 
 __WEAK_INLINE int softboundcets_ferror(FILE *stream) { return ferror(stream); }
 
@@ -1021,6 +1029,36 @@ __WEAK_INLINE ssize_t softboundcets___getdelim(char **lineptr, size_t *n,
 __WEAK_INLINE ssize_t softboundcets_getdelim(char **lineptr, size_t *n,
                                              int delim, FILE *stream) {
     return softboundcets___getdelim(lineptr, n, delim, stream);
+}
+
+__WEAK_INLINE int softboundcets_setvbuf(FILE *restrict stream,
+                                        char *restrict buf, int mode,
+                                        size_t size) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+
+    // TODO Checks on stream?
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    if (buf && mode != _IONBF) {
+        void *buf_base = __softboundcets_load_base_shadow_stack(1);
+        void *buf_bound = __softboundcets_load_bound_shadow_stack(1);
+        __softboundcets_spatial_dereference_check(buf_base, buf_bound, buf,
+                                                  size);
+    }
+#endif
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    if (buf && mode != _IONBF) {
+        lock_type buf_lock = __softboundcets_load_lock_shadow_stack(1);
+        key_type buf_key = __softboundcets_load_key_shadow_stack(1);
+        __softboundcets_temporal_dereference_check(buf_lock, buf_key);
+    }
+#endif
+#endif
+    // TODO Under some complicated conditions, the internal buffer in stream (fp
+    // below) is set to the buffer handed over here. If one can get the buffer
+    // back (or access it externally after storing it), we need to propagate
+    // metadata here. A `getvbuf` function seems not to be available though.
+    // fp->_bf._base = fp->_p = (unsigned char *)buf;
+    return setvbuf(stream, buf, mode, size);
 }
 
 //===----------------------------------------------------------------------===//
