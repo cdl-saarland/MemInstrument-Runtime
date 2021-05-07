@@ -1306,6 +1306,8 @@ __WEAK_INLINE int softboundcets_rmdir(const char *pathname) {
     return rmdir(pathname);
 }
 
+__WEAK_INLINE int softboundcets_setuid(uid_t uid) { return setuid(uid); }
+
 __WEAK_INLINE int softboundcets_setreuid(uid_t ruid, uid_t euid) {
 
     /* tested */
@@ -1410,6 +1412,65 @@ __WEAK_INLINE int softboundcets_unlink(const char *pathname) {
 }
 
 __WEAK_INLINE int softboundcets_close(int fd) { return close(fd); }
+
+__WEAK_INLINE int softboundcets_dup(int oldfd) { return dup(oldfd); }
+
+__WEAK_INLINE int softboundcets_dup2(int oldfd, int newfd) {
+    return dup2(oldfd, newfd);
+}
+
+#ifdef _GNU_SOURCE
+__WEAK_INLINE int softboundcets_dup3(int oldfd, int newfd, int flags) {
+    return dup3(oldfd, newfd, flags);
+}
+#endif
+
+__WEAK_INLINE
+int softboundcets_execve(const char *pathname, char *const argv[],
+                         char *const envp[]) {
+    return execve(pathname, argv, envp);
+}
+
+__WEAK_INLINE
+int softboundcets_execv(const char *file, char *const argv[]) {
+    return execv(file, argv);
+}
+
+__WEAK_INLINE
+int softboundcets_execvp(const char *file, char *const argv[]) {
+    return execvp(file, argv);
+}
+
+#ifdef _GNU_SOURCE
+__WEAK_INLINE
+int softboundcets_execvpe(const char *file, char *const argv[],
+                          char *const envp[]) {
+    return execvpe(file, argv, envp);
+}
+#endif
+
+__WEAK_INLINE pid_t softboundcets_fork(void) { return fork(); }
+
+__WEAK_INLINE int softboundcets_pipe(int pipefd[2]) {
+#if __SOFTBOUNDCETS_WRAPPER_CHECKS
+    // TODO maybe check if pipefd is valid. It is unclear what conditions it has
+    // to meet, it seems that some sanitization is done for pipefd, as the
+    // function might return EFAULT in case of an "invalid" pipefd. If something
+    // should be checked here, make sure to not modify the behavior for this
+    // corner case.
+#endif
+    return pipe(pipefd);
+}
+
+__WEAK_INLINE
+int softboundcets_truncate(const char *path, off_t length) {
+    return truncate(path, length);
+}
+
+__WEAK_INLINE
+int softboundcets_link(const char *path1, const char *path2) {
+    return link(path1, path2);
+}
 
 //===----------------------------------------------------------------------===//
 //                         String Function Wrappers
@@ -2512,18 +2573,6 @@ __WEAK_INLINE
 int softboundcets_epoll_wait(int epfd, struct epoll_event *events,
                              int maxevents, int timeout) {
     return epoll_wait(epfd, events, maxevents, timeout);
-}
-
-// TODO: does it make sense to support this?
-__WEAK_INLINE
-int softboundcets_execve(const char *pathname, char *const argv[],
-                         char *const envp[]) {
-    return execve(pathname, argv, envp);
-}
-
-__WEAK_INLINE
-int softboundcets_execvp(const char *file, char *const argv[]) {
-    return execvp(file, argv);
 }
 
 __WEAK_INLINE
