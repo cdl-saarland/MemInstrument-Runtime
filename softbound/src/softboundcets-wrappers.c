@@ -222,37 +222,9 @@ __WEAK_INLINE void __softboundcets_store_return_metadata(void *base,
 #endif
 }
 
-#if __SOFTBOUNDCETS_SPATIAL
-
-// TODO those are written with only spatial safety in mind.
-// Find out which generalize, make them available to configurations that include
-// temporal safety.
-
 //===----------------------------------------------------------------------===//
 //                  Generic Wrappers for frequent cases
 //===----------------------------------------------------------------------===//
-
-// The location the returned pointer points to can be dereferenced, but
-// neither can elements before or after it.
-__WEAK_INLINE
-void __softboundcets_generic_pointer_width_bounds(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        ret_ptr, (void *)((char *)ret_ptr + sizeof(ret_ptr)), 1,
-        __softboundcets_get_global_lock());
-}
-
-// DISCLAIMER: These methods should ideally not be needed. They limit the
-// bug finding capabilities, but honestly reflect the execution time
-// behavior of SoftBound checks and metadata propagation.
-
-// There is no information on the allocation size, we only know that
-// accessing it in a positive fashion is valid.
-__WEAK_INLINE
-void __softboundcets_generic_wide_upper_bound_return(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        ret_ptr, (void *)((char *)ret_ptr + 1024 * 1024), 1,
-        __softboundcets_get_global_lock());
-}
 
 // There is no information on the allocation size, we need to assume all
 // memory is readable through this pointer.
@@ -262,6 +234,12 @@ void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
         0, (void *)((char *)ret_ptr + 1024 * 1024), 1,
         __softboundcets_get_global_lock());
 }
+
+#if __SOFTBOUNDCETS_SPATIAL
+
+// TODO those are written with only spatial safety in mind.
+// Find out which generalize, make them available to configurations that include
+// temporal safety.
 
 // This function is a similar convenience function to the one above, just
 // for metadata stores instead of returned pointers.
@@ -804,12 +782,8 @@ __WEAK_INLINE int softboundcets_snprintf(char *str, size_t size,
     __softboundcets_spatial_dereference_check(base, bound, str, size);
 #endif
 
-#if __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("snprintf wrapper: temporal check
-    missing");
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("snprintf wrapper: temporal check
-    missing");
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("snprintf wrapper: temporal check missing");
 #endif
 
     va_list args;
@@ -829,12 +803,8 @@ __WEAK_INLINE int softboundcets_vsnprintf(char *str, size_t size,
     __softboundcets_spatial_dereference_check(base, bound, str, size);
 #endif
 
-#if __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check
-    missing");
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check
-    missing");
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_abort_with_msg("vsnprintf wrapper: temporal check missing");
 #endif
 
     int ret = vsnprintf(str, size, format, ap);
@@ -1016,10 +986,12 @@ __WEAK_INLINE ssize_t softboundcets___getdelim(char **lineptr, size_t *n,
         __softboundcets_metadata_store(lineptr, *lineptr,
                                        (*lineptr) + strlen(*lineptr));
 #elif __SOFTBOUNDCETS_TEMPORAL
-        __softboundcets_metadata_store(1, __softboundcets_get_global_lock());
+        __softboundcets_metadata_store(lineptr, 1,
+                                       __softboundcets_get_global_lock());
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        __softboundcets_metadata_store(*lineptr, (*lineptr) + strlen(*lineptr),
-                                       1, __softboundcets_get_global_lock());
+        __softboundcets_metadata_store(lineptr, *lineptr,
+                                       (*lineptr) + strlen(*lineptr), 1,
+                                       __softboundcets_get_global_lock());
 #endif
     }
 
@@ -1837,7 +1809,7 @@ __WEAK_INLINE void *__softboundcets_generic_alloc(void *alloced_ptr,
     lock_type ptr_lock = NULL;
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
+    __softboundcets_memory_allocation(alloced_ptr, &ptr_lock, &ptr_key);
 #endif
 
     __softboundcets_store_return_metadata(
@@ -1913,12 +1885,11 @@ __WEAK_INLINE int softboundcets_posix_memalign(void **memptr, size_t alignment,
 
     int ret = posix_memalign(memptr, alignment, size);
 
+#if __SOFTBOUNDCETS_SPATIAL
     if (ret) {
-        __softboundcets_metadata_store(memptr, NULL, NULL);
+        // The allocation failed, `memptr` stays unchanged.
         return ret;
     }
-
-#if __SOFTBOUNDCETS_SPATIAL
     __softboundcets_metadata_store(memptr, *memptr, ((char *)*memptr) + size);
 #elif __SOFTBOUNDCETS_TEMPORAL
     __softboundcets_abort_with_msg("posix_memalign wrapper: metadata store for "
@@ -2205,7 +2176,6 @@ __WEAK_INLINE unsigned short const **softboundcets___ctype_b_loc(void) {
     __softboundcets_metadata_store(ret_ptr, (void *)(*ret_ptr - 128),
                                    (void *)(*ret_ptr + 256), 1,
                                    __softboundcets_get_global_lock());
-    L
 #endif
     return ret_ptr;
 }
@@ -2362,17 +2332,35 @@ compare_elements_helper(void *base, size_t element_size, int idx1, int idx2,
                         int (*comparer)(const void *, const void *)) {
 
     char *base_bytes = base;
-
     // Make sure the bounds for the pointer arguments of the comparator are
     // stored on the shadow stack
+
+    // First, load the values from the shadow stack
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     void *ptr_base = __softboundcets_load_base_shadow_stack(0);
     void *ptr_bound = __softboundcets_load_bound_shadow_stack(0);
+#endif
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    lock_type ptr_lock = __softboundcets_load_lock_shadow_stack(0);
+    key_type ptr_key = __softboundcets_load_key_shadow_stack(0);
+#endif
 
+    // Allocate space for the next call
     __softboundcets_allocate_shadow_stack_space(2);
+
+    // Add the loaded values to the newly allocated region
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_store_base_shadow_stack(ptr_base, 0);
     __softboundcets_store_bound_shadow_stack(ptr_bound, 0);
     __softboundcets_store_base_shadow_stack(ptr_base, 1);
     __softboundcets_store_bound_shadow_stack(ptr_bound, 1);
+#endif
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_store_lock_shadow_stack(ptr_lock, 0);
+    __softboundcets_store_key_shadow_stack(ptr_key, 0);
+    __softboundcets_store_lock_shadow_stack(ptr_lock, 1);
+    __softboundcets_store_key_shadow_stack(ptr_key, 1);
+#endif
 
     int res = comparer(&base_bytes[idx1 * element_size],
                        &base_bytes[idx2 * element_size]);
