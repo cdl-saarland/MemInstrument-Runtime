@@ -1775,6 +1775,10 @@ __WEAK_INLINE char *softboundcets_strerror(int errnum) {
 //                            signal.h Wrappers
 //===----------------------------------------------------------------------===//
 
+__WEAK_INLINE int softboundcets_kill(pid_t pid, int sig) {
+    return kill(pid, sig);
+}
+
 __WEAK_INLINE int softboundcets_raise(int sig) { return raise(sig); }
 
 __WEAK_INLINE sighandler_t softboundcets_signal(int signum,
