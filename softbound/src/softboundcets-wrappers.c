@@ -1609,9 +1609,7 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     // Make sure that dest is large enough to store n elements
-    char *dest_base = __softboundcets_load_base_shadow_stack(1);
-    char *dest_bound = __softboundcets_load_bound_shadow_stack(1);
-    __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest, n);
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, dest, n);
 
     // TODO add check for src: either its size is at least n elements, or
     // safe_strlen(src) + 1 < n holds
@@ -2585,9 +2583,7 @@ int softboundcets_setsockopt(int sockfd, int level, int optname,
                              const void *optval, socklen_t optlen) {
 
     if (optval) {
-        void *base = __softboundcets_load_base_shadow_stack(0);
-        void *bound = __softboundcets_load_bound_shadow_stack(0);
-        __softboundcets_spatial_dereference_check(base, bound, optval, optlen);
+        __softboundcets_wrapper_check_shadow_stack_ptr(0, optval, optlen);
     }
     int ret = setsockopt(sockfd, level, optname, optval, optlen);
     return ret;
@@ -2598,9 +2594,8 @@ int softboundcets_getsockname(int sockfd, struct sockaddr *addr,
                               socklen_t *addrlen) {
 
     if (addr) {
-        void *base = __softboundcets_load_base_shadow_stack(0);
-        void *bound = __softboundcets_load_bound_shadow_stack(0);
-        __softboundcets_spatial_dereference_check(base, bound, addr, *addrlen);
+        __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)addr,
+                                                       *addrlen);
     }
 
     int ret = getsockname(sockfd, addr, addrlen);
@@ -2618,15 +2613,11 @@ int softboundcets_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     // hostlen (or servlen) argument.
 
     if (hostlen && host) {
-        void *base = __softboundcets_load_base_shadow_stack(1);
-        void *bound = __softboundcets_load_bound_shadow_stack(1);
-        __softboundcets_spatial_dereference_check(base, bound, host, hostlen);
+        __softboundcets_wrapper_check_shadow_stack_ptr(1, host, hostlen);
     }
 
     if (serv && servlen) {
-        void *base = __softboundcets_load_base_shadow_stack(2);
-        void *bound = __softboundcets_load_bound_shadow_stack(2);
-        __softboundcets_spatial_dereference_check(base, bound, serv, servlen);
+        __softboundcets_wrapper_check_shadow_stack_ptr(2, serv, servlen);
     }
 
     int ret = getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
@@ -2660,10 +2651,7 @@ char *softboundcets_getpass(const char *prompt) {
 
 __WEAK_INLINE
 int softboundcets_madvise(void *addr, size_t length, int advice) {
-    void *base = __softboundcets_load_base_shadow_stack(0);
-    void *bound = __softboundcets_load_bound_shadow_stack(0);
-    __softboundcets_spatial_dereference_check(base, bound, addr, length);
-
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, addr, length);
     int ret = madvise(addr, length, advice);
     return ret;
 }
