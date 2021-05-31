@@ -72,7 +72,7 @@ __WEAK_INLINE void *__softboundcets_load_base_shadow_stack(int arg_no) {
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BASE_INDEX;
-    size_t *base_ptr = (__softboundcets_shadow_stack_ptr + count);
+    shadow_stack_ptr_type base_ptr = __softboundcets_shadow_stack_ptr + count;
     void *base = *((void **)base_ptr);
     __softboundcets_debug_printf(
         "Base loaded from shadow stack (location %i): %p\n", arg_no, base);
@@ -84,7 +84,7 @@ __WEAK_INLINE void *__softboundcets_load_bound_shadow_stack(int arg_no) {
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __BOUND_INDEX;
-    size_t *bound_ptr = (__softboundcets_shadow_stack_ptr + count);
+    shadow_stack_ptr_type bound_ptr = __softboundcets_shadow_stack_ptr + count;
     void *bound = *((void **)bound_ptr);
     __softboundcets_debug_printf(
         "Bound loaded from shadow stack (location %i): %p\n", arg_no, bound);

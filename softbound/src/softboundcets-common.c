@@ -14,8 +14,9 @@ extern __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 __WEAK_INLINE void
 __softboundcets_allocate_shadow_stack_space(int num_pointer_args) {
 
-    size_t *prev_stack_size_ptr = __softboundcets_shadow_stack_ptr + 1;
-    size_t prev_stack_size = *((size_t *)prev_stack_size_ptr);
+    shadow_stack_ptr_type prev_stack_size_ptr =
+        __softboundcets_shadow_stack_ptr + 1;
+    size_t prev_stack_size = *prev_stack_size_ptr;
 
     ssize_t size = num_pointer_args * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
 
@@ -31,17 +32,18 @@ __softboundcets_allocate_shadow_stack_space(int num_pointer_args) {
     __softboundcets_shadow_stack_ptr =
         __softboundcets_shadow_stack_ptr + prev_stack_size + 2;
 
-    *((size_t *)__softboundcets_shadow_stack_ptr) = prev_stack_size;
-    size_t *current_stack_size_ptr = __softboundcets_shadow_stack_ptr + 1;
+    *__softboundcets_shadow_stack_ptr = prev_stack_size;
+    shadow_stack_ptr_type current_stack_size_ptr =
+        __softboundcets_shadow_stack_ptr + 1;
 
-    *((size_t *)current_stack_size_ptr) = size;
+    *current_stack_size_ptr = size;
 }
 
 __WEAK_INLINE void __softboundcets_deallocate_shadow_stack_space() {
 
-    size_t *reserved_space_ptr = __softboundcets_shadow_stack_ptr;
+    shadow_stack_ptr_type reserved_space_ptr = __softboundcets_shadow_stack_ptr;
 
-    size_t read_value = *((size_t *)reserved_space_ptr);
+    size_t read_value = *reserved_space_ptr;
 
     assert(read_value >= 0 &&
            read_value <= __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES);

@@ -59,16 +59,14 @@
 
 extern char **environ;
 
-// Use meminstruments mechanism to get a useful stack trace
-static const char *mi_prog_name = NULL;
-
 __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 
-size_t *__softboundcets_shadow_stack_ptr = NULL;
+shadow_stack_ptr_type __softboundcets_shadow_stack_ptr = NULL;
 
-size_t *__softboundcets_shadow_stack_max = NULL;
+shadow_stack_ptr_type __softboundcets_shadow_stack_max = NULL;
 
-void *malloc_address = NULL;
+// Use meminstruments mechanism to get a useful stack trace
+static const char *mi_prog_name = NULL;
 
 const char *__get_prog_name(void) { return mi_prog_name; }
 
@@ -168,8 +166,8 @@ void __softboundcets_init(void) {
     __softboundcets_shadow_stack_max =
         __softboundcets_shadow_stack_ptr + __SOFTBOUNDCETS_SHADOW_STACK_ENTRIES;
 
-    *((size_t *)__softboundcets_shadow_stack_ptr) = 0; /* prev stack size */
-    size_t *current_size_shadow_stack_ptr =
+    *__softboundcets_shadow_stack_ptr = 0; /* prev stack size */
+    shadow_stack_ptr_type current_size_shadow_stack_ptr =
         __softboundcets_shadow_stack_ptr + 1;
     *(current_size_shadow_stack_ptr) = 0;
 
@@ -271,7 +269,6 @@ int main(int argc, char **argv) {
 #endif
 
     int *temp = malloc(1);
-    malloc_address = temp;
     __softboundcets_allocation_secondary_trie_allocate_range(0, (size_t)temp);
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL

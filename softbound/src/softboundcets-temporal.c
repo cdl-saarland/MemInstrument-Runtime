@@ -108,7 +108,7 @@ __WEAK_INLINE key_type __softboundcets_load_key_shadow_stack(int arg_no) {
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __KEY_INDEX;
-    key_type *key_ptr = (__softboundcets_shadow_stack_ptr + count);
+    key_type *key_ptr = __softboundcets_shadow_stack_ptr + count;
     key_type key = *key_ptr;
     return key;
 }
@@ -118,7 +118,7 @@ __WEAK_INLINE lock_type __softboundcets_load_lock_shadow_stack(int arg_no) {
     assert(arg_no >= 0);
     size_t count =
         2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS + __LOCK_INDEX;
-    size_t *lock_ptr = (__softboundcets_shadow_stack_ptr + count);
+    shadow_stack_ptr_type lock_ptr = __softboundcets_shadow_stack_ptr + count;
     lock_type lock = *((lock_type *)lock_ptr);
     return lock;
 }

@@ -265,10 +265,12 @@ extern __SOFTBOUNDCETS_NORETURN void
 __softboundcets_abort_with_msg(const char *str);
 #endif
 
+typedef size_t *shadow_stack_ptr_type;
+
 // The current level of the shadow stack
-extern size_t *__softboundcets_shadow_stack_ptr;
+extern shadow_stack_ptr_type __softboundcets_shadow_stack_ptr;
 
 // The limit of the shadow stack
-extern size_t *__softboundcets_shadow_stack_max;
+extern shadow_stack_ptr_type __softboundcets_shadow_stack_max;
 
 #endif // SOFTBOUNDCETS_DEFINES_H
