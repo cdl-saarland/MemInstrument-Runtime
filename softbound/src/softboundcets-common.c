@@ -100,7 +100,7 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
             trie_secondary_table;
     }
     __softboundcets_debug_printf(
-        "\t[metadata_store not prealloced] addr_of_ptr=%zx, primary_index=%zx, "
+        "\t[metadata_store not prealloced] addr_of_ptr=%p, primary_index=%zx, "
         "trie_secondary_table=%p\n ",
         addr_of_ptr, primary_index, trie_secondary_table);
     assert(trie_secondary_table != NULL);
