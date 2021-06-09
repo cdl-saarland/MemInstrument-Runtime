@@ -116,9 +116,10 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
     entry_ptr->bound = bound;
 
     __softboundcets_debug_printf(
-        "\t[metadata_store] addr_of_ptr=%p, base=%p, bound=%p, "
+        "\t[metadata_store] addr_of_ptr=%p (points to %p), base=%p, bound=%p, "
         "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
-        addr_of_ptr, base, bound, primary_index, secondary_index, entry_ptr);
+        addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, base, bound,
+        primary_index, secondary_index, entry_ptr);
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
@@ -191,9 +192,10 @@ __METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
     *((void **)bound) = entry_ptr->bound;
 
     __softboundcets_debug_printf(
-        "\t[metadata_load] addr_of_ptr=%p, base=%p, bound=%p, "
+        "\t[metadata_load] addr_of_ptr=%p (points to %p), base=%p, bound=%p, "
         "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
-        addr_of_ptr, *base, *bound, primary_index, secondary_index, entry_ptr);
+        addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, *base, *bound,
+        primary_index, secondary_index, entry_ptr);
 
 #endif
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
