@@ -1417,6 +1417,8 @@ __WEAK_INLINE size_t softboundcets_strcspn(const char *s, const char *reject) {
 
 __WEAK_INLINE int softboundcets_memcmp(const void *s1, const void *s2,
                                        size_t n) {
+    __softboundcets_wrapper_check_shadow_stack_ptr(0, s1, n);
+    __softboundcets_wrapper_check_shadow_stack_ptr(1, s2, n);
     return memcmp(s1, s2, n);
 }
 
