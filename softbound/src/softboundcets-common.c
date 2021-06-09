@@ -391,6 +391,125 @@ __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr) {
     return;
 }
 
+//===----------------------------------------------------------------------===//
+//                    VarArg Proxy Object Handling
+//===----------------------------------------------------------------------===//
+
+shadow_stack_ptr_type *__softboundcets_allocate_va_arg_proxy(int arg_no) {
+    shadow_stack_ptr_type *proxy = malloc(sizeof(shadow_stack_ptr_type *));
+
+    // Calculate the location to the arg_no metadata
+    size_t offset = 2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
+    shadow_stack_ptr_type loc = __softboundcets_shadow_stack_ptr + offset;
+
+    // Store the value in the proxy object
+    *proxy = loc;
+
+    __softboundcets_debug_printf("Allocated proxy %p, pointing to %p (current "
+                                 "shadow stack height: %p)\n",
+                                 proxy, loc, __softboundcets_shadow_stack_ptr);
+    return proxy;
+}
+
+#if __SOFTBOUNDCETS_SPATIAL
+__METADATA_INLINE void
+__softboundcets_next_va_arg_metadata(shadow_stack_ptr_type *va_arg_proxy,
+                                     void **base, void **bound) {
+#elif __SOFTBOUNDCETS_TEMPORAL
+__METADATA_INLINE void
+__softboundcets_next_va_arg_metadata(shadow_stack_ptr_type *va_arg_proxy,
+                                     key_type *key, lock_type *lock) {
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+__METADATA_INLINE void
+__softboundcets_next_va_arg_metadata(shadow_stack_ptr_type *va_arg_proxy,
+                                     void **base, void **bound, key_type *key,
+                                     lock_type *lock) {
+#endif
+
+    // Load the metadata
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *base = *((void **)(*va_arg_proxy + __BASE_INDEX));
+    *bound = *((void **)(*va_arg_proxy + __BOUND_INDEX));
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *key = *((key_type *)(*va_arg_proxy + __KEY_INDEX));
+    *lock = *((lock_type *)(*va_arg_proxy + __LOCK_INDEX));
+#endif
+
+    // Change the state of the proxy object to point to the next entry
+    *va_arg_proxy = *va_arg_proxy + __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
+
+    __softboundcets_debug_printf("Incremented proxy %p, loaded base %p, loaded "
+                                 "bound %p (current shadow stack height: %p)\n",
+                                 *va_arg_proxy, *base, *bound,
+                                 __softboundcets_shadow_stack_ptr);
+}
+
+shadow_stack_ptr_type *
+__softboundcets_copy_va_arg_proxy(shadow_stack_ptr_type *to_copy) {
+    shadow_stack_ptr_type *proxy_copy = malloc(sizeof(to_copy));
+
+    // Store the value of the other pointer in the proxy object
+    *proxy_copy = *to_copy;
+
+    __softboundcets_debug_printf("Allocated proxy copy %p, points to %p "
+                                 "(current shadow stack height: %p)\n",
+                                 proxy_copy, *to_copy,
+                                 __softboundcets_shadow_stack_ptr);
+
+    return proxy_copy;
+}
+
+void __softboundcets_free_va_arg_proxy(shadow_stack_ptr_type *va_arg_proxy) {
+    __softboundcets_debug_printf("Free proxy %p\n", va_arg_proxy);
+    free(va_arg_proxy);
+}
+
+__WEAK_INLINE shadow_stack_ptr_type *
+__softboundcets_load_proxy_shadow_stack(int arg_no) {
+
+    assert(arg_no >= 0);
+    size_t count = 2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
+    shadow_stack_ptr_type proxy_ptr = __softboundcets_shadow_stack_ptr + count;
+    shadow_stack_ptr_type *proxy = *((shadow_stack_ptr_type **)proxy_ptr);
+    __softboundcets_debug_printf(
+        "Proxy loaded from shadow stack (location %i): %p (pointing to %p)\n",
+        arg_no, proxy, proxy ? *proxy : NULL);
+    return proxy;
+}
+
+__WEAK_INLINE void
+__softboundcets_store_proxy_shadow_stack(shadow_stack_ptr_type *proxy,
+                                         int arg_no) {
+
+    assert(arg_no >= 0);
+    __softboundcets_debug_printf(
+        "Proxy to store to shadow stack (location %i): %p (pointing to %p)\n",
+        arg_no, proxy, proxy ? *proxy : NULL);
+    size_t count = 2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
+    shadow_stack_ptr_type **store_loc =
+        (shadow_stack_ptr_type **)(__softboundcets_shadow_stack_ptr + count);
+
+#if __SOFTBOUNDCETS_DEBUG
+    // Override the other stack entries to indicate that they are invalid to use
+#if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *(store_loc + __BOUND_INDEX) = (void *)0x42;
+#endif
+
+#if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *(store_loc + __LOCK_INDEX) = (void *)0x42;
+#endif
+
+#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *(store_loc + __KEY_INDEX) = (void *)0x43;
+#endif
+
+#endif
+
+    *(store_loc) = proxy;
+}
+
 /******************************************************************************/
 
 // Vector load/store support
