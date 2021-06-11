@@ -74,13 +74,13 @@ __METADATA_INLINE void __softboundcets_metadata_store(const void *addr_of_ptr,
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
+__METADATA_INLINE void __softboundcets_metadata_store(const void *addr_of_ptr,
                                                       key_type key,
                                                       lock_type lock) {
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
+__METADATA_INLINE void __softboundcets_metadata_store(const void *addr_of_ptr,
                                                       void *base, void *bound,
                                                       key_type key,
                                                       lock_type lock) {
@@ -140,18 +140,19 @@ __METADATA_INLINE void __softboundcets_metadata_store(void *addr_of_ptr,
 
 #if __SOFTBOUNDCETS_SPATIAL
 
-__METADATA_INLINE void
-__softboundcets_metadata_load(void *addr_of_ptr, void **base, void **bound) {
+__METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
+                                                     void **base,
+                                                     void **bound) {
 
 #elif __SOFTBOUNDCETS_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
+__METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
                                                      key_type *key,
                                                      lock_type *lock) {
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-__METADATA_INLINE void __softboundcets_metadata_load(void *addr_of_ptr,
+__METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
                                                      void **base, void **bound,
                                                      key_type *key,
                                                      lock_type *lock) {
