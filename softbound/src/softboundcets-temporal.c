@@ -83,10 +83,8 @@ __softboundcets_temporal_dereference_check(lock_type pointer_lock,
 
 #if 0
   /* URGENT: I should think about removing this condition check */
-  if(!pointer_lock){
-    __softboundcets_printf("Temporal lock null\n");
-    __softboundcets_abort();
-    return;
+  if (!pointer_lock) {
+    __softboundcets_abort_with_msg("Temporal lock null\n");
   }
 
 #endif
@@ -185,15 +183,14 @@ __WEAK_INLINE void *__softboundcets_allocate_lock_location() {
 
 #if __SOFTBOUNDCETS_DEBUG
         // TODO not sure if all of this is only to be done when debugging
-        __softboundcets_printf("[lock_allocate] new_lock_location=%p\n",
-                               __softboundcets_lock_new_location);
+        __softboundcets_debug_printf("[lock_allocate] new_lock_location=%p\n",
+                                     __softboundcets_lock_new_location);
 
         if (__softboundcets_lock_new_location >
             __softboundcets_temporal_space_begin +
                 __SOFTBOUNDCETS_N_TEMPORAL_ENTRIES) {
-            __softboundcets_printf(
+            __softboundcets_abort_with_msg(
                 "[lock_allocate] out of temporal free entries \n");
-            __softboundcets_abort();
         }
 #endif
 
@@ -291,9 +288,8 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
 #endif
 
 #if 0
-  if(ptr_key == 1){
-    __softboundcets_printf(("freeing a global key\n");
-    __softboundcets_abort();
+  if (ptr_key == 1) {
+    __softboundcets_abort_with_msg("freeing a global key\n");
   }
 #endif
 
@@ -306,8 +302,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
 
         if (tag == 0) {
 #ifndef __NOSIM_CHECKS
-            __softboundcets_printf("free map does not have the key\n");
-            __softboundcets_abort();
+            __softboundcets_abort_with_msg("free map does not have the key\n");
 #else
             break;
 #endif
@@ -320,8 +315,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
 
         if (counter >= __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) {
 #ifndef __NOSIM_CHECKS
-            __softboundcets_printf("free map out of entries\n");
-            __softboundcets_abort();
+            __softboundcets_abort_with_msg("free map out of entries\n");
 #else
             break;
 #endif
