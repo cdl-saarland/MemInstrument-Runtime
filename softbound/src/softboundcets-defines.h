@@ -130,11 +130,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define __SOFTBOUNDCETS_WRAPPER_CHECKS 0
 #endif
 
-// Option to not report errors at all [testing only]
-#ifndef NOERRORS
-#define NOERRORS 0
-#endif
-
 // Option to not report errors if a bound value is null [testing only]
 #ifndef NOERRORMISSINGBOUNDS
 #define NOERRORMISSINGBOUNDS 0
@@ -256,14 +251,9 @@ extern void __softboundcets_printf(const char *str, ...);
 #define __softboundcets_debug_printf(...)
 #endif
 
-#if NOERRORS
-extern void __softboundcets_abort();
-extern void __softboundcets_abort_with_msg(const char *str);
-#else
 extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
 extern __SOFTBOUNDCETS_NORETURN void
 __softboundcets_abort_with_msg(const char *str);
-#endif
 
 typedef size_t *shadow_stack_ptr_type;
 

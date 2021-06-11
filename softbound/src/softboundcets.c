@@ -104,10 +104,6 @@ static void __print_stats(void) {
 
 #endif
 
-#if NOERRORS
-void __softboundcets_abort() {}
-void __softboundcets_abort_with_msg(const char *) {}
-#else
 __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
     fprintf(
         stderr,
@@ -135,7 +131,6 @@ __SOFTBOUNDCETS_NORETURN void __softboundcets_abort_with_msg(const char *str) {
     __softboundcets_printf(str);
     __softboundcets_abort();
 }
-#endif
 
 static int softboundcets_initialized = 0;
 
@@ -184,14 +179,11 @@ void __softboundcets_init(void) {
 }
 
 void __softboundcets_printf(const char *str, ...) {
-#if NOERRORS
-#else
     va_list args;
 
     va_start(args, str);
     vfprintf(stderr, str, args);
     va_end(args);
-#endif
 }
 
 static void set_prog_name(const char *n) {
