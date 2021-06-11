@@ -511,32 +511,3 @@ __softboundcets_store_proxy_shadow_stack(shadow_stack_ptr_type *proxy,
 
     *(store_loc) = proxy;
 }
-
-/******************************************************************************/
-
-// Vector load/store support
-#if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-__METADATA_INLINE void
-__softboundcets_metadata_load_vector(void *addr_of_ptr, void **base,
-                                     void **bound, key_type *key,
-                                     lock_type *lock, int index) {
-
-    size_t val = index * 8;
-    size_t addr = (size_t)addr_of_ptr;
-    addr = addr + val;
-
-    __softboundcets_metadata_load((void *)addr, base, bound, key, lock);
-}
-
-__METADATA_INLINE void
-__softboundcets_metadata_store_vector(void *addr_of_ptr, void *base,
-                                      void *bound, key_type key, lock_type lock,
-                                      int index) {
-    size_t val = index * 8;
-    size_t addr = (size_t)addr_of_ptr;
-    addr = addr + val;
-
-    __softboundcets_metadata_store((void *)addr, base, bound, key, lock);
-}
-
-#endif
