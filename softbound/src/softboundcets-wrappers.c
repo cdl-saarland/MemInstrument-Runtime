@@ -1526,9 +1526,19 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
 
 __WEAK_INLINE char *softboundcets_strtok(char *str, const char *delim) {
 
+    // TODO wrapper checks that str and delim are null terminated (safe strlen)
+
     char *ret_ptr = strtok(str, delim);
-    __softboundcets_store_return_metadata((void *)0, (void *)(281474976710656),
-                                          1, __softboundcets_get_global_lock());
+    if (!ret_ptr) {
+        __softboundcets_store_null_return_metadata();
+        return ret_ptr;
+    }
+
+    // In case the token is found, a null terminated string is returned.
+    // Use this to determine the bounds with strlen (+1 for the null character).
+    __softboundcets_store_return_metadata(
+        ret_ptr, (void *)((char *)ret_ptr + strlen(ret_ptr) + 1), 1,
+        __softboundcets_get_global_lock());
     return ret_ptr;
 }
 
