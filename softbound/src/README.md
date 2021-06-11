@@ -50,6 +50,25 @@ It can be configured to ensure only spatial (1), only temporal (2) or both (3):
 
 **Remark:** The current Makefile will build it with spatial safety only, as this fits our use case.
 
+This instrumentation provides standard library wrappers for two reasons:
+1) To propagate metadata, e.g. to provide bounds for the pointer returned from a call to `malloc`
+2) To check safety guarantees, e.g. that `dest` is large enough to store `n` bytes when `memcpy(dest, src, n)` is called.
+
+In case you want to disable 2), you can set `__SOFTBOUNDCETS_WRAPPER_CHECKS` to `0`.
+This can be useful for testing the run-time overhead of these checks, but it gives fewer safety guarantees.
+
+### Width zero checks
+
+Some instrumented programs might execute checks on accesses of width zero.
+If you are ok with out-of-bounds pointers from which zero byte are read or written to, use `-D__SOFTBOUNDCETS_ALLOWWIDTHZEROACCESS`.
+
+Example which we encountered: `memcpy(dest, src, val)`, where `val` became `0` at some point and `src`/`dest` were out of bounds.
+
+### Testing
+
+In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `__SOFTBOUNDCETS_LLVM_TESTSUITE`.
+This avoids instrumenting the time measurement tools, which are built with the same compiler as the benchmarks.
+
 ### Debugging
 
 If you encounter issues with this library and you are eager to debug it, you can build it with `-D__SOFTBOUNDCETS_DEBUG`.
