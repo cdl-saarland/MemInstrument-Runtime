@@ -86,7 +86,7 @@ def main():
     features = ["__SOFTBOUNDCETS_SPATIAL ",
                 "__SOFTBOUNDCETS_TEMPORAL",
                 "__SOFTBOUNDCETS_SPATIAL_TEMPORAL",
-                "ENABLE_RT_STATS"]
+                "__SOFTBOUNDCETS_ENABLE_RT_STATS"]
 
     generate_config_info(feature_file, features, out_file_name, args.verbose)
 

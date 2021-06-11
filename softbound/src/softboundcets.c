@@ -70,7 +70,7 @@ static const char *mi_prog_name = NULL;
 
 const char *__get_prog_name(void) { return mi_prog_name; }
 
-#if ENABLE_RT_STATS
+#if __SOFTBOUNDCETS_ENABLE_RT_STATS
 
 static size_t rt_stats_sb_access_checks = 0;
 static size_t rt_stats_sb_mem_checks = 0;
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
     // Setup for backtrace recovery
     set_prog_name(argv[0]);
 
-#if LLVM_TESTSUITE
+#if __SOFTBOUNDCETS_LLVM_TESTSUITE
     char *sub = strstr(argv[0], "timeit");
     if (sub) {
         int retval = softboundcets_pseudo_main(argc, argv);
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
-#if ENABLE_RT_STATS
+#if __SOFTBOUNDCETS_ENABLE_RT_STATS
     if (atexit(__print_stats) != 0) {
         fprintf(stderr, "sb(hacked): Failed to register statistics printer!\n");
     }

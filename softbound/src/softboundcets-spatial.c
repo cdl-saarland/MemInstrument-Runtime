@@ -14,7 +14,7 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
 #ifndef __NOSIM_CHECKS
     if ((uintptr_t)base != (uintptr_t)bound ||
         (uintptr_t)ptr != (uintptr_t)base) {
-#if NOERRORMISSINGBOUNDS
+#if __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS
         if (base == NULL) {
             return;
         }
@@ -31,7 +31,7 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
 
 __WEAK_INLINE void __softboundcets_spatial_dereference_check(
     const void *base, const void *bound, const void *ptr, size_t size_of_type) {
-#if ENABLE_RT_STATS
+#if __SOFTBOUNDCETS_ENABLE_RT_STATS
     __rt_stat_inc_sb_access_check();
 #endif
 
@@ -48,12 +48,12 @@ __WEAK_INLINE void __softboundcets_spatial_dereference_check(
     if ((uintptr_t)size_of_type > (uintptr_t)bound ||
         (uintptr_t)ptr < (uintptr_t)base ||
         (uintptr_t)ptr > ((uintptr_t)bound - (uintptr_t)size_of_type)) {
-#if NOERRORMISSINGBOUNDS
+#if __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS
         if (base == NULL) {
             return;
         }
 #endif
-#if ALWAYSALLOWWIDTHZEROACCESS
+#if __SOFTBOUNDCETS_ALLOWWIDTHZEROACCESS
         if (size_of_type == 0) {
             return;
         }

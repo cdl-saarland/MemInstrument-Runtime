@@ -103,14 +103,14 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 // unfortunately builds its utils with the compiler under test, which will not
 // work with this instrumentation. Enabling this option allows you to skip the
 // `timeit` module, which avoids crashing all tests at run-time.
-#ifndef LLVM_TESTSUITE
-#define LLVM_TESTSUITE 0
+#ifndef __SOFTBOUNDCETS_LLVM_TESTSUITE
+#define __SOFTBOUNDCETS_LLVM_TESTSUITE 0
 #endif
 
 // In case zero bytes should be accessed, ignore the fact that the accessed
 // pointer is not within valid allocation bounds or a nullptr.
-#ifndef ALWAYSALLOWWIDTHZEROACCESS
-#define ALWAYSALLOWWIDTHZEROACCESS 0
+#ifndef __SOFTBOUNDCETS_ALLOWWIDTHZEROACCESS
+#define __SOFTBOUNDCETS_ALLOWWIDTHZEROACCESS 0
 #endif
 
 // The standard library wrappers have two purposes:
@@ -131,14 +131,14 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #endif
 
 // Option to not report errors if a bound value is null [testing only]
-#ifndef NOERRORMISSINGBOUNDS
-#define NOERRORMISSINGBOUNDS 0
+#ifndef __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS
+#define __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS 0
 #endif
 
 // Option for printing statistics about dynamically executed checks [testing
 // only]
-#ifndef ENABLE_RT_STATS
-#define ENABLE_RT_STATS 0
+#ifndef __SOFTBOUNDCETS_ENABLE_RT_STATS
+#define __SOFTBOUNDCETS_ENABLE_RT_STATS 0
 #endif
 
 // TODO add description of this option
@@ -235,7 +235,7 @@ typedef struct {
 //                    Commonly used internal functions
 //===----------------------------------------------------------------------===//
 
-#if ENABLE_RT_STATS
+#if __SOFTBOUNDCETS_ENABLE_RT_STATS
 void __rt_stat_inc_sb_access_check(void);
 
 void __rt_stat_inc_sb_mem_check(void);
