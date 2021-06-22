@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
     __softboundcets_store_lock_shadow_stack(argv_loc, 0);
 
 #endif
-    __softboundcets_debug_printf("Call actual main...\n");
+    __softboundcets_debug_printf("Call the actual main...\n");
     return_value = softboundcets_pseudo_main(argc, new_argv);
     __softboundcets_deallocate_shadow_stack_space();
 
