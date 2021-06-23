@@ -89,6 +89,5 @@ Note that statistic tracking influences the program execution time and should th
 
 ## Playing well with the instrumentation
 
-Currently, crashes will occur when the instrumentation is configured to ensure spatial+temporal, but the run-time is configured for something else. Make sure to configure them the same way.
-
-TODO The run-time now generates a header that can be included in a C++ project to avoid such misconfiguration
+The C++ part of SoftBound introduces calls to the run-time library to ensure memory safety. Which calls are introduced depends on the guarantees that should be given, i.e., temporal safety, spatial safety, or both.
+In order to avoid configuring the C++ part and the C run-time differently, one cannot determine the configuration with command line arguments to the modified C++ compiler. The configuration of the C run-time is communicated to the LLVM pass via auto generated headers, such that a misconfiguration is not possible (unless you modify the auto-generated headers manually, which you shouldn't).
