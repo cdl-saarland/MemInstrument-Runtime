@@ -1,11 +1,14 @@
-.PHONY: all clean splay sleep rt_stat softbound
+.PHONY: all clean splay lowfat sleep rt_stat softbound
 
-all: splay sleep rt_stat softbound
+all: splay lowfat sleep rt_stat softbound
 
-clean: splay_clean sleep_clean rt_stat_clean softbound_clean
+clean: splay_clean lowfat_clean sleep_clean rt_stat_clean softbound_clean
 
 splay:
 	$(MAKE) -C splay
+
+lowfat:
+	$(MAKE) -C lowfat
 
 sleep:
 	$(MAKE) -C sleep
@@ -18,6 +21,9 @@ softbound:
 
 splay_clean:
 	$(MAKE) clean -C splay
+
+lowfat_clean:
+	$(MAKE) clean -C lowfat
 
 sleep_clean:
 	$(MAKE) clean -C sleep
