@@ -48,7 +48,7 @@ def generate_config_info(feature_file, features, out_file_name, verbose):
 
     include_guard = "SB_RT_CONFIG_INFO"
     namespace = ["meminstrument", "softbound"]
-    short_description = "Run-Time Configuration Info"
+    short_description = "Run-Time Configuration"
     long_description = "Information on how the SoftBound run-time is configured."
 
     file_content = generate_header(include_guard, file_name, "", namespace, defines, short_description, long_description)
@@ -72,11 +72,10 @@ def main():
                         help="Print verbose output")
     args = parser.parse_args()
 
-    feature_file = "compile_commands.json"
+    feature_file = "build/compile_commands.json"
 
     # Generate the directory where the auto-generated header is put
-    # TODO change this out_dir when moving this to the meminstrument run-times
-    out_dir = os.path.join("include", "meminstrument")
+    out_dir = os.path.join("..", "include", "meminstrument-rt")
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     out_file_name = os.path.join(out_dir, "SBRTInfo.h")

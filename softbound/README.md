@@ -27,7 +27,7 @@ The library can be build LTO friendly.
 The [LLVMgold plugin](http://llvm.org/docs/GoldPlugin.html) is necessary to do so.
 Follow the instructions on "How to build it".
 The steps on "Build the LLVMgold plugin" will generate `LLVMgold.so`, which you should find in the `lib` directory of your LLVM build.
-You have to set the environment variable `LLVM_GOLD` to this library, and make will automatically build the additional library `lto/libsoftboundcets_rt.a`, which can be used with LTO.
+You have to set the environment variable `LLVM_GOLD` to this library, and make will automatically build the additional library `ltobuild/libsoftboundcets_rt.a`, which can be used with LTO.
 
 ```
 export LLVM_GOLD=<PATH_TO>/LLVMgold.so

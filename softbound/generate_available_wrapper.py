@@ -82,7 +82,7 @@ def surround_with_header_stuff(text, number_of_functions, file_path):
     """
     header_name = "SB_WRAPPER_H"
     namespaces = ["meminstrument", "softbound"]
-    short_description = "Supported Wrapper Functions"
+    short_description = "Wrapper Functions"
     long_description = "Contains all (standard library) wrapper functions available in the SoftBound runtime."
     includes = '#include "llvm/ADT/SmallVector.h"\n\n'
     content = "static llvm::SmallVector<std::string, " + \
@@ -160,11 +160,10 @@ def main():
                         help="Print verbose output")
     args = parser.parse_args()
 
-    list_of_source_files = ["softboundcets-wrappers.c"]
+    list_of_source_files = ["src/softboundcets-wrappers.c"]
 
     # Generate the directory where the auto-generated header is put
-    # TODO change this out_dir when moving this to the meminstrument run-times
-    out_dir = os.path.join("include", "meminstrument")
+    out_dir = os.path.join("..", "include", "meminstrument-rt")
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     out_file_name = os.path.join(out_dir, "SBWrapper.h")

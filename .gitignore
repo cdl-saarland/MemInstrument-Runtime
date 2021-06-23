@@ -1,2 +1,33 @@
+# Project specific
 *build
 mi_stats.txt
+
+## Auto-generated headers from SoftBound
+include/meminstrument-rt/SBRTInfo.h
+include/meminstrument-rt/SBWrapper.h
+
+# ctags
+tags
+
+# Python
+__pycache__
+.pylintrc
+.*.pyc
+
+# VS Code
+.vscode/
+
+# Apple
+.DS_Store
+.AppleDouble
+.LSOverride
+.apdisk
+.AppleDB
+.AppleDesktop
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent

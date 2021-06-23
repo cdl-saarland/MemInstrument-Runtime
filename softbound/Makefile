@@ -10,11 +10,15 @@ LIB_NAME := softboundcets_rt
 DYN_LIB_NAME := lib${LIB_NAME}.so
 STAT_LIB_NAME := lib${LIB_NAME}.a
 
-SOURCES := $(wildcard *.c)
-OBJECTS := $(SOURCES:.c=.o)
+BUILD_DIR := build
+SRC_DIR := src
 
-LTO_DIR := lto
-LTO_OBJECTS := $(addprefix $(LTO_DIR)/, $(SOURCES:.c=.lto.o))
+SOURCES := $(wildcard ${SRC_DIR}/*.c)
+HEADERS := $(wildcard ${SRC_DIR}/*.h)
+OBJECTS := $(subst $(SRC_DIR),$(BUILD_DIR),$(SOURCES:.c=.o))
+
+LTO_DIR := ltobuild
+LTO_OBJECTS := $(subst $(SRC_DIR),$(LTO_DIR),$(SOURCES:.c=.lto.o))
 
 all: static exports
 
@@ -41,7 +45,7 @@ endif
 
 COMPDB_ENTRIES = $(addsuffix .compdb_entry, $(basename $(SOURCES)))
 
-compile_commands.json: $(COMPDB_ENTRIES)
+${BUILD_DIR}/compile_commands.json: $(COMPDB_ENTRIES)
 	@echo "===> GENERATE compile_commands.json"
 	@echo "[" > $@.tmp
 	@cat $^ >> $@.tmp
@@ -50,7 +54,7 @@ compile_commands.json: $(COMPDB_ENTRIES)
 	@echo "]" >> $@
 	@rm $@.tmp
 
-gen_compile_commands: compile_commands.json
+gen_compile_commands: ${BUILD_DIR}/compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
 	@echo "'compile_commands.json' sucessfully generated"
 
@@ -63,32 +67,33 @@ cxx_header: gen_compile_commands
 # Compile without LTO static or dynamic
 $(OBJECTS): $(SOURCES)
 	@echo "===> CC"
-	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o $(var:.c=.o);)
+	@mkdir -p ${BUILD_DIR}
+	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o ${subst $(SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
 static: $(OBJECTS) exports
 	@echo "===> MAKE STATIC"
-	ar $(ARFLAGS) ${STAT_LIB_NAME} $(OBJECTS)
+	ar $(ARFLAGS) ${BUILD_DIR}/${STAT_LIB_NAME} $(OBJECTS)
 
 dynamic: $(OBJECTS) exports
 	@echo "===> MAKE DYNAMIC"
-	$(CLANG) -shared -o ${DYN_LIB_NAME} $(OBJECTS) ${LINK_LIBS}
+	$(CLANG) -shared -o ${BUILD_DIR}/${DYN_LIB_NAME} $(OBJECTS) ${LINK_LIBS}
 
 # Compile with LTO
 lto_dir:
 	@echo "===> MAKE LTO"
-	@mkdir $(LTO_DIR)
+	@mkdir -p $(LTO_DIR)
 
 ${LTO_OBJECTS}: $(SOURCES)
-	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o $(addprefix $(LTO_DIR)/, $(var:.c=.lto.o));)
+	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
 static_lto: lto_dir ${LTO_OBJECTS} exports
-	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) lto/${STAT_LIB_NAME} ${LTO_OBJECTS}
+	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) $(LTO_DIR)/${STAT_LIB_NAME} ${LTO_OBJECTS}
 
 format:
 	@echo "===> CLANG-FORMAT"
-	$(CLANG_FORMAT) -i $(sort $(wildcard *.c))
-	$(CLANG_FORMAT) -i $(sort $(wildcard *.h))
+	$(CLANG_FORMAT) -i $(sort $(SOURCES))
+	$(CLANG_FORMAT) -i $(sort $(HEADERS))
 
 clean:
 	@echo "===> CLEAN"
-	rm -rf compile_commands.json *.o *.a *.so *~ lto/
+	rm -rf ${BUILD_DIR}/ $(LTO_DIR)/
