@@ -20,7 +20,7 @@ OBJECTS := $(subst $(SRC_DIR),$(BUILD_DIR),$(SOURCES:.c=.o))
 LTO_DIR := ltobuild
 LTO_OBJECTS := $(subst $(SRC_DIR),$(LTO_DIR),$(SOURCES:.c=.lto.o))
 
-all: static exports
+all: static dynamic exports
 
 exports: cxx_header
 
