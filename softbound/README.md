@@ -10,7 +10,7 @@ The C-sources are compiled to a stand-alone library for usage with SoftBound-ins
 
 ## Build instructions
 
-A static library (`libsoftboundcets_rt.a`) can be build by simply running
+A static and dynamic library (`libsoftboundcets_rt.a`/ `libsoftboundcets_rt.so`) can be built by simply running
 
 ```
 make
@@ -19,11 +19,9 @@ make
 in this directory.
 The Makefile supports `make clean` to clean the build directory.
 
-A dynamic library `libsoftboundcets_rt.so` can be built with `make dynamic`.
-
 ### Build with Link-Time Optimization (LTO)
 
-The library can be build LTO friendly.
+The library can be built LTO friendly.
 The [LLVMgold plugin](http://llvm.org/docs/GoldPlugin.html) is necessary to do so.
 Follow the instructions on "How to build it".
 The steps on "Build the LLVMgold plugin" will generate `LLVMgold.so`, which you should find in the `lib` directory of your LLVM build.
