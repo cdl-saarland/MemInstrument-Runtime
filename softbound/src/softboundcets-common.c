@@ -497,18 +497,90 @@ __softboundcets_store_proxy_shadow_stack(shadow_stack_ptr_type *proxy,
 #if __SOFTBOUNDCETS_DEBUG
     // Override the other stack entries to indicate that they are invalid to use
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    *(store_loc + __BOUND_INDEX) = (void *)0x42;
+    *((void **)(store_loc + __BOUND_INDEX)) = (void *)INVALID_STACK_VALUE;
 #endif
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    *(store_loc + __LOCK_INDEX) = (void *)0x42;
+    *((lock_type *)(store_loc + __LOCK_INDEX)) = (lock_type)INVALID_STACK_VALUE;
 #endif
 
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    *(store_loc + __KEY_INDEX) = (void *)0x43;
+    *((key_type *)(store_loc + __KEY_INDEX)) = (key_type)INVALID_STACK_VALUE;
 #endif
 
 #endif
 
     *(store_loc) = proxy;
+}
+
+void __softboundcets_proxy_metadata_store(const void *addr_of_ptr,
+                                          shadow_stack_ptr_type *proxy) {
+
+// This lazily uses the other functions to store the proxy object.
+// Technically, the stores of invalid values to bound/(key)/lock are not
+// necessary (though a good idea for debugging/finding issues in this run-time).
+// However, checking if the arguments are not invalid within the metadata store
+// function would affect instrumented programs that do not even use varargs,
+// which is not a good solution. The alternative is to copy paste all the code
+// from the metadata store here (similar to the load) and adapt it.
+#if __SOFTBOUNDCETS_SPATIAL
+    __softboundcets_metadata_store(addr_of_ptr, (void *)proxy,
+                                   (void *)INVALID_MEM_VALUE);
+#elif __SOFTBOUNDCETS_TEMPORAL
+    __softboundcets_metadata_store(addr_of_ptr, (key_t)proxy,
+                                   (lock_type)INVALID_MEM_VALUE);
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    __softboundcets_metadata_store(
+        addr_of_ptr, (void *)proxy, (void *)INVALID_MEM_VALUE,
+        (key_type)INVALID_MEM_VALUE, (lock_type)INVALID_MEM_VALUE);
+#endif
+}
+
+void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
+                                         shadow_stack_ptr_type **proxy) {
+    size_t ptr = (size_t)addr_of_ptr;
+    __softboundcets_trie_entry_t *trie_secondary_table;
+
+    size_t primary_index = (ptr >> 25);
+    trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
+
+#if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
+    if (trie_secondary_table == NULL) {
+        *proxy = 0;
+        return;
+    }
+#endif /* PREALLOCATE_ENDS */
+
+    /* MAIN SOFTBOUNDCETS LOAD WHICH RUNS ON THE NORMAL MACHINE */
+    size_t secondary_index = ((ptr >> 3) & 0x3fffff);
+    __softboundcets_trie_entry_t *entry_ptr =
+        &trie_secondary_table[secondary_index];
+
+#if __SOFTBOUNDCETS_SPATIAL
+    *proxy = (void *)entry_ptr->base;
+#if __SOFTBOUNDCETS_DEBUG
+    assert(entry_ptr->bound == (void *)INVALID_MEM_VALUE);
+#endif
+
+    __softboundcets_debug_printf(
+        "\t[metadata_proxy_load] addr_of_ptr=%p (points to %p), proxy=%p "
+        "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
+        addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, *proxy,
+        primary_index, secondary_index, entry_ptr);
+
+#elif __SOFTBOUNDCETS_TEMPORAL
+    *proxy = (shadow_stack_ptr_type *)entry_ptr->key;
+#if __SOFTBOUNDCETS_DEBUG
+    assert(entry_ptr->lock == (lock_type)INVALID_MEM_VALUE);
+#endif
+
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+    *proxy = (shadow_stack_ptr_type *)entry_ptr->base;
+#if __SOFTBOUNDCETS_DEBUG
+    assert(entry_ptr->bound == (void *)INVALID_MEM_VALUE);
+    assert(entry_ptr->key == (key_type)INVALID_MEM_VALUE);
+    assert(entry_ptr->lock == (lock_type)INVALID_MEM_VALUE);
+#endif
+
+#endif
 }

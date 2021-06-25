@@ -114,6 +114,14 @@ void __softboundcets_allocation_secondary_trie_allocate(void *addr_of_ptr);
 // this mixup, it is likely that an (not necessarily on point) error will occur
 // at some later point during the execution.
 
+// The vararg proxy requires less space on the shadow stack than regular
+// entries, these values are written to the unused entries in debug mode to make
+// it easy to spot them in the debug output (e.g., if they are read, the shadow
+// stack is broken or used the wrong way).
+// Use a similar indicator for in-memory information.
+#define INVALID_STACK_VALUE 0x42
+#define INVALID_MEM_VALUE 0x24
+
 // Create a vaarg proxy object.
 // The arg_no needs to be the index of the last pointer in the called functions
 // signature plus one (0 if no pointer is used).
@@ -149,7 +157,7 @@ void __softboundcets_free_va_arg_proxy(shadow_stack_ptr_type *va_arg_proxy);
 
 // Vaarg proxies do not have the same layout as the regular metadata, such that
 // special functions are required to store them to/load them from the shadow
-// stack.
+// stack or memory.
 
 // Load a vaarg proxy from the shadow stack
 __WEAK_INLINE shadow_stack_ptr_type *
@@ -159,6 +167,14 @@ __softboundcets_load_proxy_shadow_stack(int arg_no);
 __WEAK_INLINE void
 __softboundcets_store_proxy_shadow_stack(shadow_stack_ptr_type *proxy,
                                          int arg_no);
+
+// Store metadata for the address the proxy object is stored to
+void __softboundcets_proxy_metadata_store(const void *addr_of_ptr,
+                                          shadow_stack_ptr_type *proxy);
+
+// Load metadata for the address the proxy object is loaded from
+void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
+                                         shadow_stack_ptr_type **proxy);
 
 /******************************************************************************/
 
