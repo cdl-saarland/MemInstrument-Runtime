@@ -427,25 +427,26 @@ __softboundcets_next_va_arg_metadata(shadow_stack_ptr_type *va_arg_proxy,
                                      void **base, void **bound, key_type *key,
                                      lock_type *lock) {
 #endif
-
+    __softboundcets_debug_printf("Proxy %p (current shadow stack height: %p)\n",
+                                 *va_arg_proxy,
+                                 __softboundcets_shadow_stack_ptr);
     // Load the metadata
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *base = *((void **)(*va_arg_proxy + __BASE_INDEX));
     *bound = *((void **)(*va_arg_proxy + __BOUND_INDEX));
+    __softboundcets_debug_printf("Loaded base %p, loaded bound %p\n", *base,
+                                 *bound);
 #endif
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *key = *((key_type *)(*va_arg_proxy + __KEY_INDEX));
     *lock = *((lock_type *)(*va_arg_proxy + __LOCK_INDEX));
+    __softboundcets_debug_printf("Loaded key %zx, loaded lock %p\n", *key,
+                                 *lock);
 #endif
 
     // Change the state of the proxy object to point to the next entry
     *va_arg_proxy = *va_arg_proxy + __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
-
-    __softboundcets_debug_printf("Incremented proxy %p, loaded base %p, loaded "
-                                 "bound %p (current shadow stack height: %p)\n",
-                                 *va_arg_proxy, *base, *bound,
-                                 __softboundcets_shadow_stack_ptr);
 }
 
 shadow_stack_ptr_type *
