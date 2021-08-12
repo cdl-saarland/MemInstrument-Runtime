@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import os
 import argparse
 import subprocess
 import math
 import textwrap
 import sys
 import shutil
-import pathlib
+from pathlib import Path
+
 
 def is_available(program_name):
     """Check if a given program is available."""
@@ -76,6 +76,7 @@ def generate_header(header_name, file_path, includes, namespaces, content,
                        """))
     return header_text
 
+
 def surround_with_header_stuff(text, number_of_functions, file_path):
     """
     Specify the header content and use it to instantiate the LLVM header template.
@@ -83,13 +84,15 @@ def surround_with_header_stuff(text, number_of_functions, file_path):
     header_name = "SB_WRAPPER_H"
     namespaces = ["meminstrument", "softbound"]
     short_description = "Wrapper Functions"
-    long_description = "Contains all (standard library) wrapper functions available in the SoftBound runtime."
+    long_description = ("Contains all (standard library) wrapper functions "
+                        "available in the SoftBound runtime.")
     includes = '#include "llvm/ADT/SmallVector.h"\n\n'
-    content = "static llvm::SmallVector<std::string, " + \
-        str(number_of_functions) + "> availableWrappers({\n" + text + "});\n"
+    content = (f"static llvm::SmallVector<std::string, {number_of_functions}> "
+               f"availableWrappers({{\n{text}}});\n")
 
     return generate_header(header_name, file_path, includes, namespaces, content,
                            short_description, long_description)
+
 
 def process_file(file_name, out_file_name, verbose):
     """
@@ -103,13 +106,13 @@ def process_file(file_name, out_file_name, verbose):
             # ignore ctags metadata
             if line.startswith("!"):
                 if verbose:
-                    print("Ignore ctag metadata:\t" + line)
+                    print(f"Ignore ctag metadata:\t{line}")
                 continue
 
             # ignore helper functions
             if not line.startswith("softboundcets"):
                 if verbose:
-                    print("Ignore softbound helper function:\t" + line)
+                    print(f"Ignore softbound helper function:\t{line}")
                 continue
 
             splitted = line.split("\t")
@@ -117,7 +120,8 @@ def process_file(file_name, out_file_name, verbose):
             result += '\t"' + function_name + '",\n'
             number_of_functions += 1
 
-    result = surround_with_header_stuff(result, number_of_functions, out_file_name)
+    result = surround_with_header_stuff(
+        result, number_of_functions, out_file_name)
     return result
 
 
@@ -126,20 +130,26 @@ def generate_file(list_of_source_files, out_file_name, verbose):
     Find SoftBound function in the given source files and generate a C++ header
     that lists the functions.
     """
-    tmp_file_name = "ctags.out"
+    tmp_file_name = Path("ctags.out")
     if not is_available("ctags"):
         print("Ctags is necessary for this program to work. Please install it "
               "(http://ctags.sourceforge.net/ or "
               "https://github.com/universal-ctags/ctags).")
         sys.exit(1)
 
+    for path_entry in list_of_source_files:
+        if not path_entry.exists():
+            print(f"File '{path_entry}' not found.")
+            sys.exit(1)
+
     subprocess.run(["ctags", "-o", tmp_file_name, "--c-types=f"] +
                    list_of_source_files, check=True)
-    file_name = out_file_name.split("include/")[-1]
+    # Generate the name without the include path prefix
+    file_name = Path(*out_file_name.parts[-2:])
     c_file_content = process_file(tmp_file_name, file_name, verbose)
 
     # Delete the temporarily generated file
-    os.remove(tmp_file_name)
+    Path.unlink(tmp_file_name)
 
     if verbose:
         print("Header file content:")
@@ -148,7 +158,8 @@ def generate_file(list_of_source_files, out_file_name, verbose):
     with open(out_file_name, "w") as generated_header:
         generated_header.write(c_file_content)
 
-    print("'" + out_file_name + "' successfully generated.")
+    print(f"'{out_file_name}' successfully generated.")
+
 
 def main():
     """
@@ -161,15 +172,17 @@ def main():
                         help="Print verbose output")
     args = parser.parse_args()
 
-    list_of_source_files = ["src/softboundcets-wrappers.c"]
+    script_dir = Path(__file__).parent
+    list_of_source_files = [script_dir / "src" / "softboundcets-wrappers.c"]
 
     # Generate the directory where the auto-generated header is put
-    out_dir = os.path.join("..", "include", "meminstrument-rt")
-    pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
+    out_dir = script_dir / ".." / "include" / "meminstrument-rt"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    out_file_name = os.path.join(out_dir, "SBWrapper.h")
+    out_file_name = out_dir / "SBWrapper.h"
 
     generate_file(list_of_source_files, out_file_name, args.verbose)
+
 
 if __name__ == "__main__":
     main()
