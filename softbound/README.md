@@ -5,7 +5,7 @@ The C-sources are compiled to a stand-alone library for usage with SoftBound-ins
 
 ## Requirements
 
-* [Ctags](http://ctags.sourceforge.net/)
+* [Exuberant Ctags](http://ctags.sourceforge.net/) or [Universal Ctags](https://github.com/universal-ctags/ctags)
 * [GNU Make](https://www.gnu.org/software/make/) (untested with other build tools)
 
 ## Build instructions

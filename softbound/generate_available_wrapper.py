@@ -128,8 +128,9 @@ def generate_file(list_of_source_files, out_file_name, verbose):
     """
     tmp_file_name = "ctags.out"
     if not is_available("ctags"):
-        print("Ctags is necessary for this program to work."
-              "Please install it (you can find it here: http://ctags.sourceforge.net/).")
+        print("Ctags is necessary for this program to work. Please install it "
+              "(http://ctags.sourceforge.net/ or "
+              "https://github.com/universal-ctags/ctags).")
         sys.exit(1)
 
     subprocess.run(["ctags", "-o", tmp_file_name, "--c-types=f"] +
