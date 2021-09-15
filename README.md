@@ -11,7 +11,7 @@ The instrumentation mechanisms and their build process are designed for/tested u
 * [Clang](https://clang.llvm.org/)
 * [GNU Make](https://www.gnu.org/software/make/)
 
-All instrumentation mechanisms are build when executing
+All instrumentation mechanisms are built when executing
 
 ```
 make
@@ -31,7 +31,7 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 
 * `splay`
 
-    Implementation of the splay tree based memory safety instrumentation proposed by Jones & Kelly.
+    Implementation of the splay-tree-based memory safety instrumentation proposed by Jones & Kelly.
 
 * `softbound`
 
@@ -66,9 +66,9 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 
 ## Contributions
 
-The splay/sleep/rt_stat implementations are due to **Fabian Ritter**.
+The splay/sleep/rt_stat implementations were contributed by **Fabian Ritter**.
 
-The lowfat implementation is due to **Philip Gebel**.
+The lowfat implementation was contributed by **Philip Gebel**.
 
 The SoftBoundCETS implementation is an adaption by **Tina Jung**, and was originally developed by:
 
