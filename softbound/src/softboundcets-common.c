@@ -159,13 +159,10 @@ __METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
 #endif
 
     size_t ptr = (size_t)addr_of_ptr;
-    __softboundcets_trie_entry_t *trie_secondary_table;
-
-    // assert(__softboundcetswithss_trie_primary_table[primary_index] ==
-    // trie_secondary_table);
 
     size_t primary_index = (ptr >> 25);
-    trie_secondary_table = __softboundcets_trie_primary_table[primary_index];
+    __softboundcets_trie_entry_t *trie_secondary_table =
+        __softboundcets_trie_primary_table[primary_index];
 
 #if !__SOFTBOUNDCETS_PREALLOCATE_TRIE
     if (trie_secondary_table == NULL) {
@@ -210,20 +207,18 @@ void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
     __softboundcets_debug_printf("[Copy metadata] dest=%p, from=%p, size=%zx\n",
                                  dest, from, size);
 
+    size_t from_ptr = (size_t)from;
+
+    if (from_ptr % 8 != 0) {
+        // TODO should this maybe raise an error if the size is larger than 8?
+        // (likely to crash later on in case pointers are involved...)
+        return;
+    }
+
     size_t dest_ptr = (size_t)dest;
     size_t dest_ptr_end = dest_ptr + size;
 
-    size_t from_ptr = (size_t)from;
     size_t from_ptr_end = from_ptr + size;
-
-    if (from_ptr % 8 != 0) {
-        return;
-        //    from_ptr = from_ptr %8;
-        //    dest_ptr = dest_ptr %8;
-    }
-
-    __softboundcets_trie_entry_t *trie_secondary_table_dest_begin;
-    __softboundcets_trie_entry_t *trie_secondary_table_from_begin;
 
     size_t dest_primary_index_begin = (dest_ptr >> 25);
     size_t dest_primary_index_end = (dest_ptr_end >> 25);
@@ -270,49 +265,49 @@ void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
             void *dest_entry_ptr = &temp_to_strie[dest_secondary_index];
             void *from_entry_ptr = &temp_from_strie[from_secondary_index];
 
-#if __SOFTBOUNDCETS_SPATIAL
-            memcpy(dest_entry_ptr, from_entry_ptr, 16);
-#elif __SOFTBOUNDCETS_TEMPORAL
-            memcpy(dest_entry_ptr, from_entry_ptr, 16);
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-            memcpy(dest_entry_ptr, from_entry_ptr, 32);
-#endif
+            memcpy(dest_entry_ptr, from_entry_ptr,
+                   sizeof(__softboundcets_trie_entry_t));
         }
         return;
     }
 
-    trie_secondary_table_dest_begin =
+    // This is the simple case: In both source and dest, only entries of one
+    // secondary table are affected. This allows for a single memcpy
+    // transferring all the data.
+
+    __softboundcets_trie_entry_t *trie_secondary_table_dest_begin =
         __softboundcets_trie_primary_table[dest_primary_index_begin];
-    trie_secondary_table_from_begin =
+    __softboundcets_trie_entry_t *trie_secondary_table_from_begin =
         __softboundcets_trie_primary_table[from_primary_index_begin];
 
+    // In case no pointer data is stored in this memory area, we don't need to
+    // copy any metadata
     if (trie_secondary_table_from_begin == NULL)
         return;
 
+    // Allocate the secondary trie for the destination in case it does not yet
+    // exist
     if (trie_secondary_table_dest_begin == NULL) {
         trie_secondary_table_dest_begin = __softboundcets_trie_allocate();
         __softboundcets_trie_primary_table[dest_primary_index_begin] =
             trie_secondary_table_dest_begin;
     }
 
+    // Compute the secondary indices
     size_t dest_secondary_index = ((dest_ptr >> 3) & 0x3fffff);
     size_t from_secondary_index = ((from_ptr >> 3) & 0x3fffff);
 
     assert(dest_secondary_index < __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES);
     assert(from_secondary_index < __SOFTBOUNDCETS_TRIE_SECONDARY_TABLE_ENTRIES);
 
+    // Copy the secondary table from src to dest
     void *dest_entry_ptr =
         &trie_secondary_table_dest_begin[dest_secondary_index];
     void *from_entry_ptr =
         &trie_secondary_table_from_begin[from_secondary_index];
 
-#if __SOFTBOUNDCETS_SPATIAL
-    memcpy(dest_entry_ptr, from_entry_ptr, 16 * (size >> 3));
-#elif __SOFTBOUNDCETS_TEMPORAL
-    memcpy(dest_entry_ptr, from_entry_ptr, 16 * (size >> 3));
-#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    memcpy(dest_entry_ptr, from_entry_ptr, 32 * (size >> 3));
-#endif
+    memcpy(dest_entry_ptr, from_entry_ptr,
+           sizeof(__softboundcets_trie_entry_t) * (size >> 3));
     return;
 }
 
