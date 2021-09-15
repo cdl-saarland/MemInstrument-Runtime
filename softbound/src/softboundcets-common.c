@@ -248,11 +248,12 @@ void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
             __softboundcets_trie_entry_t *temp_from_strie =
                 __softboundcets_trie_primary_table[temp_from_pindex];
 
+            // In case no pointer data is stored in this memory area, we don't
+            // need to copy any metadata
             if (temp_from_strie == NULL) {
-                temp_from_strie = __softboundcets_trie_allocate();
-                __softboundcets_trie_primary_table[temp_from_pindex] =
-                    temp_from_strie;
+                continue;
             }
+
             __softboundcets_trie_entry_t *temp_to_strie =
                 __softboundcets_trie_primary_table[temp_to_pindex];
 
