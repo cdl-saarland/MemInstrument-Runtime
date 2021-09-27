@@ -523,7 +523,7 @@ void __softboundcets_proxy_metadata_store(const void *addr_of_ptr,
     __softboundcets_metadata_store(addr_of_ptr, (void *)proxy,
                                    (void *)INVALID_MEM_VALUE);
 #elif __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_metadata_store(addr_of_ptr, (key_t)proxy,
+    __softboundcets_metadata_store(addr_of_ptr, (key_type)proxy,
                                    (lock_type)INVALID_MEM_VALUE);
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     __softboundcets_metadata_store(
