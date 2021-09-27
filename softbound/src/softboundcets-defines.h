@@ -109,9 +109,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 // TODO add description of this option
 // #define __SOFTBOUNDCETS_CONSTANT_STACK_KEY_LOCK
 
-// TODO add description of this option
-// #define __NOSIM_CHECKS
-
 // The free map stores information on pointers that can be freed (those
 // dynamically allocated by malloc/calloc etc.). This should (always) be enabled
 // when using temporal safety.

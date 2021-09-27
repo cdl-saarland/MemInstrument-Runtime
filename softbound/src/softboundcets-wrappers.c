@@ -1455,7 +1455,6 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
 
-#ifndef __NOSIM_CHECKS
     void *src_base = __softboundcets_load_base_shadow_stack(2);
     void *src_bound = __softboundcets_load_bound_shadow_stack(2);
 
@@ -1475,7 +1474,6 @@ __WEAK_INLINE char *softboundcets_strcpy(char *dest, char *src) {
     void *dest_bound = __softboundcets_load_bound_shadow_stack(1);
     __softboundcets_spatial_dereference_check(dest_base, dest_bound, dest,
                                               size);
-#endif
 #endif
 #endif
 

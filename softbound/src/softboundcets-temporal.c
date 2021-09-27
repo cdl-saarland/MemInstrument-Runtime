@@ -269,11 +269,7 @@ __WEAK_INLINE void __softboundcets_add_to_free_map(key_type ptr_key,
             return;
         }
         if (counter >= (__SOFTBOUNDCETS_N_FREE_MAP_ENTRIES)) {
-#ifndef __NOSIM_CHECKS
             __softboundcets_abort();
-#else
-            break;
-#endif
         }
         counter++;
     }
@@ -301,11 +297,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
         key_type tag = *entry_ptr;
 
         if (tag == 0) {
-#ifndef __NOSIM_CHECKS
             __softboundcets_abort_with_msg("free map does not have the key\n");
-#else
-            break;
-#endif
         }
 
         if (tag == (key_type)ptr) {
@@ -314,11 +306,7 @@ __WEAK_INLINE void __softboundcets_check_remove_from_free_map(key_type ptr_key,
         }
 
         if (counter >= __SOFTBOUNDCETS_N_FREE_MAP_ENTRIES) {
-#ifndef __NOSIM_CHECKS
             __softboundcets_abort_with_msg("free map out of entries\n");
-#else
-            break;
-#endif
         }
         counter++;
     }
