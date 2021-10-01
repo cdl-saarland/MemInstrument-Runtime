@@ -10,7 +10,7 @@
  * for each counter "FooCounter".
  *
  * To initialize the statistics mechanism, include this file and call
- * __setupt_statistics() with the name of the binary (this is expanded to its
+ * __setup_statistics() with the name of the binary (this is expanded to its
  * absolute path automatically). This also registers the statistics printer to
  * run at the very end of the program.
  *
