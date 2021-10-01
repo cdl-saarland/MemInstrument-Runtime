@@ -33,12 +33,12 @@ const char *__get_prog_name(void) { return mi_prog_name; }
 #if __SOFTBOUNDCETS_ENABLE_RT_STATS
 
 static size_t rt_stats_sb_access_checks = 0;
-static size_t rt_stats_sb_mem_checks = 0;
+static size_t rt_stats_sb_call_checks = 0;
 static size_t rt_stats_external_checks = 0;
 
 void __rt_stat_inc_sb_access_check(void) { rt_stats_sb_access_checks += 1; }
 
-void __rt_stat_inc_sb_mem_check(void) { rt_stats_sb_mem_checks += 1; }
+void __rt_stat_inc_sb_call_check(void) { rt_stats_sb_call_checks += 1; }
 
 void __rt_stat_inc_external_check(void) { rt_stats_external_checks += 1; }
 
@@ -53,8 +53,8 @@ static void __print_stats(void) {
 
     fprintf(dest, "STAT  # of softbound access checks executed : %lu\n",
             rt_stats_sb_access_checks);
-    fprintf(dest, "STAT  # of other softbound checks executed : %lu\n",
-            rt_stats_sb_mem_checks);
+    fprintf(dest, "STAT  # of softbound call checks executed : %lu\n",
+            rt_stats_sb_call_checks);
     fprintf(dest, "STAT  # of external checks executed : %lu\n",
             rt_stats_external_checks);
 

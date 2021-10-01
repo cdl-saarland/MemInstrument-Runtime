@@ -7,6 +7,9 @@
 
 __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
     const void *base, const void *bound, const void *ptr) {
+#if __SOFTBOUNDCETS_ENABLE_RT_STATS
+    __rt_stat_inc_sb_call_check();
+#endif
 
     __softboundcets_debug_printf(
         "In Call Dereference Check, base=%p, bound=%p, ptr=%p\n", base, bound,

@@ -195,7 +195,7 @@ typedef struct {
 #if __SOFTBOUNDCETS_ENABLE_RT_STATS
 void __rt_stat_inc_sb_access_check(void);
 
-void __rt_stat_inc_sb_mem_check(void);
+void __rt_stat_inc_sb_call_check(void);
 
 void __rt_stat_inc_external_check(void);
 #endif
