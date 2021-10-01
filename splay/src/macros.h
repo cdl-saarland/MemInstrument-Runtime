@@ -8,10 +8,10 @@
 
 #define UNREACHABLE(msg) assert(false && msg);
 
-#ifdef CONTINUE_ON_FATAL
-#define MI_NO_RETURN
+#ifdef MIRT_CONTINUE_ON_FATAL
+#define MIRT_NO_RETURN
 #else
-#define MI_NO_RETURN _Noreturn
+#define MIRT_NO_RETURN _Noreturn
 #endif
 
 #if ASSERT_LEVEL >= AL_TREE_COMPLEX

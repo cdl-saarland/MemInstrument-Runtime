@@ -9,36 +9,37 @@
  * It is expected that the instrumentation mechanism provides a "config.h"
  * header with #defines that control the behavior of the instrumentation.
  * The following macros are relevant:
- *      SILENT - Defining this macro disables any messages.
- *      CONTINUE_ON_FATAL - Defining this macro disables termination of
+ *      MIRT_SILENT - Defining this macro disables any messages.
+ *      MIRT_CONTINUE_ON_FATAL - Defining this macro disables termination of
  *          execution.
- *      FAIL_COUNTER - If defined, the value of this macro is used as a
+ *      MIRT_FAIL_COUNTER - If defined, the value of this macro is used as a
  *          statistic counter that is incremented on each call of a fail
  *          function. This will only have a value differing from 0 or 1 if
- *          CONTINUE_ON_FATAL is defined.
- *      RET_FAIL - The exit code that is produced by the fail functions (73 is
- *          used if this macro is not defined).
- *      MAX_BACKTRACE_LENGTH - Determines the maximal number of functions from
- *          the call stack to print in the backtrace on abort.
+ *          MIRT_CONTINUE_ON_FATAL is defined.
+ *      MIRT_RET_FAIL - The exit code that is produced by the fail functions (73
+ *          is used if this macro is not defined).
+ *      MIRT_MAX_BACKTRACE_LENGTH - Determines the maximal number of functions
+ * from the call stack to print in the backtrace on abort.
  */
 
-#ifndef MI_NO_RETURN
-#ifdef CONTINUE_ON_FATAL
-#define MI_NO_RETURN
+#ifndef MIRT_NO_RETURN
+#ifdef MIRT_CONTINUE_ON_FATAL
+#define MIRT_NO_RETURN
 #else
-#define MI_NO_RETURN _Noreturn
+#define MIRT_NO_RETURN _Noreturn
 #endif
 #endif
 
-MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...);
+MIRT_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...);
 
-MI_NO_RETURN void __mi_fail(void);
+MIRT_NO_RETURN void __mi_fail(void);
 
-MI_NO_RETURN void __mi_fail_with_msg(const char *msg);
+MIRT_NO_RETURN void __mi_fail_with_msg(const char *msg);
 
-MI_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr);
+MIRT_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr);
 
-MI_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
-                                             const char *verbMsg);
+MIRT_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg,
+                                               void *faultingPtr,
+                                               const char *verbMsg);
 
 void __mi_warning(const char *msg);

@@ -14,7 +14,7 @@ static FILE *OutFile = NULL;
 
 #define dumpBackTrace(of)                                                      \
     {                                                                          \
-        int btlen = MAX_BACKTRACE_LENGTH;                                      \
+        int btlen = MIRT_MAX_BACKTRACE_LENGTH;                                 \
         fprintf(of, "  BACKTRACE(%lu)\n", running_index);                      \
         fflush(of);                                                            \
         void *buf[btlen];                                                      \

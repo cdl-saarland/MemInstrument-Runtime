@@ -15,7 +15,7 @@
 // #define CRASH_ON_MISSING_WITNESS 1
 
 /// The maximum length of backtraces that are printed
-#define MAX_BACKTRACE_LENGTH 16
+#define MIRT_MAX_BACKTRACE_LENGTH 16
 
 /// Dumps the entire allocation map of the splay tree when failing
 #define DUMP_ALLOCATION_MAP_ON_FAIL 1
@@ -54,10 +54,10 @@
 #define MIRT_STATS_FILE "mi_stats.txt"
 
 /// Disable crashing when a fatal error is discovered
-// #define CONTINUE_ON_FATAL 1
+// #define MIRT_CONTINUE_ON_FATAL 1
 
 /// Don't print anything (unless stats are enabled)
-// #define SILENT 1
+// #define MIRT_SILENT 1
 
 #define AL_NONE 0
 #define AL_INPUT 1

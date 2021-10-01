@@ -4,7 +4,7 @@
 // executing the main function.
 #define INIT_CALLBACK __mi_init_callback__
 
-#define MAX_BACKTRACE_LENGTH 16
+#define MIRT_MAX_BACKTRACE_LENGTH 16
 
 // Enable collecting and printing statistics at run time
 // #define MIRT_STATISTICS 1

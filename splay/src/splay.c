@@ -2,8 +2,8 @@
 
 #include <fcntl.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -25,8 +25,8 @@ static void dumpSplayAllocMapConditionally(void) {
 #endif
 }
 
-MI_NO_RETURN static void __mi_fail_wrapper(const char *msg, void *ptr,
-                                           char *vmsg) {
+MIRT_NO_RETURN static void __mi_fail_wrapper(const char *msg, void *ptr,
+                                             char *vmsg) {
     dumpSplayAllocMapConditionally();
     if (vmsg) {
         __mi_fail_verbose_with_ptr(msg, ptr, vmsg);
@@ -206,9 +206,7 @@ static Node *getNode(uintptr_t witness_val, const char *str) {
 
 void __setup_splay(void) { splayInit(&__memTree); }
 
-void __splay_inc_external_counter(void) {
-    STAT_INC(NumExtChecks);
-}
+void __splay_inc_external_counter(void) { STAT_INC(NumExtChecks); }
 
 #ifdef TREE_ANNOTATE_NODES
 static const char *stringForKind(char c) {
@@ -256,11 +254,11 @@ void __splay_check_inbounds_named(void *witness, void *ptr, char *name) {
             size_t obj_size = n->bound - n->base;
             dumpSplayAllocMapConditionally();
 #ifdef TREE_ANNOTATE_NODES
-            __mi_fail_fmt(
-                stderr,
-                "Outflowing out-of-bounds pointer %p with offset %d, "
-                "associated to a %s object of size %dB at [%p-%p)",
-                ptr, off, stringForKind(n->kind), obj_size, n->base, n->bound);
+            __mi_fail_fmt(stderr,
+                          "Outflowing out-of-bounds pointer %p with offset %d, "
+                          "associated to a %s object of size %dB at [%p-%p)",
+                          ptr, off, stringForKind(n->kind), obj_size, n->base,
+                          n->bound);
 #else
             __mi_fail_fmt(stderr,
                           "Outflowing out-of-bounds pointer %p with offset "

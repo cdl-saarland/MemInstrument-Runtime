@@ -9,30 +9,30 @@
 #include "config.h"
 #include "statistics.h"
 
-#ifndef RET_FAIL
-#define RET_FAIL 73
+#ifndef MIRT_RET_FAIL
+#define MIRT_RET_FAIL 73
 #endif
 
 #ifndef UNUSED
 #define UNUSED(x) (void)x;
 #endif
 
-#ifndef MAX_BACKTRACE_LENGTH
-#define MAX_BACKTRACE_LENGTH 16
+#ifndef MIRT_MAX_BACKTRACE_LENGTH
+#define MIRT_MAX_BACKTRACE_LENGTH 16
 #endif
 
 #define PRINTBACKTRACE                                                         \
     {                                                                          \
-        void *buf[MAX_BACKTRACE_LENGTH];                                       \
-        int n = backtrace(buf, MAX_BACKTRACE_LENGTH);                          \
+        void *buf[MIRT_MAX_BACKTRACE_LENGTH];                                  \
+        int n = backtrace(buf, MIRT_MAX_BACKTRACE_LENGTH);                     \
         backtrace_symbols_fd(buf, n, STDERR_FILENO);                           \
     }
 
-MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
-#ifdef FAIL_COUNTER
-    STAT_INC(FAIL_COUNTER);
+MIRT_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
+#ifdef MIRT_FAIL_COUNTER
+    STAT_INC(MIRT_FAIL_COUNTER);
 #endif
-#ifdef SILENT
+#ifdef MIRT_SILENT
     UNUSED(dest)
     UNUSED(fmt)
 #endif
@@ -40,8 +40,8 @@ MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
-#ifdef CONTINUE_ON_FATAL
-#ifndef SILENT
+#ifdef MIRT_CONTINUE_ON_FATAL
+#ifndef MIRT_SILENT
     fprintf(dest, "FATAL: Memory safety violation!");
     if (fmt) {
         fprintf(dest, " ");
@@ -50,7 +50,7 @@ MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
     fprintf(dest, "\n");
 #endif
 #else
-#ifndef SILENT
+#ifndef MIRT_SILENT
     fprintf(dest, "Memory safety violation!\n"
                   "         / .'\n"
                   "   .---. \\/\n"
@@ -66,22 +66,23 @@ MI_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
                     "######################\n");
 #endif
 
-    exit(RET_FAIL);
+    exit(MIRT_RET_FAIL);
 #endif
 }
 
-MI_NO_RETURN void __mi_fail(void) { __mi_fail_fmt(stderr, NULL); }
+MIRT_NO_RETURN void __mi_fail(void) { __mi_fail_fmt(stderr, NULL); }
 
-MI_NO_RETURN void __mi_fail_with_msg(const char *msg) {
+MIRT_NO_RETURN void __mi_fail_with_msg(const char *msg) {
     __mi_fail_fmt(stderr, "%s", msg);
 }
 
-MI_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr) {
+MIRT_NO_RETURN void __mi_fail_with_ptr(const char *msg, void *faultingPtr) {
     __mi_fail_fmt(stderr, "%s with pointer %p", msg, faultingPtr);
 }
 
-MI_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg, void *faultingPtr,
-                                             const char *verbMsg) {
+MIRT_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg,
+                                               void *faultingPtr,
+                                               const char *verbMsg) {
     __mi_fail_fmt(stderr, "%s with pointer %p\nat %s", msg, faultingPtr,
                   verbMsg);
 }
