@@ -1,6 +1,8 @@
 #ifndef SOFTBOUNDCETS_DEFINES_H
 #define SOFTBOUNDCETS_DEFINES_H
 
+#include "statistics.h"
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -95,12 +97,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
 #define __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS 0
 #endif
 
-// Option for printing statistics about dynamically executed checks [testing
-// only]
-#ifndef __SOFTBOUNDCETS_ENABLE_RT_STATS
-#define __SOFTBOUNDCETS_ENABLE_RT_STATS 0
-#endif
-
 // TODO add description of this option
 #ifndef __SOFTBOUNDCETS_PREALLOCATE_TRIE
 #define __SOFTBOUNDCETS_PREALLOCATE_TRIE 0
@@ -191,14 +187,6 @@ typedef struct {
 //===----------------------------------------------------------------------===//
 //                    Commonly used internal functions
 //===----------------------------------------------------------------------===//
-
-#if __SOFTBOUNDCETS_ENABLE_RT_STATS
-void __rt_stat_inc_sb_access_check(void);
-
-void __rt_stat_inc_sb_call_check(void);
-
-void __rt_stat_inc_external_check(void);
-#endif
 
 extern void __softboundcets_printf(const char *str, ...);
 

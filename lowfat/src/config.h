@@ -19,7 +19,7 @@
 /******************/
 
 /** STATISTICS **/
-#define STATISTICS 1
-#define STATS_COUNTER_DEFS "statistic_counters.def"
-#define STATS_FILE "mi_stats.txt"
+#define MIRT_STATISTICS 1
+#define MIRT_STATS_COUNTER_DEFS "statistic_counters.def"
+#define MIRT_STATS_FILE "mi_stats.txt"
 /****************/

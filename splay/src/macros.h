@@ -49,7 +49,7 @@
 
 #define ASSERTION(x, l) ASSERT_IMPL_##l(x)
 
-#ifdef STATISTICS
+#ifdef MIRT_STATISTICS
 #define STATS(x)                                                               \
     do {                                                                       \
         x;                                                                     \

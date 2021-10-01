@@ -21,13 +21,14 @@
  * It is expected that the instrumentation mechanism provides a "config.h"
  * header with #defines that control the behavior of the instrumentation.
  * The following macros are relevant:
- *      STATISTICS - Statistics are collected and printed iff this is defined.
- *      STATS_FILE - If this is defined (as a string s), statistics will be
+ *      MIRT_STATISTICS - Statistics are collected and printed iff this is
+ *          defined.
+ *      MIRT_STATS_FILE - If this is defined (as a string s), statistics will be
  *          printed (i.e. appended) to a file with the name s.
- *      STATS_COUNTER_DEFS - Defines the name of the file in which Counter
+ *      MIRT_STATS_COUNTER_DEFS - Defines the name of the file in which counter
  *          definitions are given, should be in the include path.
  *
- * Independently of whether STATISTICS is set, this header declares the
+ * Independently of whether MIRT_STATISTICS is set, this header declares the
  * __get_prog_name() function that returns the absolute path of the binary as a
  * string.
  */
@@ -38,14 +39,14 @@ void __setup_statistics(const char *n);
 
 const char *__get_prog_name(void);
 
-#ifdef STATISTICS
+#ifdef MIRT_STATISTICS
 
 #include <stddef.h>
 
 // Declare all statistics counters
 #define STAT_ACTION(var, text) extern size_t __##var;
 
-#include STATS_COUNTER_DEFS
+#include MIRT_STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 

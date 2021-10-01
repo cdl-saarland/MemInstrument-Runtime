@@ -15,14 +15,14 @@
 
 static const char *mi_prog_name = NULL;
 
-#ifdef STATISTICS
+#ifdef MIRT_STATISTICS
 
 static const char *mi_stats_file = NULL;
 
 // Define all statistics counters
 #define STAT_ACTION(var, text) size_t __##var = 0;
 
-#include STATS_COUNTER_DEFS
+#include MIRT_STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 
@@ -36,7 +36,7 @@ static struct __StatEntry {
 #define STAT_ACTION(var, text)                                                 \
     (struct __StatEntry){__COUNTER__, &__##var, text},
 
-#include STATS_COUNTER_DEFS
+#include MIRT_STATS_COUNTER_DEFS
 
 #undef STAT_ACTION
 };
@@ -81,7 +81,7 @@ static void set_prog_name(const char *n) {
 
 void __setup_statistics(const char *n) {
     set_prog_name(n);
-#ifdef STATISTICS
+#ifdef MIRT_STATISTICS
     if (atexit(__print_stats) != 0) {
         fprintf(stderr,
                 "meminstrument: Failed to register statistics printer!\n");
@@ -89,8 +89,8 @@ void __setup_statistics(const char *n) {
 #ifdef STATS_FILE_ENV
     mi_stats_file = getenv(STATS_FILE_ENV);
 #else
-#ifdef STATS_FILE
-    mi_stats_file = STATS_FILE;
+#ifdef MIRT_STATS_FILE
+    mi_stats_file = MIRT_STATS_FILE;
 #endif
 #endif
 #endif

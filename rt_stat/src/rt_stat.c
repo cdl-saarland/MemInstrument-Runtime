@@ -11,7 +11,7 @@
 #define __USE_GNU
 #include <dlfcn.h>
 
-#define STATS_FILE "MI_STATS_FILE"
+#define MIRT_STATS_FILE "MIRT_STATS_FILE"
 
 static const char *mi_prog_name = NULL;
 
@@ -113,8 +113,8 @@ int __libc_start_main(int (*main)(int, char **, char **), int argc,
 
     mi_prog_name = ubp_av[0];
 
-#ifdef STATS_FILE
-    mi_stats_file = getenv(STATS_FILE);
+#ifdef MIRT_STATS_FILE
+    mi_stats_file = getenv(MIRT_STATS_FILE);
 #endif
 
     if (atexit(__mi_print_stats) != 0) {

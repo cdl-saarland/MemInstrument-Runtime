@@ -6,6 +6,6 @@ component of each entry.
 
 At the end of execution of a program that is linked against this library, the
 statistics table is printed either to stderr or, if a filename is specified via
-the `MI_STATS_FILE` environment variable, to the denoted file.
+the `MIRT_STATS_FILE` environment variable, to the denoted file.
 
 This library is currently not threadsafe!

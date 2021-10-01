@@ -37,21 +37,21 @@
 // #define ENABLE_MMAP_HOOK 1
 
 /// Enable collecting and printing statistics at run time
-// #define STATISTICS 1
+// #define MIRT_STATISTICS 1
 
 
 /// Do not run anything and return early before calling the main function.
 ///   "Semantics is what makes programs slow"
 // #define START_MAIN_EARLY_RETURN 1
 
-#define STATS_COUNTER_DEFS "statistic_counters.def"
+#define MIRT_STATS_COUNTER_DEFS "statistic_counters.def"
 
 /// If defined, use this key to find a file to print runtime stats to
-// #define STATS_FILE_ENV "MI_STATS_FILE"
+// #define STATS_FILE_ENV "MIRT_STATS_FILE"
 
 /// If defined and no STATS_FILE_ENV defined, use this as the name of the file
 /// to print statistics to.
-#define STATS_FILE "mi_stats.txt"
+#define MIRT_STATS_FILE "mi_stats.txt"
 
 /// Disable crashing when a fatal error is discovered
 // #define CONTINUE_ON_FATAL 1

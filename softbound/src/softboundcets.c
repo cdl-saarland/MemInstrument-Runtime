@@ -3,6 +3,8 @@
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
+#include "statistics.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,45 +26,6 @@ __softboundcets_trie_entry_t **__softboundcets_trie_primary_table;
 shadow_stack_ptr_type __softboundcets_shadow_stack_ptr = NULL;
 
 shadow_stack_ptr_type __softboundcets_shadow_stack_max = NULL;
-
-// Use meminstruments mechanism to get a useful stack trace
-static const char *mi_prog_name = NULL;
-
-const char *__get_prog_name(void) { return mi_prog_name; }
-
-#if __SOFTBOUNDCETS_ENABLE_RT_STATS
-
-static size_t rt_stats_sb_access_checks = 0;
-static size_t rt_stats_sb_call_checks = 0;
-static size_t rt_stats_external_checks = 0;
-
-void __rt_stat_inc_sb_access_check(void) { rt_stats_sb_access_checks += 1; }
-
-void __rt_stat_inc_sb_call_check(void) { rt_stats_sb_call_checks += 1; }
-
-void __rt_stat_inc_external_check(void) { rt_stats_external_checks += 1; }
-
-static void __print_stats(void) {
-    FILE *dest = fopen("mi_stats.txt", "a");
-    if (!dest) {
-        fprintf(stderr, "Failed to open stats file 'mi_stats.txt'");
-        return;
-    }
-    fprintf(dest, "\n==================================================\n");
-    fprintf(dest, "hacked softbound runtime stats for '%s':\n", mi_prog_name);
-
-    fprintf(dest, "STAT  # of softbound access checks executed : %lu\n",
-            rt_stats_sb_access_checks);
-    fprintf(dest, "STAT  # of softbound call checks executed : %lu\n",
-            rt_stats_sb_call_checks);
-    fprintf(dest, "STAT  # of external checks executed : %lu\n",
-            rt_stats_external_checks);
-
-    fprintf(dest, "==================================================\n");
-    fclose(dest);
-}
-
-#endif
 
 __SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
     fprintf(
@@ -146,18 +109,6 @@ void __softboundcets_printf(const char *str, ...) {
     va_end(args);
 }
 
-static void set_prog_name(const char *n) {
-    char actualpath[PATH_MAX + 1];
-    if (realpath(n, actualpath)) {
-        size_t len = strlen(actualpath);
-        char *res = malloc(sizeof(char) * (len + 1));
-        memcpy(res, actualpath, len + 1);
-        mi_prog_name = res;
-    } else {
-        mi_prog_name = n;
-    }
-}
-
 void __softboundcets_update_environment_metadata() {
     char *const *envPtr = environ;
     while (*envPtr != NULL) {
@@ -194,20 +145,14 @@ extern int softboundcets_pseudo_main(int argc, char **argv);
 
 int main(int argc, char **argv) {
 
-    // Setup for backtrace recovery
-    set_prog_name(argv[0]);
+    // Setup for backtrace recovery and statistics if requested
+    __setup_statistics(argv[0]);
 
 #if __SOFTBOUNDCETS_LLVM_TESTSUITE
     char *sub = strstr(argv[0], "timeit");
     if (sub) {
         int retval = softboundcets_pseudo_main(argc, argv);
         return retval;
-    }
-#endif
-
-#if __SOFTBOUNDCETS_ENABLE_RT_STATS
-    if (atexit(__print_stats) != 0) {
-        fprintf(stderr, "sb(hacked): Failed to register statistics printer!\n");
     }
 #endif
 

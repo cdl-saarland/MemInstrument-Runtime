@@ -78,7 +78,7 @@ The library can currently track three kinds of statistics:
 * The number of memcpy+memset checks executed at run-time.
 * The number of external checks executed (this will be zero for the ordinary SoftBound instrumentation) executed at run-time.
 
-Statistic tracking can be enabled with `__SOFTBOUNDCETS_ENABLE_RT_STATS`.
+Statistic tracking can be enabled with `MIRT_STATISTICS`.
 The results can be found in the `mi_stats.txt` file.
 
 Note that statistic tracking influences the program execution time and should therefore be disabled for performance runs.

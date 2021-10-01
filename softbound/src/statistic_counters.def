@@ -1,0 +1,3 @@
+STAT_ACTION(SpatialAccessCheck, "number of dereference checks")
+STAT_ACTION(CallCheck, "number of call checks")
+STAT_ACTION(ExternalCheck, "number of inbounds checks")

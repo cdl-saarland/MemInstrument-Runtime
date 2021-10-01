@@ -7,9 +7,9 @@
 #define MAX_BACKTRACE_LENGTH 16
 
 // Enable collecting and printing statistics at run time
-// #define STATISTICS 1
+// #define MIRT_STATISTICS 1
 
-#define STATS_COUNTER_DEFS "statistic_counters.def"
+#define MIRT_STATS_COUNTER_DEFS "statistic_counters.def"
 
 // If defined, use this key to find a file to print runtime stats to
-#define STATS_FILE "MI_STATS_FILE"
+#define MIRT_STATS_FILE "MIRT_STATS_FILE"

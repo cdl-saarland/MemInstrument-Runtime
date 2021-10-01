@@ -1,8 +1,13 @@
 CLANG := clang
 CLANG_FORMAT := clang-format
 
+BUILD_DIR := build
+SRC_DIR := src
+SHARED_DIR := ../shared
+SHARED_SRC_DIR := ${SHARED_DIR}/src
+
 # Use spatial checks only
-CFLAGS := -Wall -pedantic -fPIC -O3 -D__SOFTBOUNDCETS_SPATIAL -D_GNU_SOURCE -D__SOFTBOUNDCETS_WRAPPER_CHECKS
+CFLAGS := -Wall -pedantic -fPIC -O3 -I${SRC_DIR} -I${SHARED_DIR}/include -D_GNU_SOURCE -D__SOFTBOUNDCETS_SPATIAL -D__SOFTBOUNDCETS_WRAPPER_CHECKS
 ARFLAGS := -rcs
 LINK_LIBS := -luuid -ldl -lcrypt
 
@@ -10,8 +15,8 @@ LIB_NAME := softboundcets_rt
 DYN_LIB_NAME := lib${LIB_NAME}.so
 STAT_LIB_NAME := lib${LIB_NAME}.a
 
-BUILD_DIR := build
-SRC_DIR := src
+SHARED_SOURCES := $(wildcard ${SHARED_SRC_DIR}/*.c)
+SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(BUILD_DIR),$(SHARED_SOURCES:.c=.o))
 
 SOURCES := $(wildcard ${SRC_DIR}/*.c)
 HEADERS := $(wildcard ${SRC_DIR}/*.h)
@@ -19,6 +24,7 @@ OBJECTS := $(subst $(SRC_DIR),$(BUILD_DIR),$(SOURCES:.c=.o))
 
 LTO_DIR := ltobuild
 LTO_OBJECTS := $(subst $(SRC_DIR),$(LTO_DIR),$(SOURCES:.c=.lto.o))
+LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_DIR),$(SHARED_SOURCES:.c=.lto.o))
 
 all: static dynamic exports
 
@@ -70,24 +76,36 @@ $(OBJECTS): $(SOURCES)
 	@mkdir -p ${BUILD_DIR}
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o ${subst $(SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
-static: $(OBJECTS) exports
-	@echo "===> MAKE STATIC"
-	ar $(ARFLAGS) ${BUILD_DIR}/${STAT_LIB_NAME} $(OBJECTS)
+$(SHARED_OBJECTS): $(SHARED_SOURCES)
+	@echo "===> CC Shared"
+	@mkdir -p ${BUILD_DIR}
+	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o ${subst $(SHARED_SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
-dynamic: $(OBJECTS) exports
+static: $(OBJECTS) $(SHARED_OBJECTS) exports
+	@echo "===> MAKE STATIC"
+	ar $(ARFLAGS) ${BUILD_DIR}/${STAT_LIB_NAME} $(OBJECTS) $(SHARED_OBJECTS)
+
+dynamic: $(OBJECTS) $(SHARED_OBJECTS) exports
 	@echo "===> MAKE DYNAMIC"
-	$(CLANG) -shared -o ${BUILD_DIR}/${DYN_LIB_NAME} $(OBJECTS) ${LINK_LIBS}
+	$(CLANG) -shared -o ${BUILD_DIR}/${DYN_LIB_NAME} $(OBJECTS) $(SHARED_OBJECTS) ${LINK_LIBS}
 
 # Compile with LTO
 lto_dir:
-	@echo "===> MAKE LTO"
+	@echo "===> LTO"
 	@mkdir -p $(LTO_DIR)
 
 ${LTO_OBJECTS}: $(SOURCES)
+	@echo "===> CC LTO"
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
-static_lto: lto_dir ${LTO_OBJECTS} exports
-	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) $(LTO_DIR)/${STAT_LIB_NAME} ${LTO_OBJECTS}
+${LTO_SHARED_OBJECTS}: $(SHARED_SOURCES)
+	echo "what"
+	@echo "===> CC LTO Shared"
+	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
+
+static_lto: lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
+	@echo "===> MAKE LTO STATIC"
+	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) $(LTO_DIR)/${STAT_LIB_NAME} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 
 format:
 	@echo "===> CLANG-FORMAT"
