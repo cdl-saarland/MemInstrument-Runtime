@@ -418,10 +418,6 @@ void free(void *p) {
     free_found(p);
 }
 
-#if ENABLE_MPX
-void enable_mpx(void);
-#endif
-
 int
 __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end)) {
     // for program initialization we can't use the low fat allocator
@@ -436,7 +432,7 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
         if ((uintptr_t) regions[i] % REGION_SIZE != 0)
             exit(99); // TODO more info than just exotic return code
     }
-    
+
     // get original functions from dynamic linker
     initDynamicFunctions();
 
@@ -444,11 +440,6 @@ __libc_start_main(int *(main)(int, char **, char **), int argc, char **ubp_av, v
 
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
-
-#if ENABLE_MPX
-    // call magic code to enable the intel mpx extension
-    enable_mpx();
-#endif
 
     // enable our malloc etc. replacements
     hooks_active = 1;

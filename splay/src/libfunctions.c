@@ -4,7 +4,6 @@
 
 #include "splay.h"
 
-#include "enable_mpx.h"
 #include "fail_function.h"
 
 #include "config.h"
@@ -288,11 +287,6 @@ int __libc_start_main(int (*main)(int, char **, char **), int argc,
         }
         __splay_alloc(ubp_av[i], len * sizeof(char));
     }
-
-#if ENABLE_MPX
-    // call magic code to enable the intel mpx extension
-    enable_mpx();
-#endif
 
     // enable our malloc etc. replacements
     hooks_active = 1;

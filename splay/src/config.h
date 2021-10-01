@@ -53,9 +53,6 @@
 /// to print statistics to.
 #define STATS_FILE "mi_stats.txt"
 
-/// Enable Intel MPX bound checking on startup if defined to 1
-// #define ENABLE_MPX 1
-
 /// Disable crashing when a fatal error is discovered
 // #define CONTINUE_ON_FATAL 1
 
