@@ -2,6 +2,9 @@
 
 #include "config.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
 uint64_t __lowfat_ptr_index(void *ptr) __attribute__((__weak__,__always_inline__));
 uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) __attribute__((__weak__,__always_inline__));
 uint64_t __lowfat_ptr_size(uint64_t index) __attribute__((__weak__,__always_inline__));
