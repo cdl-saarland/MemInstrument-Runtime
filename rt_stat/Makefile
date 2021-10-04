@@ -6,6 +6,8 @@ LIB_NAME = rt_stat
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
 STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
+CLANG_FORMAT ?= clang-format
+
 Q ?= @
 
 CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3 -D_GNU_SOURCE
@@ -70,6 +72,5 @@ clean:
 
 format:
 	@echo "===> CLANG-FORMAT"
-	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.c))
-	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.h))
-
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.c))
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.h))

@@ -10,6 +10,8 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
 SHARED_SRC_DIR = ${SHARED_DIR}/src
 
+CLANG_FORMAT ?= clang-format
+
 Q ?= @
 
 CFLAGS  += -Wall -Wextra -g -O2 -D_GNU_SOURCE -fno-strict-aliasing -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
@@ -81,6 +83,5 @@ clean:
 
 format:
 	@echo "===> CLANG-FORMAT"
-	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.c))
-	$(Q)clang-format -i $(sort $(wildcard $(SRC_DIR)/*.h))
-
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.c))
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.h))

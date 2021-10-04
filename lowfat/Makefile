@@ -10,7 +10,8 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
 SHARED_SRC_DIR = ${SHARED_DIR}/src
 
-CC = clang
+CC ?= clang
+CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
@@ -81,3 +82,7 @@ clean:
 	@echo "===> CLEAN"
 	$(Q)rm -rf ${BUILD_DIR}
 
+format:
+	@echo "===> CLANG-FORMAT"
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.c))
+	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.h))
