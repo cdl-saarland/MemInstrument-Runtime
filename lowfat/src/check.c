@@ -51,8 +51,16 @@ void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
         STAT_INC(NumLowFatDerefChecks);
         if ((((uintptr_t)ptr + size) ^ (uintptr_t)witness) >>
                 (index + MIN_PERMITTED_LF_SIZE_LOG) !=
-            0)
-            __mi_fail_with_ptr("Out-of-bounds pointer dereference!", ptr);
+            0) {
+            __mi_debug_printf(
+                "Error with\n\tPtr:\t%p, base %p, size %u, width %u\n", ptr,
+                __lowfat_get_lower_bound(ptr),
+                __lowfat_ptr_size(__lowfat_ptr_index(ptr)), size);
+            __mi_debug_printf("\tWit:\t%p, base %p, size %u\n", witness,
+                              __lowfat_get_lower_bound(witness),
+                              __lowfat_ptr_size(index));
+            __mi_fail_with_msg("Out-of-bounds pointer dereference!\n");
+        }
     }
 }
 
@@ -64,7 +72,14 @@ void __lowfat_check_oob(void *witness, void *ptr) {
         STAT_INC(NumLowFatInboundsChecks);
         if (((uintptr_t)ptr ^ (uintptr_t)witness) >>
                 (index + MIN_PERMITTED_LF_SIZE_LOG) !=
-            0)
-            __mi_fail_with_ptr("Outflowing out-of-bounds pointer!", ptr);
+            0) {
+            __mi_debug_printf("Error with\n\tPtr:\t%p, base %p, size %u\n", ptr,
+                              __lowfat_get_lower_bound(ptr),
+                              __lowfat_ptr_size(__lowfat_ptr_index(ptr)));
+            __mi_debug_printf("\tWit:\t%p, base %p, size %u\n", witness,
+                              __lowfat_get_lower_bound(witness),
+                              __lowfat_ptr_size(index));
+            __mi_fail_with_msg("Outflowing out-of-bounds pointer!\n");
+        }
     }
 }
