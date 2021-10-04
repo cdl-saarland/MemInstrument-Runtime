@@ -12,7 +12,7 @@ SHARED_SRC_DIR = ${SHARED_DIR}/src
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -g -O2 -fno-strict-aliasing -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
+CFLAGS  += -Wall -Wextra -g -O2 -D_GNU_SOURCE -fno-strict-aliasing -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 

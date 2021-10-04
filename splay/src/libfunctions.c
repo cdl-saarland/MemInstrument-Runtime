@@ -12,7 +12,6 @@
 #include "tracer.h"
 
 // for reading symbols from glibc (not portable)
-#define __USE_GNU
 #include <dlfcn.h>
 
 // TODO make threadsafe

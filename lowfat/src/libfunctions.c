@@ -6,11 +6,10 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 // for reading symbols from glibc (not portable)
-#define __USE_GNUS
 #include <dlfcn.h>
-#include <errno.h>
 
 #include "config.h"
 #include "freelist.h"
