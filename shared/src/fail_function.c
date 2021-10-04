@@ -90,3 +90,11 @@ MIRT_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg,
 void __mi_warning(const char *msg) {
     fprintf(stderr, "\nMI-WARNING: %s\n", msg);
 }
+
+void __mi_printf(const char *str, ...) {
+    va_list args;
+
+    va_start(args, str);
+    vfprintf(stderr, str, args);
+    va_end(args);
+}

@@ -43,3 +43,11 @@ MIRT_NO_RETURN void __mi_fail_verbose_with_ptr(const char *msg,
                                                const char *verbMsg);
 
 void __mi_warning(const char *msg);
+
+// Debug print utilities
+#ifdef MIRT_DEBUG
+void __mi_printf(const char *str, ...);
+#define __mi_debug_printf(...) __mi_printf(__VA_ARGS__)
+#else
+#define __mi_debug_printf(...)
+#endif
