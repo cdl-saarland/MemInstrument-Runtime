@@ -150,7 +150,8 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     if (hooks_active) {
         hooks_active = 0;
 
-        int res = posix_memalign_found(memptr, alignment, size + INCREASE_MALLOC_SIZE);
+        int res = posix_memalign_found(memptr, alignment,
+                                       size + INCREASE_MALLOC_SIZE);
 
         if (!res && *memptr) {
             __splay_alloc(*memptr, size);

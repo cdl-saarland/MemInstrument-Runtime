@@ -39,7 +39,6 @@
 /// Enable collecting and printing statistics at run time
 // #define MIRT_STATISTICS 1
 
-
 /// Do not run anything and return early before calling the main function.
 ///   "Semantics is what makes programs slow"
 // #define START_MAIN_EARLY_RETURN 1
