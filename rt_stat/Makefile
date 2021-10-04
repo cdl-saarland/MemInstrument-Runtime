@@ -8,7 +8,7 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3
+CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3 -D_GNU_SOURCE
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 

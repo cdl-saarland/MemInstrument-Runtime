@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define __USE_GNU
 #include <dlfcn.h>
 
 #define MIRT_STATS_FILE "MIRT_STATS_FILE"

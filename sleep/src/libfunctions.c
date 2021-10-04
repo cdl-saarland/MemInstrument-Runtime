@@ -10,7 +10,6 @@
 #include "statistics.h"
 
 // for reading symbols from glibc (not portable)
-#define __USE_GNU
 #include <dlfcn.h>
 
 typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc,
