@@ -9,10 +9,6 @@
 #include "config.h"
 #include "statistics.h"
 
-#ifndef MIRT_RET_FAIL
-#define MIRT_RET_FAIL 73
-#endif
-
 #ifndef UNUSED
 #define UNUSED(x) (void)x;
 #endif
@@ -66,7 +62,7 @@ MIRT_NO_RETURN void __mi_fail_fmt(FILE *dest, const char *fmt, ...) {
                     "######################\n");
 #endif
 
-    exit(MIRT_RET_FAIL);
+    abort();
 #endif
 }
 

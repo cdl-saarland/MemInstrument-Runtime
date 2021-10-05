@@ -16,8 +16,6 @@
  *          statistic counter that is incremented on each call of a fail
  *          function. This will only have a value differing from 0 or 1 if
  *          MIRT_CONTINUE_ON_FATAL is defined.
- *      MIRT_RET_FAIL - The exit code that is produced by the fail functions (73
- *          is used if this macro is not defined).
  *      MIRT_MAX_BACKTRACE_LENGTH - Determines the maximal number of functions
  * from the call stack to print in the backtrace on abort.
  */
