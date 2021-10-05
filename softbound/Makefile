@@ -99,7 +99,6 @@ ${LTO_OBJECTS}: $(SOURCES)
 	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
 ${LTO_SHARED_OBJECTS}: $(SHARED_SOURCES)
-	echo "what"
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
