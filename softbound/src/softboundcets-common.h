@@ -71,9 +71,6 @@ void __softboundcets_metadata_load(const void *addr_of_ptr, void **base,
 
 void __softboundcets_copy_metadata(void *dest, const void *from, size_t size);
 
-void __softboundcets_introspect_metadata(void *ptr, void *base, void *bound,
-                                         int arg_no);
-
 /******************************************************************************/
 
 void __softboundcets_allocation_secondary_trie_allocate_range(void *initial_ptr,

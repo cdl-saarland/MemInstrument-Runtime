@@ -312,15 +312,6 @@ void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
     return;
 }
 
-__WEAK_INLINE void __softboundcets_introspect_metadata(void *ptr, void *base,
-                                                       void *bound,
-                                                       int arg_no) {
-
-    __softboundcets_printf(
-        "[introspect_metadata]ptr=%p, base=%p, bound=%p, arg_no=%d\n", ptr,
-        base, bound, arg_no);
-}
-
 /******************************************************************************/
 
 __WEAK_INLINE void
