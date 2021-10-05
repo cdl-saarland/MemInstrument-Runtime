@@ -3,6 +3,8 @@
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
+#include "fail_function.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -59,8 +61,7 @@ __WEAK_INLINE __softboundcets_trie_entry_t *__softboundcets_trie_allocate() {
     __softboundcets_trie_entry_t *secondary_entry = mmap(
         0, length, PROT_READ | PROT_WRITE, SOFTBOUNDCETS_MMAP_FLAGS, -1, 0);
     // assert(secondary_entry != (void*)-1);
-    __softboundcets_debug_printf("snd trie table %p %lx\n", secondary_entry,
-                                 length);
+    __mi_debug_printf("snd trie table %p %lx\n", secondary_entry, length);
     return secondary_entry;
 }
 
@@ -98,7 +99,7 @@ __METADATA_INLINE void __softboundcets_metadata_store(const void *addr_of_ptr,
         __softboundcets_trie_primary_table[primary_index] =
             trie_secondary_table;
     }
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "\t[metadata_store not prealloced] addr_of_ptr=%p, primary_index=%zx, "
         "trie_secondary_table=%p\n ",
         addr_of_ptr, primary_index, trie_secondary_table);
@@ -114,7 +115,7 @@ __METADATA_INLINE void __softboundcets_metadata_store(const void *addr_of_ptr,
     entry_ptr->base = base;
     entry_ptr->bound = bound;
 
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "\t[metadata_store] addr_of_ptr=%p (points to %p), base=%p, bound=%p, "
         "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
         addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, base, bound,
@@ -188,7 +189,7 @@ __METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
     *((void **)base) = entry_ptr->base;
     *((void **)bound) = entry_ptr->bound;
 
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "\t[metadata_load] addr_of_ptr=%p (points to %p), base=%p, bound=%p, "
         "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
         addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, *base, *bound,
@@ -204,8 +205,8 @@ __METADATA_INLINE void __softboundcets_metadata_load(const void *addr_of_ptr,
 __METADATA_INLINE
 void __softboundcets_copy_metadata(void *dest, const void *from, size_t size) {
 
-    __softboundcets_debug_printf("[Copy metadata] dest=%p, from=%p, size=%zx\n",
-                                 dest, from, size);
+    __mi_debug_printf("[Copy metadata] dest=%p, from=%p, size=%zx\n", dest,
+                      from, size);
 
     size_t from_ptr = (size_t)from;
 
@@ -394,9 +395,9 @@ shadow_stack_ptr_type *__softboundcets_allocate_va_arg_proxy(int arg_no) {
     // Store the value in the proxy object
     *proxy = loc;
 
-    __softboundcets_debug_printf("Allocated proxy %p, pointing to %p (current "
-                                 "shadow stack height: %p)\n",
-                                 proxy, loc, __softboundcets_shadow_stack_ptr);
+    __mi_debug_printf("Allocated proxy %p, pointing to %p (current "
+                      "shadow stack height: %p)\n",
+                      proxy, loc, __softboundcets_shadow_stack_ptr);
     return proxy;
 }
 
@@ -414,22 +415,19 @@ __softboundcets_next_va_arg_metadata(shadow_stack_ptr_type *va_arg_proxy,
                                      void **base, void **bound, key_type *key,
                                      lock_type *lock) {
 #endif
-    __softboundcets_debug_printf("Proxy %p (current shadow stack height: %p)\n",
-                                 *va_arg_proxy,
-                                 __softboundcets_shadow_stack_ptr);
+    __mi_debug_printf("Proxy %p (current shadow stack height: %p)\n",
+                      *va_arg_proxy, __softboundcets_shadow_stack_ptr);
     // Load the metadata
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *base = *((void **)(*va_arg_proxy + __BASE_INDEX));
     *bound = *((void **)(*va_arg_proxy + __BOUND_INDEX));
-    __softboundcets_debug_printf("Loaded base %p, loaded bound %p\n", *base,
-                                 *bound);
+    __mi_debug_printf("Loaded base %p, loaded bound %p\n", *base, *bound);
 #endif
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *key = *((key_type *)(*va_arg_proxy + __KEY_INDEX));
     *lock = *((lock_type *)(*va_arg_proxy + __LOCK_INDEX));
-    __softboundcets_debug_printf("Loaded key %zx, loaded lock %p\n", *key,
-                                 *lock);
+    __mi_debug_printf("Loaded key %zx, loaded lock %p\n", *key, *lock);
 #endif
 
     // Change the state of the proxy object to point to the next entry
@@ -443,16 +441,15 @@ __softboundcets_copy_va_arg_proxy(shadow_stack_ptr_type *to_copy) {
     // Store the value of the other pointer in the proxy object
     *proxy_copy = *to_copy;
 
-    __softboundcets_debug_printf("Allocated proxy copy %p, points to %p "
-                                 "(current shadow stack height: %p)\n",
-                                 proxy_copy, *to_copy,
-                                 __softboundcets_shadow_stack_ptr);
+    __mi_debug_printf("Allocated proxy copy %p, points to %p "
+                      "(current shadow stack height: %p)\n",
+                      proxy_copy, *to_copy, __softboundcets_shadow_stack_ptr);
 
     return proxy_copy;
 }
 
 void __softboundcets_free_va_arg_proxy(shadow_stack_ptr_type *va_arg_proxy) {
-    __softboundcets_debug_printf("Free proxy %p\n", va_arg_proxy);
+    __mi_debug_printf("Free proxy %p\n", va_arg_proxy);
     free(va_arg_proxy);
 }
 
@@ -463,7 +460,7 @@ __softboundcets_load_proxy_shadow_stack(int arg_no) {
     size_t count = 2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
     shadow_stack_ptr_type proxy_ptr = __softboundcets_shadow_stack_ptr + count;
     shadow_stack_ptr_type *proxy = *((shadow_stack_ptr_type **)proxy_ptr);
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "Proxy loaded from shadow stack (location %i): %p (pointing to %p)\n",
         arg_no, proxy, proxy ? *proxy : NULL);
     return proxy;
@@ -474,14 +471,14 @@ __softboundcets_store_proxy_shadow_stack(shadow_stack_ptr_type *proxy,
                                          int arg_no) {
 
     assert(arg_no >= 0);
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "Proxy to store to shadow stack (location %i): %p (pointing to %p)\n",
         arg_no, proxy, proxy ? *proxy : NULL);
     size_t count = 2 + arg_no * __SOFTBOUNDCETS_METADATA_NUM_FIELDS;
     shadow_stack_ptr_type **store_loc =
         (shadow_stack_ptr_type **)(__softboundcets_shadow_stack_ptr + count);
 
-#if __SOFTBOUNDCETS_DEBUG
+#ifdef MIRT_DEBUG
     // Override the other stack entries to indicate that they are invalid to use
 #if __SOFTBOUNDCETS_SPATIAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *((void **)(store_loc + __BOUND_INDEX)) = (void *)INVALID_STACK_VALUE;
@@ -545,11 +542,11 @@ void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
 
 #if __SOFTBOUNDCETS_SPATIAL
     *proxy = (void *)entry_ptr->base;
-#if __SOFTBOUNDCETS_DEBUG
+#ifdef MIRT_DEBUG
     assert(entry_ptr->bound == (void *)INVALID_MEM_VALUE);
 #endif
 
-    __softboundcets_debug_printf(
+    __mi_debug_printf(
         "\t[metadata_proxy_load] addr_of_ptr=%p (points to %p), proxy=%p "
         "primary_index=%zx, secondary_index=%zx, trie_entry_addr=%p\n",
         addr_of_ptr, addr_of_ptr ? *(void **)addr_of_ptr : NULL, *proxy,
@@ -557,13 +554,13 @@ void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
 
 #elif __SOFTBOUNDCETS_TEMPORAL
     *proxy = (shadow_stack_ptr_type *)entry_ptr->key;
-#if __SOFTBOUNDCETS_DEBUG
+#ifdef MIRT_DEBUG
     assert(entry_ptr->lock == (lock_type)INVALID_MEM_VALUE);
 #endif
 
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
     *proxy = (shadow_stack_ptr_type *)entry_ptr->base;
-#if __SOFTBOUNDCETS_DEBUG
+#ifdef MIRT_DEBUG
     assert(entry_ptr->bound == (void *)INVALID_MEM_VALUE);
     assert(entry_ptr->key == (key_type)INVALID_MEM_VALUE);
     assert(entry_ptr->lock == (lock_type)INVALID_MEM_VALUE);

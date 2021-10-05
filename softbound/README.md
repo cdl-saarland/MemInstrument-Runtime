@@ -67,7 +67,7 @@ This avoids instrumenting the time measurement tools, which are built with the s
 
 ### Debugging
 
-If you encounter issues with this library and you are eager to debug it, you can build it with `__SOFTBOUNDCETS_DEBUG`.
+If you encounter issues with this library and you are eager to debug it, you can build it with `MIRT_DEBUG`.
 Be aware that this can cause a lot of output, especially on memory intense programs.
 
 ### Statistics

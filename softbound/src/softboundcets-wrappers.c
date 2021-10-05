@@ -3,6 +3,8 @@
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
+#include "fail_function.h"
+
 #include <arpa/inet.h>
 
 #if defined(__linux__)
@@ -351,7 +353,7 @@ __WEAK_INLINE long softboundcets_strtol(const char *nptr, char **endptr,
 
     long temp = strtol(nptr, endptr, base);
     if (endptr != NULL) {
-        __softboundcets_debug_printf("[strtol] *endptr=%p\n", *endptr);
+        __mi_debug_printf("[strtol] *endptr=%p\n", *endptr);
         __softboundcets_read_shadow_stack_metadata_store(endptr, 0);
     }
     return temp;
@@ -360,7 +362,7 @@ __WEAK_INLINE long softboundcets_strtol(const char *nptr, char **endptr,
 __WEAK_INLINE int softboundcets_atoi(const char *ptr) {
 
     if (ptr == NULL) {
-        __softboundcets_abort();
+        __mi_fail();
     }
     return atoi(ptr);
 }
@@ -369,7 +371,7 @@ __WEAK_INLINE long softboundcets_atol(const char *nptr) { return atol(nptr); }
 
 __WEAK_INLINE char *softboundcets_gcvt(double number, int ndigit, char *buf) {
 #if __SOFTBOUNDCETS_WRAPPER_CHECKS
-    // __softboundcets_abort_with_msg("Missing wrapper check for gcvt.");
+    // __mi_fail_with_msg("Missing wrapper check for gcvt.");
 #endif
     char *res = gcvt(number, ndigit, buf);
     __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
@@ -733,8 +735,7 @@ __WEAK_INLINE int softboundcets_putchar(int c) { return putchar(c); }
 
 __WEAK_INLINE char *softboundcets_gets(char *s) {
 
-    __softboundcets_abort_with_msg(
-        "[Error] gets used and should not be used\n");
+    __mi_fail_with_msg("[Error] gets used and should not be used\n");
     return NULL;
 }
 
@@ -1201,7 +1202,7 @@ __WEAK_INLINE unsigned int softboundcets_sleep(unsigned int seconds) {
 __WEAK_INLINE char *softboundcets_getcwd(char *buf, size_t size) {
 
     if (buf == NULL) {
-        __softboundcets_abort_with_msg("[getcwd] The given buffer is null.\n");
+        __mi_fail_with_msg("[getcwd] The given buffer is null.\n");
     }
 
     __softboundcets_wrapper_check_shadow_stack_ptr(1, buf, size);
@@ -1508,8 +1509,8 @@ __WEAK_INLINE void __softboundcets_strdup_handler(void *ret_ptr) {
     if (ret_ptr == NULL) {
         __softboundcets_store_null_return_metadata();
     } else {
-        __softboundcets_debug_printf(
-            "[strdup handler] str(n)dup malloced pointer %p\n", ret_ptr);
+        __mi_debug_printf("[strdup handler] str(n)dup malloced pointer %p\n",
+                          ret_ptr);
 
 #if __SOFTBOUNDCETS_TEMPORAL || __SOFTBOUNDCETS_SPATIAL_TEMPORAL
         __softboundcets_memory_allocation(ret_ptr, &ptr_lock, &ptr_key);
@@ -1554,10 +1555,10 @@ __WEAK_INLINE char *softboundcets_strcat(char *dest, const char *src) {
     // hold the concatenated strings (use the dereference check function).
 #if 0
   if(dest + strlen(dest) + strlen(src) > dest_bound){
-    __softboundcets_printf("overflow with strcat, dest = %p, strlen(dest)=%d,
+    __mi_printf("overflow with strcat, dest = %p, strlen(dest)=%d,
             strlen(src)=%d, dest_bound=%p \n",
            dest, strlen(dest), strlen(src), dest_bound);
-    __softboundcets_abort();
+    __mi_fail();
   }
 #endif
 
@@ -1590,7 +1591,7 @@ __WEAK_INLINE char *softboundcets_strncpy(char *dest, char *src, size_t n) {
     //  char* src_base = __softboundcets_load_base_shadow_stack(2);
     //  char* src_bound = __softboundcets_load_bound_shadow_stack(2);
     //  if(src < src_base || (src > src_bound -n) || (n > (size_t) src_bound)){
-    //    __softboundcets_abort();
+    //    __mi_fail();
     //  }
 #endif
 #endif
@@ -1658,7 +1659,7 @@ __WEAK_INLINE sighandler_t softboundcets_signal(int signum,
 
 __WEAK_INLINE void *softboundcets_realloc(void *ptr, size_t size) {
 
-    __softboundcets_debug_printf("[realloc] ptr=%p\n", ptr);
+    __mi_debug_printf("[realloc] ptr=%p\n", ptr);
 
     void *ret_ptr = realloc(ptr, size);
     __softboundcets_allocation_secondary_trie_allocate(ret_ptr);
@@ -1750,9 +1751,9 @@ __WEAK_INLINE void *softboundcets_pvalloc(size_t size) {
     // "The obsolete function pvalloc() is similar to valloc(), but rounds the
     // size of the allocation up to the next multiple of the system page size."
     if (size % sysconf(_SC_PAGESIZE)) {
-        __softboundcets_debug_printf("[pvalloc] Adapted size from %zu", size);
+        __mi_debug_printf("[pvalloc] Adapted size from %zu", size);
         size = ((size / sysconf(_SC_PAGESIZE)) + 1) * sysconf(_SC_PAGESIZE);
-        __softboundcets_debug_printf(" to %zu.\n", size);
+        __mi_debug_printf(" to %zu.\n", size);
     }
 
     return __softboundcets_generic_alloc(ret_ptr, size);
@@ -1782,15 +1783,15 @@ __WEAK_INLINE int softboundcets_posix_memalign(void **memptr, size_t alignment,
     }
     __softboundcets_metadata_store(memptr, *memptr, ((char *)*memptr) + size);
 #elif __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg("posix_memalign wrapper: metadata store for "
-                                   "temporal safety not implemented");
+    __mi_fail_with_msg("posix_memalign wrapper: metadata store for "
+                       "temporal safety not implemented");
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg("posix_memalign metadata store for "
-                                   "temporal+spatial safety not implemented");
+    __mi_fail_with_msg("posix_memalign metadata store for "
+                       "temporal+spatial safety not implemented");
 #endif
 
 #if __SOFTBOUNDCETS_FREE_MAP
-    __softboundcets_abort_with_msg(
+    __mi_fail_with_msg(
         "posix_memalign wrapper: free map entry setting not implemented");
 #endif
 
@@ -2130,7 +2131,7 @@ struct hostent *softboundcets_gethostbyname(const char *name) {
 #if defined(__linux__)
 __WEAK_INLINE int *softboundcets___errno_location() {
     void *ret_ptr = (int *)__errno_location();
-    __softboundcets_debug_printf("[errno_location]");
+    __mi_debug_printf("[errno_location]");
     __softboundcets_store_return_metadata(
         ret_ptr, (void *)((char *)ret_ptr + sizeof(int *)), 1,
         __softboundcets_get_global_lock());
@@ -2485,8 +2486,7 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
     }
 
     // Store the metadata for the first element of the linked list
-    __softboundcets_debug_printf(
-        "[getaddrinfo] Store metadata for the first element\n");
+    __mi_debug_printf("[getaddrinfo] Store metadata for the first element\n");
     __softboundcets_metadata_store(res, *res,
                                    ((char *)*res) + sizeof(struct addrinfo));
 
@@ -2497,7 +2497,7 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
         // ai_addr is a pointer to a struct with no further indirection
         void *addr_of_addr = &(next->ai_addr);
 
-        __softboundcets_debug_printf("[getaddrinfo] Store ai_addr info\n");
+        __mi_debug_printf("[getaddrinfo] Store ai_addr info\n");
 
         if (next->ai_addr) {
             __softboundcets_metadata_store(addr_of_addr, next->ai_addr,
@@ -2510,7 +2510,7 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
         // ai_canonname is pointer to a name of unknown length
         void *addr_of_name = &(next->ai_canonname);
 
-        __softboundcets_debug_printf("[getaddrinfo] Store ai_canonname info\n");
+        __mi_debug_printf("[getaddrinfo] Store ai_canonname info\n");
 
         if (next->ai_canonname) {
             __softboundcets_metadata_store_generic_wide_bounds(addr_of_name);
@@ -2521,7 +2521,7 @@ int softboundcets_getaddrinfo(const char *node, const char *service,
         // ai_next links to the next addrinfo struct
         void *addr_of_next_ptr = &(next->ai_next);
 
-        __softboundcets_debug_printf("[getaddrinfo] Store ai_next info\n");
+        __mi_debug_printf("[getaddrinfo] Store ai_next info\n");
 
         if (next->ai_next) {
             __softboundcets_metadata_store(addr_of_next_ptr, next->ai_next,
@@ -2679,8 +2679,7 @@ int softboundcets_waitid(idtype_t idtype, id_t id, siginfo_t *infop,
     // Applications should avoid relying on this inconsistent,
     // nonstandard, and unnecessary feature.
     if (!infop) {
-        __softboundcets_abort_with_msg(
-            "Calling `waitid` with a null pointer is invalid.");
+        __mi_fail_with_msg("Calling `waitid` with a null pointer is invalid.");
     }
 
     __softboundcets_wrapper_check_shadow_stack_ptr(0, (char *)infop,

@@ -3,6 +3,7 @@
 #include "softboundcets-spatial.h"
 #include "softboundcets-temporal.h"
 
+#include "fail_function.h"
 #include "statistics.h"
 
 #include <assert.h>
@@ -27,34 +28,6 @@ shadow_stack_ptr_type __softboundcets_shadow_stack_ptr = NULL;
 
 shadow_stack_ptr_type __softboundcets_shadow_stack_max = NULL;
 
-__SOFTBOUNDCETS_NORETURN void __softboundcets_abort() {
-    fprintf(
-        stderr,
-        "\nSoftboundcets: Memory safety violation detected\n\nBacktrace:\n");
-
-    // Based on code from the backtrace man page
-    size_t size;
-    void *array[100];
-
-    fprintf(stderr, "\n#################### meminstrument --- backtrace start "
-                    "####################\n");
-    fprintf(stderr, "> executable: %s\n", __get_prog_name());
-#if !defined(__FreeBSD__)
-    size = backtrace(array, 100);
-    backtrace_symbols_fd(array, size, fileno(stderr));
-#endif
-    fprintf(stderr, "#################### meminstrument --- backtrace end "
-                    "######################\n");
-    fprintf(stderr, "\n\n");
-
-    abort();
-}
-
-__SOFTBOUNDCETS_NORETURN void __softboundcets_abort_with_msg(const char *str) {
-    __softboundcets_printf(str);
-    __softboundcets_abort();
-}
-
 static int softboundcets_initialized = 0;
 
 void __softboundcets_init(void) {
@@ -64,7 +37,7 @@ void __softboundcets_init(void) {
 
     softboundcets_initialized = 1;
 
-    __softboundcets_debug_printf("Initializing softboundcets metadata space\n");
+    __mi_debug_printf("Initializing softboundcets metadata space\n");
 
     assert(sizeof(__softboundcets_trie_entry_t) >= 16);
 
@@ -101,14 +74,6 @@ void __softboundcets_init(void) {
     __softboundcets_allocation_secondary_trie_allocate_range(0, (size_t)temp);
 }
 
-void __softboundcets_printf(const char *str, ...) {
-    va_list args;
-
-    va_start(args, str);
-    vfprintf(stderr, str, args);
-    va_end(args);
-}
-
 void __softboundcets_update_environment_metadata() {
     char *const *envPtr = environ;
     while (*envPtr != NULL) {
@@ -117,10 +82,10 @@ void __softboundcets_update_environment_metadata() {
         __softboundcets_metadata_store(envPtr, *envPtr,
                                        *envPtr + strlen(*envPtr) + 1);
 #elif __SOFTBOUNDCETS_TEMPORAL
-        __softboundcets_abort_with_msg(
+        __mi_fail_with_msg(
             "Missing implementation for enviornment variable access");
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-        __softboundcets_abort_with_msg(
+        __mi_fail_with_msg(
             "Missing implementation for enviornment variable access");
 #endif
         envPtr++;
@@ -133,10 +98,10 @@ void __softboundcets_update_environment_metadata() {
     __softboundcets_metadata_store(&environ, environ,
                                    environ + (envPtr - environ));
 #elif __SOFTBOUNDCETS_TEMPORAL
-    __softboundcets_abort_with_msg(
+    __mi_fail_with_msg(
         "Missing implementation for enviornment variable access");
 #elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
-    __softboundcets_abort_with_msg(
+    __mi_fail_with_msg(
         "Missing implementation for enviornment variable access");
 #endif
 }
@@ -226,7 +191,7 @@ int main(int argc, char **argv) {
     __softboundcets_store_lock_shadow_stack(argv_loc, 0);
 
 #endif
-    __softboundcets_debug_printf("Call the actual main...\n");
+    __mi_debug_printf("Call the actual main...\n");
     return_value = softboundcets_pseudo_main(argc, new_argv);
     __softboundcets_deallocate_shadow_stack_space();
 

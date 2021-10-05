@@ -55,12 +55,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
               "__SOFTBOUNDCETS_SPATIAL, __SOFTBOUNDCETS_TEMPORAL and "
               "__SOFTBOUNDCETS_SPATIAL_TEMPORAL.");
 
-// Option to generate debug output. Note that this can be very verbose if the
-// instrumented programs accesses a lot of memory.
-#ifndef __SOFTBOUNDCETS_DEBUG
-#define __SOFTBOUNDCETS_DEBUG 0
-#endif
-
 // Option to allow running in the llvm test-suite framework. The test-suite
 // unfortunately builds its utils with the compiler under test, which will not
 // work with this instrumentation. Enabling this option allows you to skip the
@@ -187,18 +181,6 @@ typedef struct {
 //===----------------------------------------------------------------------===//
 //                    Commonly used internal functions
 //===----------------------------------------------------------------------===//
-
-extern void __softboundcets_printf(const char *str, ...);
-
-#if __SOFTBOUNDCETS_DEBUG
-#define __softboundcets_debug_printf(...) __softboundcets_printf(__VA_ARGS__)
-#else
-#define __softboundcets_debug_printf(...)
-#endif
-
-extern __SOFTBOUNDCETS_NORETURN void __softboundcets_abort();
-extern __SOFTBOUNDCETS_NORETURN void
-__softboundcets_abort_with_msg(const char *str);
 
 typedef size_t *shadow_stack_ptr_type;
 
