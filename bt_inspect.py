@@ -5,109 +5,123 @@ import re
 import sys
 from subprocess import Popen, PIPE
 
-exec_pat = re.compile(r"> executable: (.+)")
-addr_pat = re.compile(r"\[(.+)\]")
+EXEC_PAT = re.compile(r"> executable: (.+)")
+ADDR_PAT = re.compile(r"\[(.+)\]")
 
-blacklist = [
-        re.compile(r"^__mi_"),
-        re.compile(r"^__splay_"),
-        re.compile(r"^_start"),
-        # re.compile(r"^\?\? \?\?"),
-        ]
+INGORE_LIST = [
+    re.compile(r"^__mi_"),
+    re.compile(r"^__splay_"),
+    re.compile(r"^_start"),
+    # re.compile(r"^\?\? \?\?"),
+]
 
-parser = argparse.ArgumentParser(description='A small script for crunching backtraces')
-parser.add_argument('--executable', metavar='<binary file>',
-                    help='the executable that produced the backtrace', default=None)
-parser.add_argument('--full', action='store_true',
-                    help='show full backtrace without filtering')
-parser.add_argument('--nodemangle', action='store_true',
-                    help='do not demangle C++ identifier names')
-parser.add_argument('input', nargs='*')
-args = parser.parse_args()
+START_IDENT = "meminstrument --- backtrace start"
+END_IDENT = "meminstrument --- backtrace end"
 
 
-def shouldBePrinted(s):
-    if len(s) == 0:
+def should_be_printed(text, print_ignored_functions):
+    if len(text) == 0:
         return False
-    if args.full:
+    if print_ignored_functions:
         return True
-    for x in blacklist:
-        if x.search(s):
+    for elem in INGORE_LIST:
+        if elem.search(text):
             return False
     return True
 
-n = 0
-def translate(binname, addr):
-    if not args.nodemangle:
-        cmd = ['addr2line', '-e' , binname, '-f', '-C', '-i', '-p', addr]
+
+def translate(binname, addr, no_demangle, print_ignored_functions):
+    if not no_demangle:
+        cmd = ['addr2line', '-e', binname, '-f', '-C', '-i', '-p', addr]
     else:
-        cmd = ['addr2line', '-e' , binname, '-f', '-i', '-p', addr]
+        cmd = ['addr2line', '-e', binname, '-f', '-i', '-p', addr]
     process = Popen(cmd, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
+    stdout, _ = process.communicate()
     out = stdout.decode("utf-8")
-    if not shouldBePrinted(out):
-        return
+    if not should_be_printed(out, print_ignored_functions):
+        return ''
     out = out[:-1]
-    out = out.replace('\n','\n  ')
-    global n
-    print('#{:2} {}'.format(n, out))
-    n += 1
+    out = out.replace('\n', '\n  ')
+    return out
+
+
+def get_backtrace(input_file, given_exec, no_demangle, print_ignored_functions, in_place=False):
+    lines = list(input_file.readlines())
+    if len(lines) == 0:
+        return ""
+
+    exec_name = None
+    if lines[0].startswith("TRACE "):
+        exec_name = lines[0][6:-1]
+
+    in_bt = False
+    line_no = -1
+    bt_string = ""
+    for line in lines:
+        if START_IDENT in line or line.startswith("  BACKTRACE("):
+            assert not in_bt
+            in_bt = True
+            line_no = 0
+            bt_string += "Start of backtrace:\n"
+            continue
+
+        if END_IDENT in line or line.startswith("  ENDBACKTRACE("):
+            assert in_bt
+            in_bt = False
+            bt_string += "End of backtrace.\n"
+            continue
+
+        if in_bt:
+            exec_match = EXEC_PAT.search(line)
+            if exec_match:
+                exec_name = exec_match.group(1)
+                bt_string += f"Backtrace for executable {exec_name}:\n"
+                continue
+
+            if given_exec:
+                exec_name = given_exec
+
+            addr_match = ADDR_PAT.search(line)
+            if addr_match:
+                addr_name = addr_match.group(1)
+                result = translate(exec_name, addr_name, no_demangle,
+                                   print_ignored_functions)
+                if result:
+                    bt_string += f'#{line_no:2} {result}\n'
+                    line_no += 1
+        elif in_place:
+            bt_string += line
+
+    return bt_string
 
 
 def main():
-    found_backtrace = False
 
-    def crunchFile(infile, inplace = False):
-        nonlocal found_backtrace
-        in_bt = False
+    parser = argparse.ArgumentParser(
+        description='A small script for crunching backtraces')
+    parser.add_argument('--executable', metavar='<binary file>',
+                        help='the executable that produced the backtrace', default=None)
+    parser.add_argument('--full', action='store_true',
+                        help='show full backtrace without filtering')
+    parser.add_argument('--nodemangle', action='store_true',
+                        help='do not demangle C++ identifier names')
+    parser.add_argument('input', nargs='*')
+    args = parser.parse_args()
 
-        exec_name = None
-
-        lines = list(infile.readlines())
-
-        if len(lines) == 0:
-            return
-
-        if lines[0].startswith("TRACE "):
-            exec_name = lines[0][6:-1]
-
-        for line in lines:
-            if "#################### meminstrument --- backtrace start ####################" in line or line.startswith("  BACKTRACE("):
-                assert not in_bt
-                in_bt = True
-                found_backtrace = True
-                print("Start of backtrace:")
-                continue
-
-            if "#################### meminstrument --- backtrace end ######################" in line or line.startswith("  ENDBACKTRACE("):
-                assert in_bt
-                in_bt = False
-                print("End of backtrace.")
-                continue
-
-            if in_bt:
-                exec_match = exec_pat.search(line)
-                if exec_match:
-                    exec_name = exec_match.group(1)
-                    print("Backtrace for executable " + exec_name +":")
-                    continue
-
-                addr_match = addr_pat.search(line)
-                if addr_match:
-                    addr_name = addr_match.group(1)
-                    if args.executable:
-                        translate(args.executable, addr_name)
-                    else:
-                        translate(exec_name, addr_name)
-            elif inplace:
-                print(line, end="")
+    found_backtrace = ""
 
     if len(args.input) == 0:
-        crunchFile(sys.stdin, inplace=True, )
+        found_backtrace = get_backtrace(
+            sys.stdin, args.executable, args.nodemangle, args.full, in_place=True)
+        if found_backtrace:
+            print(found_backtrace)
     else:
-        for fname in args.input:
-            with open(fname, "r") as infile:
-                crunchFile(infile)
+        for file_name in args.input:
+            with open(file_name, "r") as input_file:
+                found_backtrace = get_backtrace(
+                    input_file, args.executable, args.nodemangle, args.full)
+            if found_backtrace:
+                print(found_backtrace)
 
     if not found_backtrace:
         print("Backtrace inspector called on input without backtraces!")
