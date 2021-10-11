@@ -986,7 +986,7 @@ __WEAK_INLINE void softboundcets_rewinddir(DIR *dirp) { rewinddir(dirp); }
 __WEAK_INLINE struct lconv *softboundcets_localeconv(void) {
     struct lconv *temp = localeconv();
 
-    __softboundcets_store_return_metadata(temp, temp + 1024, 1,
+    __softboundcets_store_return_metadata(temp, temp + sizeof(struct lconv), 1,
                                           __softboundcets_get_global_lock());
 
     return temp;
@@ -1914,7 +1914,12 @@ __WEAK_INLINE struct tm *softboundcets_gmtime(const time_t *timep) {
 
     struct tm *temp = gmtime(timep);
 
-    __softboundcets_store_return_metadata(temp, temp + 1024, 1,
+    if (!temp) {
+        __softboundcets_store_null_return_metadata();
+        return temp;
+    }
+
+    __softboundcets_store_return_metadata(temp, temp + sizeof(struct tm), 1,
                                           __softboundcets_get_global_lock());
 
     return temp;
