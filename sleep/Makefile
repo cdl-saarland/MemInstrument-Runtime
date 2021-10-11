@@ -14,7 +14,7 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -g -O2 -fno-strict-aliasing -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
+CFLAGS  += -Wall -Wextra -O3 -fno-strict-aliasing -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 

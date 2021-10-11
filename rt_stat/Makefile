@@ -10,7 +10,7 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11 -g -fPIC -O3 -D_GNU_SOURCE
+CFLAGS  += -Wall -Wextra -std=c11 -fPIC -O3 -D_GNU_SOURCE
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
