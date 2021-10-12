@@ -568,3 +568,7 @@ void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
 
 #endif
 }
+
+#ifdef MIRT_STATISTICS
+void __softboundcets_inc_external_check(void) { STAT_INC(ExternalCheck); }
+#endif

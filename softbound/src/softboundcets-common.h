@@ -178,4 +178,10 @@ void __softboundcets_proxy_metadata_load(const void *addr_of_ptr,
 // Store metadata about the `environ` variable
 void __softboundcets_update_environment_metadata();
 
+#ifdef MIRT_STATISTICS
+// If statistics should be selected, provide a function to incremenet the
+// external checks counter
+void __softboundcets_inc_external_check(void);
+#endif
+
 #endif // SOFTBOUNDCETS_COMMON_H
