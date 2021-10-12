@@ -9,7 +9,7 @@ STAT_ACTION(NumFailedDerefChecksNULL, "# of failed deref checks because of NULL 
 STAT_ACTION(NumInboundsChecks, "# of performed inbounds checks")
 STAT_ACTION(NumFailedInboundsChecksOOB, "# of failed inbounds checks because of OOB pointers")
 STAT_ACTION(NumFailedInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
-STAT_ACTION(NumSuccessfulInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
+STAT_ACTION(NumSuccessfulInboundsChecksNULL, "# of successful inbounds checks with NULL pointers")
 
 STAT_ACTION(NumExtChecks, "# of performed external checks")
 
