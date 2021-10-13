@@ -5,6 +5,6 @@
 #define MIRT_STATS_COUNTER_DEFS "statistic_counters.def"
 
 // Define the name of the output file for statistics
-#define MIRT_STATS_FILE "softbound_stats.txt"
+#define MIRT_STATS_FILE "mi_stats.txt"
 
 #endif
