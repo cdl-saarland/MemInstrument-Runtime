@@ -107,6 +107,7 @@ static_lto: lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 clean:
 	@echo "===> CLEAN"
 	$(Q)rm -rf ${BUILD_DIR}
+	$(Q)rm -rf ${LTO_BUILD_DIR}
 
 format:
 	@echo "===> CLANG-FORMAT"
