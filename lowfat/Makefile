@@ -13,7 +13,7 @@ LTO_LIB = ${LTO_BUILD_DIR}/lib${LIB_NAME}.a
 SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
 SHARED_SRC_DIR = ${SHARED_DIR}/src
 
-CC ?= clang
+CLANG ?= clang
 CLANG_FORMAT ?= clang-format
 
 Q ?= @
@@ -66,27 +66,27 @@ ${STAT_LIB}: ${OBJ} ${SHARED_OBJ}
 ${DYN_LIB}: ${OBJ} ${SHARED_OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
-	$(Q)$(CC) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CLANG) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
 ${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CC) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CC) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
+	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 lto_dir:
 	@echo "===> LTO"
