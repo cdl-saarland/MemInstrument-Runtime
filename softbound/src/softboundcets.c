@@ -116,8 +116,11 @@ int main(int argc, char **argv) {
 #if __SOFTBOUNDCETS_LLVM_TESTSUITE
     char *sub = strstr(argv[0], "timeit");
     if (sub) {
-        int retval = softboundcets_pseudo_main(argc, argv);
-        return retval;
+        return softboundcets_pseudo_main(argc, argv);
+    }
+    sub = strstr(argv[0], "fpcmp");
+    if (sub) {
+        return softboundcets_pseudo_main(argc, argv);
     }
 #endif
 
