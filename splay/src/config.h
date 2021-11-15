@@ -50,7 +50,7 @@
 
 /// If defined and no STATS_FILE_ENV defined, use this as the name of the file
 /// to print statistics to.
-#define MIRT_STATS_FILE "mi_stats.txt"
+// #define MIRT_STATS_FILE "mi_stats.txt"
 
 /// Disable crashing when a fatal error is discovered
 // #define MIRT_CONTINUE_ON_FATAL 1

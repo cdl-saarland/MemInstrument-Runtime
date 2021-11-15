@@ -4,6 +4,7 @@
  * Consider include/statistics.h for usage information.
  */
 
+#include <libgen.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,8 +49,9 @@ static void __print_stats(void) {
     if (mi_stats_file) {
         dest = fopen(mi_stats_file, "a");
         if (!dest) {
-            fprintf(stderr, "Failed to open stats file '%s'", mi_stats_file);
-            return;
+            fprintf(stderr, "Failed to open stats file '%s'!\n", mi_stats_file);
+            perror("Error while opening");
+            abort();
         }
     }
     fprintf(dest, "\n==================================================\n");
@@ -91,6 +93,26 @@ void __setup_statistics(const char *n) {
 #else
 #ifdef MIRT_STATS_FILE
     mi_stats_file = MIRT_STATS_FILE;
+#else
+    char *file_name = "/mi_stats.txt";
+
+    // Copy the program name (as dirname might modify its argument)
+    size_t prog_name_len = strlen(mi_prog_name);
+    char *copied_prog_name = malloc(prog_name_len + 1);
+    strncpy(copied_prog_name, mi_prog_name, prog_name_len);
+    copied_prog_name[prog_name_len] = '\0';
+
+    // Get the path to the binary
+    char *folder = dirname(copied_prog_name);
+
+    // Generate the full statistics file name
+    char *target = malloc(strlen(folder) + strlen(file_name) + 1);
+    strncpy(target, folder, strlen(folder));
+    strncat(target, file_name, strlen(file_name));
+    mi_stats_file = target;
+
+    // Free the copied program name after folder is also no longer required
+    free(copied_prog_name);
 #endif
 #endif
 #endif

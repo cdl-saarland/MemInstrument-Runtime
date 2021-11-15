@@ -17,9 +17,17 @@
 // number of low-fat regions, i.e. how many permitted allocation sizes
 // there are 27 powers of 2 from 16B to 1GB
 #define NUM_REGIONS 27U
+
 /******************/
 
 /** STATISTICS **/
 #define MIRT_STATS_COUNTER_DEFS "statistic_counters.def"
-#define MIRT_STATS_FILE "mi_stats.txt"
+
+/// If defined, use this key to find a file to print runtime stats to
+// #define STATS_FILE_ENV "MIRT_STATS_FILE"
+
+/// If defined and no STATS_FILE_ENV defined, use this as the name of the file
+/// to print statistics to.
+// #define MIRT_STATS_FILE "mi_stats.txt"
+
 /****************/
