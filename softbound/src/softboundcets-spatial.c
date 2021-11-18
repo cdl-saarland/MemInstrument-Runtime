@@ -39,6 +39,12 @@ __WEAK_INLINE void __softboundcets_spatial_dereference_check(
                       "bound=%p, ptr=%p, size_of_type=%zx\n",
                       base, bound, ptr, size_of_type);
 
+#ifdef MIRT_STATISTICS
+    if (bound == (void *)WIDE_UPPER) {
+        STAT_INC(WideBoundsCheck);
+    }
+#endif
+
     // Convert all pointers to uintptr_t, such that no undefined behavior
     // occurs in case `ptr` happens not to point to the same object as `base`
     // and `bound` do.

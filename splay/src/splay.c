@@ -243,6 +243,11 @@ void __splay_check_inbounds_named(void *witness, void *ptr, char *name) {
     if (n == NULL) {
         return;
     }
+#ifdef MIRT_STATISTICS
+    if (n->bound == (uintptr_t)WIDE_UPPER) {
+        STAT_INC(NumWideBoundsInboundsCheck);
+    }
+#endif
     if (ptr_val < n->base || ptr_val >= n->bound) {
         // ignore the potential access size here
         STAT_INC(NumFailedInboundsChecksOOB);
@@ -289,6 +294,11 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
     if (n == NULL) {
         return;
     }
+#ifdef MIRT_STATISTICS
+    if (n->bound == (uintptr_t)WIDE_UPPER) {
+        STAT_INC(NumWideBoundsDerefCheck);
+    }
+#endif
     if (ptr_val < n->base || (ptr_val + sz) > n->bound) {
         STAT_INC(NumFailedDerefChecksOOB);
         size_t off = ptr_val - n->base;
@@ -332,9 +342,6 @@ void __splay_check_dereference_named(void *witness, void *ptr, size_t sz,
 void __splay_check_dereference(void *witness, void *ptr, size_t sz) {
     __splay_check_dereference_named(witness, ptr, sz, NULL);
 }
-
-#define WIDE_LOWER 0
-#define WIDE_UPPER (UINTPTR_MAX >> 1)
 
 // Storage for caching lookups via get_lower/upper
 void *__prev_witness = NULL;

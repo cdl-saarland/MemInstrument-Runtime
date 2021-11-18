@@ -26,20 +26,17 @@ void *__lowfat_get_lower_bound(void *ptr) {
     uint64_t index = __lowfat_ptr_index(ptr);
     if (index < NUM_REGIONS)
         return (void *)__lowfat_ptr_base(ptr, index);
-    else
-        return (void *)0;
+    return (void *)WIDE_LOWER;
 }
 
-// returns INT64_MAX instead of UINT64_MAX for non-fat pointers, as UINT64_MAX
-// can cause problems for PICO
 void *__lowfat_get_upper_bound(void *ptr) {
     STAT_INC(NumGetUpper)
     uint64_t index = __lowfat_ptr_index(ptr);
     if (index < NUM_REGIONS)
         return (void *)(__lowfat_ptr_base(ptr, index) +
                         __lowfat_ptr_size(index));
-    else
-        return (void *)INT64_MAX;
+
+    return (void *)WIDE_UPPER;
 }
 
 void __lowfat_check_deref(void *witness, void *ptr, size_t size) {

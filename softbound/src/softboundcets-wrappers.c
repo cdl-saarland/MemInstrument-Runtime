@@ -218,9 +218,9 @@ void __softboundcets_wrapper_check_shadow_stack_ptr(int stack_slot,
 // memory is readable through this pointer.
 __WEAK_INLINE
 void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
-    __softboundcets_store_return_metadata(
-        0, (void *)((char *)ret_ptr + 1024 * 1024), 1,
-        __softboundcets_get_global_lock());
+    __softboundcets_store_return_metadata((void *)WIDE_LOWER,
+                                          (void *)WIDE_UPPER, 1,
+                                          __softboundcets_get_global_lock());
 }
 
 #if __SOFTBOUNDCETS_SPATIAL
@@ -233,8 +233,8 @@ void __softboundcets_generic_wide_bounds_return(void *ret_ptr) {
 // for metadata stores instead of returned pointers.
 __WEAK_INLINE
 void __softboundcets_metadata_store_generic_wide_bounds(void *addr_of_ptr) {
-    __softboundcets_metadata_store(addr_of_ptr, NULL,
-                                   (void *)((char *)addr_of_ptr + 1024 * 1024));
+    __softboundcets_metadata_store(addr_of_ptr, (void *)WIDE_LOWER,
+                                   (void *)WIDE_UPPER);
 }
 
 __WEAK_INLINE

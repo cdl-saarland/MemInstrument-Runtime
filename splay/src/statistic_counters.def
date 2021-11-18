@@ -5,11 +5,13 @@ STAT_ACTION(NumFatalFails, "# of fatally failed checks")
 STAT_ACTION(NumDerefChecks, "# of performed dereference checks")
 STAT_ACTION(NumFailedDerefChecksOOB, "# of failed deref checks because of OOB pointers")
 STAT_ACTION(NumFailedDerefChecksNULL, "# of failed deref checks because of NULL pointers")
+STAT_ACTION(NumWideBoundsDerefCheck, "# of deref checks with wide bounds")
 
 STAT_ACTION(NumInboundsChecks, "# of performed inbounds checks")
 STAT_ACTION(NumFailedInboundsChecksOOB, "# of failed inbounds checks because of OOB pointers")
 STAT_ACTION(NumFailedInboundsChecksNULL, "# of failed inbounds checks because of NULL pointers")
 STAT_ACTION(NumSuccessfulInboundsChecksNULL, "# of successful inbounds checks with NULL pointers")
+STAT_ACTION(NumWideBoundsInboundsCheck, "# of inbounds checks with wide bounds")
 
 STAT_ACTION(NumExtChecks, "# of performed external checks")
 
