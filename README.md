@@ -43,7 +43,7 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 
 * `sleep`
 
-    This mechanism does not provide any memory safety guarantees, but rather only executes stores to a volatile variable to spent time ("sleep").
+    This mechanism does not provide any memory safety guarantees, but rather only executes stores to a volatile variable to spend time ("sleep").
 
 * `rt_stat`
 
