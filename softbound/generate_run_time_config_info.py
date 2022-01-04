@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-
+"""
+Generates C++ header which contains information on the C-runtime config.
+"""
 import os
 import argparse
 import pathlib
 
 from generate_available_wrapper import generate_header
+
 
 def translate_to_CXX(feature_dict):
     """
@@ -19,6 +22,7 @@ def translate_to_CXX(feature_dict):
         result += f"#define {key} {string_value}\n"
 
     return result
+
 
 def compute_defines(feature_file, features, verbose):
     """
@@ -39,6 +43,7 @@ def compute_defines(feature_file, features, verbose):
 
     return translate_to_CXX(feature_set)
 
+
 def generate_config_info(feature_file, features, out_file_name, verbose):
     """
     Find the defined features and write them to the C++ header.
@@ -51,7 +56,8 @@ def generate_config_info(feature_file, features, out_file_name, verbose):
     short_description = "Run-Time Configuration"
     long_description = "Information on how the SoftBound run-time is configured."
 
-    file_content = generate_header(include_guard, file_name, "", namespace, defines, short_description, long_description)
+    file_content = generate_header(
+        include_guard, file_name, "", namespace, defines, short_description, long_description)
     if verbose:
         print("Header file content:")
         print(file_content)
@@ -59,7 +65,8 @@ def generate_config_info(feature_file, features, out_file_name, verbose):
     with open(out_file_name, "w") as generated_header:
         generated_header.write(file_content)
 
-    print("'" + out_file_name + "' successfully generated.")
+    print(f"'{out_file_name}' successfully generated.")
+
 
 def main():
     """
@@ -67,7 +74,9 @@ def main():
     safety features the C run-time is configured.
     """
     parser = argparse.ArgumentParser(
-        description="Generate a ready-to-include C++ file containing information on SoftBound safety features configured in the run-time.\n")
+        description="Generate a ready-to-include C++ file containing "
+                    "information on SoftBound safety features configured in "
+                    "the run-time.\n")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Print verbose output")
     args = parser.parse_args()
@@ -88,6 +97,7 @@ def main():
                 "MIRT_STATISTICS"]
 
     generate_config_info(feature_file, features, out_file_name, args.verbose)
+
 
 if __name__ == "__main__":
     main()
