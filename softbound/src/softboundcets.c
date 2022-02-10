@@ -113,16 +113,9 @@ int main(int argc, char **argv) {
     // Setup for backtrace recovery and statistics if requested
     __setup_statistics(argv[0]);
 
-#if __SOFTBOUNDCETS_LLVM_TESTSUITE
-    char *sub = strstr(argv[0], "timeit");
-    if (sub) {
+    if (__is_llvm_tooling_function(argv[0])) {
         return softboundcets_pseudo_main(argc, argv);
     }
-    sub = strstr(argv[0], "fpcmp");
-    if (sub) {
-        return softboundcets_pseudo_main(argc, argv);
-    }
-#endif
 
     char **new_argv = argv;
     int i;

@@ -239,6 +239,12 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // get original functions from dynamic linker
     initDynamicFunctions();
 
+    // Ignore llvm tooling functions
+    if (__is_llvm_tooling_function(ubp_av[0])) {
+        return (*start_main_found)(main, argc, ubp_av, init, fini, rtld_fini,
+                                   stack_end);
+    }
+
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
 

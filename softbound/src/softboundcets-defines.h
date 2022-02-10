@@ -55,14 +55,6 @@ static_assert((__SOFTBOUNDCETS_SPATIAL ^ __SOFTBOUNDCETS_TEMPORAL ^
               "__SOFTBOUNDCETS_SPATIAL, __SOFTBOUNDCETS_TEMPORAL and "
               "__SOFTBOUNDCETS_SPATIAL_TEMPORAL.");
 
-// Option to allow running in the llvm test-suite framework. The test-suite
-// unfortunately builds its utils with the compiler under test, which will not
-// work with this instrumentation. Enabling this option allows you to skip the
-// `timeit` module, which avoids crashing all tests at run-time.
-#ifndef __SOFTBOUNDCETS_LLVM_TESTSUITE
-#define __SOFTBOUNDCETS_LLVM_TESTSUITE 0
-#endif
-
 // In case zero bytes should be accessed, ignore the fact that the accessed
 // pointer is not within valid allocation bounds or a nullptr.
 #ifndef __SOFTBOUNDCETS_ALLOWWIDTHZEROACCESS

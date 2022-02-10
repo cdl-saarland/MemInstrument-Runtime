@@ -62,7 +62,7 @@ Example which we encountered: `memcpy(dest, src, val)`, where `val` became `0` a
 
 ### Testing
 
-In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `__SOFTBOUNDCETS_LLVM_TESTSUITE`.
+In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `MIRT_IGNORE_LLVM_TOOLING`.
 This avoids instrumenting the time measurement tools, which are built with the same compiler as the benchmarks.
 
 ### Debugging

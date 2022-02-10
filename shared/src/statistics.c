@@ -67,8 +67,6 @@ static void __print_stats(void) {
 }
 #endif
 
-const char *__get_prog_name(void) { return mi_prog_name; }
-
 static void set_prog_name(const char *n) {
     char actualpath[PATH_MAX + 1];
     if (realpath(n, actualpath)) {
@@ -117,3 +115,21 @@ void __setup_statistics(const char *n) {
 #endif
 #endif
 }
+
+int __is_llvm_tooling_function(const char *name) {
+
+#ifndef MIRT_IGNORE_LLVM_TOOLING
+    (void)name;
+    return 0;
+#else
+    char *isTI = strstr(name, "timeit");
+    char *isFP = strstr(name, "fpcmp");
+    if (isTI || isFP) {
+        return 1;
+    }
+
+    return 0;
+#endif
+}
+
+const char *__get_prog_name(void) { return mi_prog_name; }

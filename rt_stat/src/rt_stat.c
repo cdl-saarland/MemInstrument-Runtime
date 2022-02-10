@@ -110,6 +110,11 @@ int __libc_start_main(int (*main)(int, char **, char **), int argc,
                       char **ubp_av, void (*init)(void), void (*fini)(void),
                       void (*rtld_fini)(void), void(*stack_end)) {
 
+    // TODO: rt_stat duplicates information from the shared statistics
+    // functionality, we should merge this where appropriate. LLVM Tooling
+    // functions are currently not ignored (related due to the function being
+    // supplied by the statistics header).
+
     mi_prog_name = ubp_av[0];
 
 #ifdef MIRT_STATS_FILE

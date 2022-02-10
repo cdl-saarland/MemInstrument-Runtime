@@ -31,11 +31,19 @@
  * Independently of whether MIRT_STATISTICS is set, this header declares the
  * __get_prog_name() function that returns the absolute path of the binary as a
  * string.
+ *
+ * LLVM builds certain tooling functions with the compiler under test. It is not
+ * advisable to instrument them, so if you use the LLVM setup, define
+ * MIRT_IGNORE_LLVM_TOOLING.
  */
 
 #include "config.h"
 
 void __setup_statistics(const char *n);
+
+// Determine whether the given function name belongs to one of the llvm testing
+// tools.
+int __is_llvm_tooling_function(const char *name);
 
 const char *__get_prog_name(void);
 
