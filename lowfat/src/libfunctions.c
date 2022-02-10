@@ -152,8 +152,10 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
     // use fallback allocator for sizes that are too large (-> non low fat
     // pointer)
-    if (padded_size > MAX_PERMITTED_LF_SIZE)
+    if (padded_size > MAX_PERMITTED_LF_SIZE) {
+        STAT_INC(NumTooLargeNonFatAllocs);
         return NULL;
+    }
 
     unsigned index = compute_size_index(padded_size);
 
