@@ -1,6 +1,7 @@
 #include "check.h"
 
 #include "fail_function.h"
+#include "sizes.h"
 #include "statistics.h"
 
 #include <stddef.h>
@@ -19,6 +20,24 @@ uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
 
 uint64_t __lowfat_ptr_size(uint64_t index) {
     return MIN_PERMITTED_LF_SIZE << index;
+}
+
+// TODO think about making the stack functions computation based rather than
+// performing the lookup (as index/base/size)
+uint64_t __lowfat_lookup_stack_size(int index) { return STACK_SIZES[index]; }
+
+int64_t __lowfat_lookup_stack_offset(int index) { return STACK_OFFSETS[index]; }
+
+void *__lowfat_compute_aligned(void *ptr, int index) {
+    void *alignedPtr = (void *)((uintptr_t)ptr & STACK_MASKS[index]);
+    __mi_debug_printf("Pointer %p aligned is %p\n", ptr, alignedPtr);
+    return alignedPtr;
+}
+
+void *__lowfat_get_mirror(void *ptr, int64_t offset) {
+    void *mirror = (void *)((uintptr_t)ptr + offset);
+    __mi_debug_printf("Mirror of %p is %p\n", ptr, mirror);
+    return mirror;
 }
 
 void *__lowfat_get_lower_bound(void *ptr) {

@@ -1,5 +1,6 @@
-#include "config.h"
+#include "fail_function.h"
 #include "freelist.h"
+#include "sizes.h"
 #include "statistics.h"
 
 #include <errno.h>
@@ -29,11 +30,12 @@ uint64_t page_size;
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
+static void *stack_regions[NUM_REGIONS];
 
-// internal structures (i.e free list) use the glibc functions for allocating
-// and freeing, as they don't need runtime checks this flag ensures that
-// behavior the flag is active on default, so new threads can use the low fat
-// allocator
+// Internal structures (i.e. the free list) use the glibc functions for
+// allocating and freeing, as they don't need runtime checks. This flag ensures
+// that behavior. The flag is active by default, so new threads can use the low
+// fat allocator.
 _Thread_local static int hooks_active = 1;
 
 typedef int (*start_main_type)(int *(main)(int, char **, char **), int argc,
@@ -435,23 +437,106 @@ void free(void *p) {
     free_found(p);
 }
 
+/// A pointer to the environment variables, defined in unistd.h.
+extern char **environ;
+
+/// Move the program stack to a different location
+void *__lowfat_move_stack(void *stack_current) {
+    char **env_trav = environ;
+
+    // Find the beginning of the program stack.
+    // We are searching for the highest address of any environment variable
+    // string, not just the first pointer to the enviornment variables (which
+    // would be the address just before the NULL that marks the end of the
+    // environment variable pointers).
+    char *stack_begin = *env_trav;
+    while (*env_trav != NULL) {
+        // Compute the highst char of the string (len + nul terminator)
+        char *end_of_env_var = *env_trav + strlen(*env_trav) + 1;
+        if (end_of_env_var > stack_begin) {
+            stack_begin = end_of_env_var;
+        }
+        env_trav++;
+    }
+    if (stack_begin < (char *)env_trav) {
+        puts("Highest address is smaller than the env pointer\n");
+        exit(1);
+    }
+
+    // Align to page size
+    unsigned long not_aligned = (uintptr_t)stack_begin % page_size;
+    if (not_aligned) {
+        stack_begin = stack_begin + page_size - not_aligned;
+    }
+    ptrdiff_t stack_size = stack_begin - (char *)stack_current;
+
+    if ((unsigned long long)stack_size > STACK_SIZE) {
+        printf("LF: Program stack larger than expected (was %lu, allowed %llu)",
+               stack_size, STACK_SIZE);
+        exit(1);
+    }
+
+    // Location where to allocate the stack
+    uintptr_t new_stack_base =
+        BASE_STACK_REGION_NUM * REGION_SIZE + STACK_REGION_OFFSET;
+    // Allocate the new stack
+    void *allocated_new_stack =
+        mmap((void *)new_stack_base, STACK_SIZE, PROT_READ | PROT_WRITE,
+             MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+
+    if ((uintptr_t)allocated_new_stack != new_stack_base) {
+        printf("LF: Failed to allocate the new stack\n Tried %p (got %p)",
+               (void *)new_stack_base, allocated_new_stack);
+        exit(1);
+    }
+
+    void *new_copied_top = allocated_new_stack + STACK_SIZE - stack_size;
+    // Copy the old stack to the new one
+    memcpy(new_copied_top, stack_current, stack_size);
+
+    // Set environ to the new location of the environment variables
+    // Compute the offset they previously had to the beginning of the stack and
+    // subtract it from the beginning of the stack
+    // TODO Not sure if this is actually necessary, as the environment variables
+    // are not protected anyway.
+    environ = allocated_new_stack + STACK_SIZE -
+              ((void *)stack_begin - (void *)environ);
+
+    // Make sure that pointers on the stack pointing to the stack are updated.
+    // Traverse the new stack and search for old addresses.
+    // FIXME This is an awful hack, as it can also overwrite values on the stack
+    // that look like pointers, but are not actually pointers...
+    for (void **next = (void **)new_copied_top;
+         next < (void **)new_copied_top - stack_size; next++) {
+
+        // Check if the pointer points to the stack
+        if ((uintptr_t)*next < (uintptr_t)stack_begin &&
+            (uintptr_t)stack_current <= (uintptr_t)*next) {
+            // Overrite it with the location on the new stack
+            ptrdiff_t offset = *next - stack_current;
+            *next = (void *)((uintptr_t)new_copied_top + offset);
+        }
+    }
+
+    return new_copied_top;
+}
+
+__asm__("\t.align 16, 0x90\n"
+        "\t.type __lowfat_move_stack_trampoline,@function\n"
+        "__lowfat_move_stack_trampoline:\n"
+        "\tmovq %rsp, %rdi\n"
+        "\tmovabsq $__lowfat_move_stack, %rax\n"
+        "\tcallq *%rax\n"
+        "\tmovq %rax, %rsp\n"
+        "\tretq\n");
+
+void __lowfat_move_stack_trampoline(void);
+
 int __libc_start_main(int *(main)(int, char **, char **), int argc,
                       char **ubp_av, void (*init)(void), void (*fini)(void),
                       void (*rtld_fini)(void), void(*stack_end)) {
     // for program initialization we can't use the low fat allocator
     hooks_active = 0;
-
-    // create regions for each size
-    for (unsigned i = 0; i < NUM_REGIONS; i++) {
-        uintptr_t region_address = (i + 1) * REGION_SIZE;
-        regions[i] = mmap((void *)region_address, REGION_SIZE, PROT_NONE,
-                          MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
-
-        // check that mmap mapped the desired addresses (otherwise we might get
-        // false positive later for the safety checks)
-        if ((uintptr_t)regions[i] % REGION_SIZE != 0)
-            exit(99); // TODO more info than just exotic return code
-    }
 
     // get original functions from dynamic linker
     initDynamicFunctions();
@@ -466,6 +551,47 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
 
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
+
+    // Create heap regions for each size
+    for (unsigned i = 0; i < NUM_REGIONS; i++) {
+        uintptr_t region_address = (i + 1) * REGION_SIZE + HEAP_REGION_OFFSET;
+        regions[i] = mmap((void *)region_address, HEAP_REGION_SIZE,
+                          PROT_READ | PROT_WRITE,
+                          MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+
+        // Check that mmap mapped the desired addresses (otherwise we might get
+        // false positive later for the safety checks)
+        if ((uintptr_t)regions[i] != region_address) {
+            __mi_printf("LF: Failed to mmap the required memory location "
+                        "(heap)!\n\tWanted: %p\n\tGot: %p\n",
+                        (void *)region_address, regions[i]);
+            exit(99);
+        }
+        __mi_debug_printf("Allocated heap region %p (num %d size %llu)\n",
+                          (void *)region_address, i, HEAP_REGION_SIZE);
+    }
+
+    // Create stack regions for each size
+    for (unsigned i = 0; i < NUM_REGIONS; i++) {
+        uintptr_t region_address = (i + 1) * REGION_SIZE + STACK_REGION_OFFSET;
+        stack_regions[i] = mmap(
+            (void *)region_address, STACK_REGION_SIZE, PROT_READ | PROT_WRITE,
+            MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+
+        // Make sure we mmaped the requested region
+        if ((uintptr_t)stack_regions[i] != region_address) {
+            __mi_printf("LF: Failed to mmap the required memory location "
+                        "(stack)!\n\tWanted: %p\n\tGot: %p\n",
+                        (void *)region_address, stack_regions[i]);
+            exit(99);
+        }
+        __mi_debug_printf("Allocated stack region %p (num %d size %llu)\n",
+                          (void *)region_address, i, STACK_REGION_SIZE);
+    }
+    __mi_debug_printf("Allocated the stack\n");
+
+    // Move the stack
+    __lowfat_move_stack_trampoline();
 
     // enable our malloc etc. replacements
     hooks_active = 1;

@@ -68,7 +68,7 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 
 The splay/sleep/rt_stat implementations were contributed by **Fabian Ritter**.
 
-The lowfat implementation was contributed by **Philip Gebel**.
+The lowfat implementation (heap protection) was contributed by **Philip Gebel** and extended by the stack protection by **Tina Jung**.
 
 The SoftBoundCETS implementation is an adaption by **Tina Jung**, and was originally developed by:
 
