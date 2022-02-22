@@ -289,7 +289,7 @@ void *realloc(void *ptr, size_t size) {
 
             if (res == NULL)
                 res = malloc_found(
-                    size); // case 2 (or lowfat_alloc wasn't successful
+                    size); // case 2 (or lowfat_alloc wasn't successful)
 
             if (res != NULL) {
                 size_t old_size = MIN_PERMITTED_LF_SIZE
