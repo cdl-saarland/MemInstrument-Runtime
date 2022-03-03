@@ -267,7 +267,7 @@ __WEAK_INLINE char *softboundcets_getenv(const char *name) {
 
     char *ret_ptr = getenv(name);
 
-    if (ret_ptr != NULL) {
+    if (ret_ptr) {
         __softboundcets_store_return_metadata(
             ret_ptr, ret_ptr + strlen(ret_ptr) + 1, 1,
             __softboundcets_get_global_lock());
@@ -1063,10 +1063,48 @@ struct passwd *softboundcets_getpwnam(const char *name) {
 
 __WEAK_INLINE struct passwd *softboundcets_getpwuid(uid_t uid) {
     struct passwd *ret_ptr = getpwuid(uid);
-    if (ret_ptr) {
-        __softboundcets_store_return_metadata(
-            ret_ptr, (char *)ret_ptr + sizeof(struct passwd), 1,
-            __softboundcets_get_global_lock());
+    if (!ret_ptr) {
+        __softboundcets_store_null_return_metadata();
+        return ret_ptr;
+    }
+    __softboundcets_store_return_metadata(
+        ret_ptr, (char *)ret_ptr + sizeof(struct passwd), 1,
+        __softboundcets_get_global_lock());
+
+    // Enter the length for every entry in the passwd struct into our shadow
+    // memory.
+    // Store pw_name length
+    char *name = ret_ptr->pw_name;
+    if (name) {
+        __softboundcets_metadata_store(&ret_ptr->pw_name, name,
+                                       name + strlen(name) + 1);
+    }
+    // Store pw_passwd length
+    char *passwd = ret_ptr->pw_passwd;
+    if (passwd) {
+        __softboundcets_metadata_store(&ret_ptr->pw_passwd, passwd,
+                                       passwd + strlen(passwd) + 1);
+    }
+
+    // Store pw_gecos length
+    char *gecos = ret_ptr->pw_gecos;
+    if (gecos) {
+        __softboundcets_metadata_store(&ret_ptr->pw_gecos, gecos,
+                                       gecos + strlen(gecos) + 1);
+    }
+
+    // Store pw_dir length
+    char *dir = ret_ptr->pw_dir;
+    if (dir) {
+        __softboundcets_metadata_store(&ret_ptr->pw_dir, dir,
+                                       dir + strlen(dir) + 1);
+    }
+
+    // Store pw_shell length
+    char *shell = ret_ptr->pw_shell;
+    if (shell) {
+        __softboundcets_metadata_store(&ret_ptr->pw_shell, shell,
+                                       shell + strlen(shell) + 1);
     }
 
     return ret_ptr;
