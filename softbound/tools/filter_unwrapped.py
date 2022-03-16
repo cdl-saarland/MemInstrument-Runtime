@@ -6,7 +6,6 @@ undefined symbols using `nm`.
 """
 
 import argparse
-import os
 import subprocess
 import shutil
 import sys
