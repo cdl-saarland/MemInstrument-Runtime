@@ -2,9 +2,12 @@
 *build
 mi_stats.txt
 
-## Auto-generated headers from SoftBound
+# Auto-generated headers from SoftBound
 include/meminstrument-rt/SBRTInfo.h
 include/meminstrument-rt/SBWrapper.h
+
+# Auto-generated files from LowFat
+include/meminstrument-rt/LFSizes.h
 
 # ctags
 tags

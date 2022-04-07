@@ -1,6 +1,6 @@
 #include "fail_function.h"
 #include "freelist.h"
-#include "sizes.h"
+#include "LFSizes.h"
 #include "statistics.h"
 
 #include <errno.h>
@@ -124,7 +124,7 @@ int is_power_of_2(size_t value) {
 unsigned compute_size_index(size_t size) {
     // get the index of the next higher power of 2 by counting leading zeros
     // Note: this only works, if there are no powers of 2 skipped
-    int index = 64 - __builtin_clzll(size) - MIN_PERMITTED_LF_SIZE_LOG;
+    int index = 64 - __builtin_clzll(size) - MIN_ALLOC_SIZE_LOG;
     if (is_power_of_2(size))
         index--; // corner case if size is already a power 2
     return index < 0
@@ -154,7 +154,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
     // use fallback allocator for sizes that are too large (-> non low fat
     // pointer)
-    if (padded_size > MAX_PERMITTED_LF_SIZE) {
+    if (padded_size > MAX_HEAP_ALLOC_SIZE) {
         STAT_INC(NumTooLargeNonFatAllocs);
         return NULL;
     }
@@ -173,7 +173,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return free_res;
     }
 
-    size_t allocation_size = MIN_PERMITTED_LF_SIZE << index;
+    size_t allocation_size = MIN_ALLOC_SIZE << index;
     void *res = regions[index];
 
     // for unaligned allocations this loop finishes in the first iteration
@@ -244,7 +244,7 @@ void *calloc(size_t nmemb, size_t size) {
         size_t total_size = nmemb * size;
 
         int overflow = size != 0 && total_size / size != nmemb;
-        if (overflow || total_size > MAX_PERMITTED_LF_SIZE)
+        if (overflow || total_size > MAX_HEAP_ALLOC_SIZE)
             res = calloc_found(nmemb, size);
         else {
             res = lowfat_alloc(total_size);
@@ -284,7 +284,7 @@ void *realloc(void *ptr, size_t size) {
         if (ptr == NULL)
             res = malloc(size);
         else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
-            if (size <= MAX_PERMITTED_LF_SIZE)
+            if (size <= MAX_HEAP_ALLOC_SIZE)
                 res = lowfat_alloc(size); // case 1
 
             if (res == NULL)
@@ -292,7 +292,7 @@ void *realloc(void *ptr, size_t size) {
                     size); // case 2 (or lowfat_alloc wasn't successful)
 
             if (res != NULL) {
-                size_t old_size = MIN_PERMITTED_LF_SIZE
+                size_t old_size = MIN_ALLOC_SIZE
                                   << __lowfat_ptr_index(ptr);
                 size_t copy_size = old_size < size ? old_size : size;
                 memcpy(res, ptr, copy_size);
@@ -316,7 +316,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
         if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
             errno = EINVAL;
             res = NULL;
-        } else if (size > MAX_PERMITTED_LF_SIZE)
+        } else if (size > MAX_HEAP_ALLOC_SIZE)
             res = aligned_alloc_found(alignment, size);
         else {
             // since size must be a multiple of alignment here, we can simply
@@ -342,7 +342,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
         // check valid parameters
         if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
             err_status = EINVAL;
-        else if (size > MAX_PERMITTED_LF_SIZE)
+        else if (size > MAX_HEAP_ALLOC_SIZE)
             err_status = posix_memalign(memptr, alignment, size);
         else {
             res = lowfat_aligned_alloc(size, alignment);
@@ -368,7 +368,7 @@ void *memalign(size_t alignment, size_t size) {
         if (!is_power_of_2(alignment)) {
             errno = EINVAL;
             res = NULL;
-        } else if (size > MAX_PERMITTED_LF_SIZE)
+        } else if (size > MAX_HEAP_ALLOC_SIZE)
             res = memalign_found(alignment, size);
         else {
             res = lowfat_aligned_alloc(size, alignment);
@@ -388,7 +388,7 @@ void *valloc(size_t size) {
         hooks_active = 0;
         void *res;
 
-        if (size > MAX_PERMITTED_LF_SIZE)
+        if (size > MAX_HEAP_ALLOC_SIZE)
             res = valloc_found(size);
         else {
             res = lowfat_aligned_alloc(size, page_size);
@@ -408,7 +408,7 @@ void *pvalloc(size_t size) {
         hooks_active = 0;
         void *res;
 
-        if (size > MAX_PERMITTED_LF_SIZE)
+        if (size > MAX_HEAP_ALLOC_SIZE)
             res = pvalloc_found(size);
         else {
             uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);

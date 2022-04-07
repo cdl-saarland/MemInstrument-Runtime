@@ -1,7 +1,12 @@
-BUILD_DIR   = build
-SRC_DIR     = src
-TEST_DIR    = test
-SHARED_DIR  = ../shared
+BUILD_DIR   		= build
+SRC_DIR     		= src
+TEST_DIR    		= test
+SHARED_DIR  		= ../shared
+GENERATED_HEADERS 	= ../include/meminstrument-rt
+
+LF_CONF = lf_config.json
+SIZES = ${GENERATED_HEADERS}/LFSizes.h
+LINKER_SCRIPT = ${BUILD_DIR}/lowfat.ld
 
 LIB_NAME = lowfat
 DYN_LIB = ${BUILD_DIR}/lib${LIB_NAME}.so
@@ -18,7 +23,7 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -O3 -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
+CFLAGS  += -Wall -Wextra -O3 -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR} -I${GENERATED_HEADERS}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -43,7 +48,7 @@ all: static dynamic
 
 -include $(DEP)
 
-test: test-dynamic test-static
+test: test-dynamic test-static | build-dir
 
 test-dynamic: dynamic ${BUILD_DIR}/test_dyn
 	@echo "===> TEST DYNAMIC"
@@ -54,37 +59,39 @@ test-static: ${BUILD_DIR}/test_stat
 	@echo "===> TEST STATIC"
 	${BUILD_DIR}/test_stat
 
-static: ${STAT_LIB}
-
-dynamic: ${DYN_LIB}
-
-${STAT_LIB}: ${OBJ} ${SHARED_OBJ}
+build-dir:
+	@echo "===> Create build directory"
 	$(Q)mkdir -p ${BUILD_DIR}
+
+sizes-header-and-linker-script: | build-dir
+	@echo "===> Generate sizes header and linker script"
+	./generate_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --scriptname ${LINKER_SCRIPT}
+
+static: sizes-header-and-linker-script ${STAT_LIB}
+
+dynamic: sizes-header-and-linker-script ${DYN_LIB}
+
+${STAT_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
-${DYN_LIB}: ${OBJ} ${SHARED_OBJ}
-	$(Q)mkdir -p ${BUILD_DIR}
+${DYN_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
 	@echo "===> LD $@"
 	$(Q)$(CLANG) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
-${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c
-	$(Q)mkdir -p ${BUILD_DIR}
+${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
 	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
-${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
-	$(Q)mkdir -p ${BUILD_DIR}
+${BUILD_DIR}/%.o : ${SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
 	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
-	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
 	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
-	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
 	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
@@ -100,7 +107,7 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
-static_lto: lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
+static_lto: sizes-header-and-linker-script lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) ${LTO_LIB} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 
@@ -108,6 +115,7 @@ clean:
 	@echo "===> CLEAN"
 	$(Q)rm -rf ${BUILD_DIR}
 	$(Q)rm -rf ${LTO_BUILD_DIR}
+	$(Q)rm -f ${SIZES}
 
 format:
 	@echo "===> CLANG-FORMAT"

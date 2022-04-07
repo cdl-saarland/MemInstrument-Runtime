@@ -1,7 +1,7 @@
 #include "check.h"
 
 #include "fail_function.h"
-#include "sizes.h"
+#include "LFSizes.h"
 #include "statistics.h"
 
 #include <stddef.h>
@@ -15,11 +15,11 @@ uint64_t __lowfat_ptr_index(void *ptr) {
 }
 
 uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
-    return (uint64_t)ptr & (UINT64_MAX << (index + MIN_PERMITTED_LF_SIZE_LOG));
+    return (uint64_t)ptr & (UINT64_MAX << (index + MIN_ALLOC_SIZE_LOG));
 }
 
 uint64_t __lowfat_ptr_size(uint64_t index) {
-    return MIN_PERMITTED_LF_SIZE << index;
+    return MIN_ALLOC_SIZE << index;
 }
 
 // TODO think about making the stack functions computation based rather than
@@ -66,7 +66,7 @@ void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
     if (index < NUM_REGIONS) {
         STAT_INC(NumLowFatDerefChecks);
         if ((((uintptr_t)ptr + size) ^ (uintptr_t)witness) >>
-                (index + MIN_PERMITTED_LF_SIZE_LOG) !=
+                (index + MIN_ALLOC_SIZE_LOG) !=
             0) {
             __mi_debug_printf(
                 "Error with\n\tPtr:\t%p, base %p, size %u, width %u\n", ptr,
@@ -87,7 +87,7 @@ void __lowfat_check_oob(void *witness, void *ptr) {
     if (index < NUM_REGIONS) {
         STAT_INC(NumLowFatInboundsChecks);
         if (((uintptr_t)ptr ^ (uintptr_t)witness) >>
-                (index + MIN_PERMITTED_LF_SIZE_LOG) !=
+                (index + MIN_ALLOC_SIZE_LOG) !=
             0) {
             __mi_debug_printf("Error with\n\tPtr:\t%p, base %p, size %u\n", ptr,
                               __lowfat_get_lower_bound(ptr),

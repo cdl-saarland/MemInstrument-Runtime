@@ -1,6 +1,6 @@
 #include "freelist.h"
 
-#include "sizes.h"
+#include "LFSizes.h"
 
 #include <stdlib.h>
 #include <sys/mman.h>
