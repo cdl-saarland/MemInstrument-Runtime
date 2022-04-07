@@ -1,7 +1,7 @@
 #include "check.h"
 
-#include "fail_function.h"
 #include "LFSizes.h"
+#include "fail_function.h"
 #include "statistics.h"
 
 #include <stddef.h>
@@ -18,9 +18,7 @@ uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
     return (uint64_t)ptr & (UINT64_MAX << (index + MIN_ALLOC_SIZE_LOG));
 }
 
-uint64_t __lowfat_ptr_size(uint64_t index) {
-    return MIN_ALLOC_SIZE << index;
-}
+uint64_t __lowfat_ptr_size(uint64_t index) { return MIN_ALLOC_SIZE << index; }
 
 // TODO think about making the stack functions computation based rather than
 // performing the lookup (as index/base/size)

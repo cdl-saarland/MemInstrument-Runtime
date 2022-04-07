@@ -1,6 +1,6 @@
+#include "LFSizes.h"
 #include "fail_function.h"
 #include "freelist.h"
-#include "LFSizes.h"
 #include "statistics.h"
 
 #include <errno.h>
@@ -292,8 +292,7 @@ void *realloc(void *ptr, size_t size) {
                     size); // case 2 (or lowfat_alloc wasn't successful)
 
             if (res != NULL) {
-                size_t old_size = MIN_ALLOC_SIZE
-                                  << __lowfat_ptr_index(ptr);
+                size_t old_size = MIN_ALLOC_SIZE << __lowfat_ptr_index(ptr);
                 size_t copy_size = old_size < size ? old_size : size;
                 memcpy(res, ptr, copy_size);
                 internal_free(ptr);
