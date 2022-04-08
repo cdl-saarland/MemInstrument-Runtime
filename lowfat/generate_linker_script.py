@@ -50,6 +50,7 @@ def parse_config_file(config_file, verbose):
 
     return json_content
 
+
 def write_includes(out_file, _):
     """
     Write the necessary includes to the header file.
@@ -161,7 +162,8 @@ def get_offsets(min_size, max_size, number_of_regions, region_size):
     """
     Compute the offsets array. Min/Max size are given in bytes.
     """
-    func = lambda x: compute_offset(decimal_log_2(x), number_of_regions, region_size)
+    def func(x): return compute_offset(
+        decimal_log_2(x), number_of_regions, region_size)
     return get_values_for_index(min_size, max_size, func)
 
 
@@ -206,12 +208,18 @@ def generate_sizes_header_and_add_derived_vars(config_dict, out_file, verbose):
     min_size = to_int(config_dict["MIN_ALLOC_SIZE"])
     max_size = config_dict["MAX_STACK_ALLOC_SIZE"]
 
-    sizes = get_array("STACK_SIZES", unsigned_type, get_sizes(min_size, max_size))
+    sizes = get_array("STACK_SIZES", unsigned_type,
+                      get_sizes(min_size, max_size))
     masks = get_array("STACK_MASKS", unsigned_type,
                       get_masks(min_size, max_size))
+    # Determine how many entries are non-zero in the array. In addition to the
+    # number of available sizes, we need to count the duplicated entries for
+    # indices that map to the smallest possible allocation size.
+    num_smaller = len([2**i for i in range(0, int(lower))])
+    non_zero = config_dict["NUM_REGIONS"] + num_smaller
     offsets = get_array("STACK_OFFSETS", signed_type, get_offsets(min_size,
                                                                   max_size,
-                                                                  config_dict["NUM_REGIONS"] + 4,
+                                                                  non_zero,
                                                                   config_dict["REGION_SIZE"]))
     if verbose:
         print(f"Sizes array:\n{sizes}\n")
@@ -225,7 +233,6 @@ def generate_sizes_header_and_add_derived_vars(config_dict, out_file, verbose):
     # Write the arrays
     with open(out_file, "a") as open_file:
         open_file.write(f"\n{sizes}\n{masks}\n{offsets}")
-
 
 
 def bytes_to_gib(bytes_value):
@@ -312,7 +319,7 @@ def main():
     parser.add_argument('--sizes', type=Path,
                         help='The path of the generated file that describes the'
                              ' LowFat sizes.',
-                        default='src/sizes.h')
+                        default='../include/meminstrument-rt/LFSizes.h')
     parser.add_argument('--scriptname', type=Path,
                         help='The path of the generated linker script file.',
                         default='build/lowfat.ld')
