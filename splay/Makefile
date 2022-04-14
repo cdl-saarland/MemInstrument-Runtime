@@ -34,7 +34,7 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(SHARED_SRC:.c
 DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
 ifneq ($(LLVM_GOLD),)
-all: static_lto
+all: lto-static
 endif
 
 .PHONY: all clean format
@@ -88,7 +88,7 @@ ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	@echo "===> CC/LD $@"
 	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} $< -L${BUILD_DIR} -l:lib${LIB_NAME}.a ${LDFLAGS}
 
-lto_dir:
+lto-build-dir:
 	@echo "===> LTO"
 	@mkdir -p $(LTO_BUILD_DIR)
 
@@ -100,7 +100,7 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
-static_lto: lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
+lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) ${LTO_LIB} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 

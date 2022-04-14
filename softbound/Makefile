@@ -28,7 +28,7 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_DIR),$(SHARED_SOURCES:.c=.
 
 all: static dynamic exports
 
-exports: cxx_header
+exports: cxx-header
 
 # If LLVM_GOLD is set, also build a library for use with LTO
 #
@@ -37,7 +37,7 @@ exports: cxx_header
 # -L/path/to/softboundcets-lib/lto to the compiler, and use -flto during
 # compilation and linking
 ifneq ($(LLVM_GOLD),)
-all: static_lto
+all: lto-static
 endif
 
 # Write a compile_commands.json file
@@ -60,12 +60,12 @@ ${BUILD_DIR}/compile_commands.json: $(COMPDB_ENTRIES)
 	@echo "]" >> $@
 	@rm $@.tmp
 
-gen_compile_commands: ${BUILD_DIR}/compile_commands.json
+gen-compile-commands: ${BUILD_DIR}/compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
 	@echo "'compile_commands.json' sucessfully generated"
 
 # Auto-generate C++ header
-cxx_header: gen_compile_commands
+cxx-header: gen-compile-commands
 	@echo "===> GENERATE C++ header"
 	./generate_available_wrapper.py
 	./generate_run_time_config_info.py
@@ -90,7 +90,7 @@ dynamic: $(OBJECTS) $(SHARED_OBJECTS) exports
 	$(CLANG) -shared -o ${BUILD_DIR}/${DYN_LIB_NAME} $(OBJECTS) $(SHARED_OBJECTS) ${LINK_LIBS}
 
 # Compile with LTO
-lto_dir:
+lto-build-dir:
 	@echo "===> LTO"
 	@mkdir -p $(LTO_DIR)
 
@@ -102,7 +102,7 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SOURCES)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
-static_lto: lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
+lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) $(LTO_DIR)/${STAT_LIB_NAME} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 
