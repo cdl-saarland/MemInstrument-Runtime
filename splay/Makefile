@@ -18,7 +18,12 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -O3 -D_GNU_SOURCE -fno-strict-aliasing -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
+# Ignore LLVM tooling files by default
+CFLAGS += -DMIRT_IGNORE_LLVM_TOOLING
+# Add recommended flags
+CFLAGS += -Wall -Wextra -O3
+# Mandatory flags which should not be overwritable
+ALL_CFLAGS := $(CFLAGS) -D_GNU_SOURCE -fno-strict-aliasing -I${SRC_DIR} -I${SHARED_INCLUDE_DIR}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -66,27 +71,27 @@ ${STAT_LIB}: ${OBJ} ${SHARED_OBJ}
 ${DYN_LIB}: ${OBJ} ${SHARED_OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CLANG) -fPIC -MMD -o $@ ${ALL_CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
 ${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} $< -L${BUILD_DIR} -l${LIB_NAME} ${LDFLAGS}
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} $< -L${BUILD_DIR} -l${LIB_NAME} ${LDFLAGS}
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} $< -L${BUILD_DIR} -l:lib${LIB_NAME}.a ${LDFLAGS}
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} $< -L${BUILD_DIR} -l:lib${LIB_NAME}.a ${LDFLAGS}
 
 lto-build-dir:
 	@echo "===> LTO"
@@ -94,11 +99,11 @@ lto-build-dir:
 
 ${LTO_OBJECTS}: $(SRC)
 	@echo "===> CC LTO"
-	$(foreach var,$(SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SRC),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
 ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
-	$(foreach var,$(SHARED_SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SHARED_SRC),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
 lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"

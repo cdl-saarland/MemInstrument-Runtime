@@ -11,7 +11,10 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -std=c11 -fPIC -O3 -D_GNU_SOURCE
+# Add recommended flags
+CFLAGS += -Wall -Wextra -std=c11 -O3
+# Mandatory flags which should not be overwritable
+ALL_CFLAGS := $(CFLAGS) -fPIC -D_GNU_SOURCE
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -49,23 +52,23 @@ ${STAT_LIB}: ${OBJ}
 ${DYN_LIB}: ${OBJ}
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	$(Q)mkdir -p ${BUILD_DIR}
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 clean:
 	@echo "===> CLEAN"

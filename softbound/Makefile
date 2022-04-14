@@ -6,8 +6,12 @@ SRC_DIR := src
 SHARED_DIR := ../shared
 SHARED_SRC_DIR := ${SHARED_DIR}/src
 
-# Use spatial checks only
-CFLAGS := -Wall -pedantic -fPIC -O3 -I${SRC_DIR} -I${SHARED_DIR}/include -D_GNU_SOURCE -D__SOFTBOUNDCETS_SPATIAL -D__SOFTBOUNDCETS_WRAPPER_CHECKS
+# Use wrapper checks, spatial safety only and ignore the LLVM tooling by default
+CFLAGS += -D__SOFTBOUNDCETS_SPATIAL -D__SOFTBOUNDCETS_WRAPPER_CHECKS -DMIRT_IGNORE_LLVM_TOOLING
+# Add recommended flags
+CFLAGS += -Wall -pedantic -O3
+# Mandatory flags which should not be overwritable (fPIC is required for the dynamic library)
+ALL_CFLAGS :=  -fPIC -I${SRC_DIR} -I${SHARED_DIR}/include -D_GNU_SOURCE $(CFLAGS)
 ARFLAGS := -rcs
 LINK_LIBS := -luuid -ldl -lcrypt
 
@@ -44,10 +48,10 @@ endif
 # This code is a modified version of https://gist.github.com/JayKickliter/f4e1945abe1d3bbbe3263640a3669e3c
 %.compdb_entry: %.c
 	@echo "    {" > $@
-	@echo "        \"command\": \"$(CLANG) $(CFLAGS) -c $<\","  >> $@
-	@echo "        \"directory\": \"$(CURDIR)\","               >> $@
-	@echo "        \"file\": \"$<\""                            >> $@
-	@echo "    },"                                              >> $@
+	@echo "        \"command\": \"$(CLANG) $(ALL_CFLAGS) -c $<\"," 	>> $@
+	@echo "        \"directory\": \"$(CURDIR)\","                 	>> $@
+	@echo "        \"file\": \"$<\""                            	>> $@
+	@echo "    },"                                              	>> $@
 
 COMPDB_ENTRIES = $(addsuffix .compdb_entry, $(basename $(SOURCES)))
 
@@ -74,12 +78,12 @@ cxx-header: gen-compile-commands
 $(OBJECTS): $(SOURCES)
 	@echo "===> CC"
 	@mkdir -p ${BUILD_DIR}
-	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o ${subst $(SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
+	$(foreach var,$(SOURCES),$(CLANG) $(ALL_CFLAGS) -c $(var) -o ${subst $(SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
 $(SHARED_OBJECTS): $(SHARED_SOURCES)
 	@echo "===> CC Shared"
 	@mkdir -p ${BUILD_DIR}
-	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -c $(var) -o ${subst $(SHARED_SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
+	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(ALL_CFLAGS) -c $(var) -o ${subst $(SHARED_SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
 static: $(OBJECTS) $(SHARED_OBJECTS) exports
 	@echo "===> MAKE STATIC"
@@ -96,11 +100,11 @@ lto-build-dir:
 
 ${LTO_OBJECTS}: $(SOURCES)
 	@echo "===> CC LTO"
-	$(foreach var,$(SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SOURCES),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
 ${LTO_SHARED_OBJECTS}: $(SHARED_SOURCES)
 	@echo "===> CC LTO Shared"
-	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
 lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
 	@echo "===> MAKE LTO STATIC"

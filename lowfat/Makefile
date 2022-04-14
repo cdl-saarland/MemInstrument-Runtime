@@ -24,7 +24,12 @@ CLANG_FORMAT ?= clang-format
 
 Q ?= @
 
-CFLAGS  += -Wall -Wextra -O3 -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR} -I${GENERATED_HEADERS}
+# Ignore LLVM tooling files by default
+CFLAGS += -DMIRT_IGNORE_LLVM_TOOLING
+# Add recommended flags
+CFLAGS += -Wall -Wextra -O3
+# Mandatory flags which should not be overwritable
+ALL_CFLAGS := $(CFLAGS) -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR} -I${GENERATED_HEADERS}
 SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
@@ -82,23 +87,23 @@ ${STAT_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
 
 ${DYN_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
 	@echo "===> LD $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ ${CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
+	$(Q)$(CLANG) -fPIC -MMD -o $@ ${ALL_CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
 
 ${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${CFLAGS} $<
+	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
+	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
 lto-build-dir:
 	@echo "===> LTO"
@@ -106,11 +111,11 @@ lto-build-dir:
 
 ${LTO_OBJECTS}: $(SRC)
 	@echo "===> CC LTO"
-	$(foreach var,$(SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SRC),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
 ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
-	$(foreach var,$(SHARED_SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
+	$(foreach var,$(SHARED_SRC),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
 lto-static: sizes-header-and-lto-linker-script lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"
