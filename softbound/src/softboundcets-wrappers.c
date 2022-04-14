@@ -1076,35 +1076,76 @@ __WEAK_INLINE struct passwd *softboundcets_getpwuid(uid_t uid) {
     // Store pw_name length
     char *name = ret_ptr->pw_name;
     if (name) {
+
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_store(&ret_ptr->pw_name, name,
                                        name + strlen(name) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "spatial+temporal safety not implemented");
+#endif
     }
     // Store pw_passwd length
     char *passwd = ret_ptr->pw_passwd;
     if (passwd) {
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_store(&ret_ptr->pw_passwd, passwd,
                                        passwd + strlen(passwd) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "spatial+temporal safety not implemented");
+#endif
     }
 
     // Store pw_gecos length
     char *gecos = ret_ptr->pw_gecos;
     if (gecos) {
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_store(&ret_ptr->pw_gecos, gecos,
                                        gecos + strlen(gecos) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "spatial+temporal safety not implemented");
+#endif
     }
 
     // Store pw_dir length
     char *dir = ret_ptr->pw_dir;
     if (dir) {
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_store(&ret_ptr->pw_dir, dir,
                                        dir + strlen(dir) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "spatial+temporal safety not implemented");
+#endif
     }
 
     // Store pw_shell length
     char *shell = ret_ptr->pw_shell;
     if (shell) {
+#if __SOFTBOUNDCETS_SPATIAL
         __softboundcets_metadata_store(&ret_ptr->pw_shell, shell,
                                        shell + strlen(shell) + 1);
+#elif __SOFTBOUNDCETS_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "temporal safety not implemented");
+#elif __SOFTBOUNDCETS_SPATIAL_TEMPORAL
+        __mi_fail_with_msg("getpwuid wrapper: metadata store for "
+                           "spatial+temporal safety not implemented");
+#endif
     }
 
     return ret_ptr;

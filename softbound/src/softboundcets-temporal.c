@@ -1,5 +1,7 @@
 #include "softboundcets-temporal.h"
 
+#include "softboundcets-common.h"
+
 #include "fail_function.h"
 
 #include <assert.h>
