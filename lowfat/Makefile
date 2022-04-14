@@ -14,6 +14,7 @@ STAT_LIB = ${BUILD_DIR}/lib${LIB_NAME}.a
 
 LTO_BUILD_DIR = lto${BUILD_DIR}
 LTO_LIB = ${LTO_BUILD_DIR}/lib${LIB_NAME}.a
+LTO_LINKER_SCRIPT = ${LTO_BUILD_DIR}/lowfat.ld
 
 SHARED_INCLUDE_DIR = ${SHARED_DIR}/include
 SHARED_SRC_DIR = ${SHARED_DIR}/src
@@ -39,7 +40,7 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(SHARED_SRC:.c
 DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
 ifneq ($(LLVM_GOLD),)
-all: static_lto
+all: lto-static
 endif
 
 .PHONY: all clean
@@ -66,6 +67,10 @@ build-dir:
 sizes-header-and-linker-script: | build-dir
 	@echo "===> Generate sizes header and linker script"
 	./generate_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --scriptname ${LINKER_SCRIPT}
+
+sizes-header-and-lto-linker-script: | lto-build-dir
+	@echo "===> Generate sizes header and linker script"
+	./generate_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --lto-scriptname ${LTO_LINKER_SCRIPT}
 
 static: sizes-header-and-linker-script ${STAT_LIB}
 
@@ -95,7 +100,7 @@ ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	@echo "===> CC/LD $@"
 	$(Q)$(CLANG) -MMD -o $@ ${CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l:lib${LIB_NAME}.a $<
 
-lto_dir:
+lto-build-dir:
 	@echo "===> LTO"
 	@mkdir -p $(LTO_BUILD_DIR)
 
@@ -107,7 +112,7 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SRC),$(CLANG) $(CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
-static_lto: sizes-header-and-linker-script lto_dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
+lto-static: sizes-header-and-lto-linker-script lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) ${LTO_LIB} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 

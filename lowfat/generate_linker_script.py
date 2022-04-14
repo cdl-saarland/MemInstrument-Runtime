@@ -6,6 +6,7 @@ import argparse
 import sys
 import json
 import math
+import subprocess
 from decimal import Decimal
 from pathlib import Path
 
@@ -17,6 +18,9 @@ REQUIRED_DEFINTIONS = ["HEAP_REGION_SIZE",
                        "MAX_STACK_ALLOC_SIZE",
                        "MAX_GLOBAL_ALLOC_SIZE",
                        "STACK_SIZE"]
+
+
+LINKER_SCRIPT_EXTENSION_POINT = ".gnu.attributes"
 
 
 def verify_completeness(config, verbose):
@@ -242,23 +246,30 @@ def bytes_to_gib(bytes_value):
     return bytes_value / Decimal(1024*1024*1024)
 
 
-def get_section_definition(region, region_base, region_size, region_size_gib, is_read_only):
+def get_section_definition(region, region_base, region_size, region_size_gib, is_read_only, use_assertion):
     """
     Generate a string that describes the section with the given properties.
     """
     base = hex(to_int(region_base))
     size = hex(to_int(region_size))
+
     if is_read_only:
         region = "read_only_" + region
-    return (f'\t. = {base} + SIZEOF_HEADERS;\n'
-            f'\tlf_section_{region} : {{KEEP(*(lf_section_{region}))}}\n'
-            f'\tASSERT(. < {base} + SIZEOF_HEADERS + {size}, "LF region '
-            f'for size {region} globals is too full (>{region_size_gib}GiB).")\n\n')
+
+    assertion_text = ''
+    if use_assertion:
+        assertion_text = (f'  ASSERT(. < {base} + SIZEOF_HEADERS + {size}, '
+                          f'"LF region for size {region} globals is too full '
+                          f'(>{region_size_gib}GiB).")\n')
+
+    return (f'  . = {base} + SIZEOF_HEADERS;\n'
+            f'  lf_section_{region} : {{KEEP(*(lf_section_{region}))}}\n'
+            f'{assertion_text}\n')
 
 
-def generate_linker_script(config_dict, linker_script_name, verbose):
+def get_sections_str(config_dict, use_assertion):
     """
-    Generate the linker script from the information given by the config.
+    Compute the string that describes the lowfat sections.
     """
     # Compute the region beginning for every region of globals
     offsets = []
@@ -267,31 +278,147 @@ def generate_linker_script(config_dict, linker_script_name, verbose):
             (i + 1) * config_dict["REGION_SIZE"] + config_dict["GLOBAL_REGION_OFFSET"])
         offsets.append(global_region_offset)
 
-    if verbose:
-        print(f"Generate {linker_script_name}")
-
     # Split the general region for globals in two parts for the constant and
     # non-constant globals of a size
     region_size = config_dict["GLOBAL_REGION_SIZE"] / Decimal(2)
-    region_size_gib = bytes_to_gib(region_size)
     region_num = decimal_log_2(config_dict["MIN_ALLOC_SIZE"])
+
+    region_size_gib = bytes_to_gib(region_size)
+    result = ""
+    for offset in offsets:
+        region = str(2**region_num)
+        section_str = get_section_definition(
+            region, offset, region_size, region_size_gib, False, use_assertion)
+        section_str += get_section_definition(
+            region, offset + region_size, region_size, region_size_gib, True, use_assertion)
+        result += section_str
+        region_num += 1
+    return result
+
+
+def generate_linker_script(config_dict, linker_script_name, verbose):
+    """
+    Generate the linker script from the information given by the config.
+    """
+    if verbose:
+        print(f"Generate {linker_script_name}")
 
     # Generate the linker script file containing lowfat sections
     with open(linker_script_name, "w") as open_file:
         open_file.write("SECTIONS {\n")
-        for offset in offsets:
-            region = str(2**region_num)
-            section_str = get_section_definition(
-                region, offset, region_size, region_size_gib, False)
-            section_str += get_section_definition(
-                region, offset + region_size, region_size, region_size_gib, True)
-            open_file.write(section_str)
-            region_num += 1
-
-        open_file.write("}\nINSERT AFTER .gnu.attributes;\n")
+        section_str = get_sections_str(config_dict, True)
+        open_file.write(section_str)
+        open_file.write(f"}}\nINSERT AFTER {LINKER_SCRIPT_EXTENSION_POINT};\n")
 
 
-def generate_sizes_header_and_linker_script(config_file, sizes_path, script_path, verbose):
+def get_default_linker_script_lines():
+    """
+    Get the default linker script as lines array.
+    """
+    ld_out = subprocess.run("ld --verbose", check=True,
+                            shell=True, capture_output=True)
+
+    result = []
+    do_parse = False
+    lines = ld_out.stdout.splitlines()
+    for line in lines:
+        line_str = line.decode()
+        if do_parse:
+            if '=============' in line_str:
+                break
+            result.append(line_str)
+
+        if '=============' in line_str:
+            do_parse = True
+
+    return result
+
+
+def replace_call(name, line, verbose):
+    """
+    Remove the given call.
+    """
+    if verbose:
+        print(f"Replace '{name}' in '{line}'")
+    first_cl = line.find(')')
+    entry_loc = line.find('SORT_NONE')
+    if entry_loc > first_cl:
+        print(f"Unable to replace all occurrences of '{name}' in the default "
+              f"linker script. Cannot generate a linker script for gold.")
+        return None
+
+    line = line[:entry_loc] + line[entry_loc +
+                                   len(name)+1:first_cl] + line[first_cl+1:]
+    if verbose:
+        print(f"Replaced line: {line}")
+
+    return line
+
+
+def get_gold_compat_default_linker_script(verbose):
+    """
+    Lookup the default linker script and replace parts that are not compatible to gold.
+    """
+    lines = get_default_linker_script_lines()
+
+    to_drop = ["SORT_NONE"]
+
+    replaced_lines = []
+    for line in lines:
+        for entry in to_drop:
+            if entry in line:
+                line = replace_call(entry, line, verbose)
+                if not line:
+                    return []
+        replaced_lines.append(line)
+
+    return replaced_lines
+
+
+def generate_lto_linker_script(config_dict, linker_script_name, verbose):
+    """
+    In contrast to the standard ld linker, the gold linker used for LTO does not
+    provide a default linker script which we can extend with our sections.
+    Hence, we need to generate a full linker script. We do this by requesting
+    the default linker script from the system linker, replacing some unsupported
+    operations, and adding our sections.
+    """
+    if verbose:
+        print(f"Generate {linker_script_name}")
+
+    section_str = get_sections_str(config_dict, False)
+
+    default_lines = get_gold_compat_default_linker_script(verbose)
+
+    if not default_lines:
+        return
+
+    insertion_pt = -1
+    for index, line in enumerate(default_lines):
+        if LINKER_SCRIPT_EXTENSION_POINT in line:
+            insertion_pt = index
+            break
+
+    if insertion_pt == -1:
+        print(f"Cannot find insertion point '{LINKER_SCRIPT_EXTENSION_POINT}' "
+              f"in default linker script.")
+        return
+
+    if verbose:
+        print(f"Found insertion point at index {insertion_pt}")
+
+    # Generate the final script: Insert the sections after the insertion point
+    # for this.
+    result_str = "\n".join(default_lines[:insertion_pt+1])
+    result_str += "\n\n  /* LowFat sections */\n" + section_str
+    result_str += "\n".join(default_lines[insertion_pt+1:])
+
+    # Generate a full linker script file containing lowfat sections
+    with open(linker_script_name, "w") as open_file:
+        open_file.write(result_str)
+
+
+def generate_sizes_header_and_linker_script(config_file, sizes_path, script_path, lto_script_path, verbose):
     """
     Generate the header file for C/C++ with the configured sizes.
     Additionally generate a linker script for correctly placing global variables
@@ -302,7 +429,10 @@ def generate_sizes_header_and_linker_script(config_file, sizes_path, script_path
     generate_sizes_header_and_add_derived_vars(
         config_dict, sizes_path, verbose)
 
-    generate_linker_script(config_dict, script_path, verbose)
+    if script_path:
+        generate_linker_script(config_dict, script_path, verbose)
+    if lto_script_path:
+        generate_lto_linker_script(config_dict, lto_script_path, verbose)
 
 
 def main():
@@ -321,8 +451,9 @@ def main():
                              ' LowFat sizes.',
                         default='../include/meminstrument-rt/LFSizes.h')
     parser.add_argument('--scriptname', type=Path,
-                        help='The path of the generated linker script file.',
-                        default='build/lowfat.ld')
+                        help='The path of the generated linker script file.')
+    parser.add_argument('--lto-scriptname', type=Path,
+                        help='The path of the generated linker script file.')
     parser.add_argument('-v', '--verbose',
                         action='store_true', help='Verbose output')
     args = parser.parse_args()
@@ -330,7 +461,7 @@ def main():
     assert args.config.exists()
 
     generate_sizes_header_and_linker_script(
-        args.config, args.sizes, args.scriptname, args.verbose)
+        args.config, args.sizes, args.scriptname, args.lto_scriptname, args.verbose)
 
 
 if __name__ == "__main__":
