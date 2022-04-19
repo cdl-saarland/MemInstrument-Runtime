@@ -222,218 +222,227 @@ void internal_free(void *p) {
 
 void *malloc(size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-
-        void *res = lowfat_alloc(size);
-        if (res == NULL)
-            res = malloc_found(size);
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return malloc_found(size);
     }
-    return malloc_found(size);
+
+    hooks_active = 0;
+
+    void *res = lowfat_alloc(size);
+    if (res == NULL)
+        res = malloc_found(size);
+
+    hooks_active = 1;
+    return res;
 }
 
 void *calloc(size_t nmemb, size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res;
-
-        size_t total_size = nmemb * size;
-
-        int overflow = size != 0 && total_size / size != nmemb;
-        if (overflow || total_size > MAX_HEAP_ALLOC_SIZE)
-            res = calloc_found(nmemb, size);
-        else {
-            res = lowfat_alloc(total_size);
-            if (res != NULL)
-                memset(res, 0, total_size);
-            else
-                res = calloc_found(nmemb, size);
-        }
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return calloc_found(nmemb, size);
     }
-    return calloc_found(nmemb, size);
+
+    hooks_active = 0;
+    void *res;
+
+    size_t total_size = nmemb * size;
+
+    int overflow = size != 0 && total_size / size != nmemb;
+    if (overflow || total_size > MAX_HEAP_ALLOC_SIZE)
+        res = calloc_found(nmemb, size);
+    else {
+        res = lowfat_alloc(total_size);
+        if (res != NULL)
+            memset(res, 0, total_size);
+        else
+            res = calloc_found(nmemb, size);
+    }
+
+    hooks_active = 1;
+    return res;
 }
 
 void *realloc(void *ptr, size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res = NULL;
-
-        // if ptr is NULL, simply use malloc
-        // otherwise we have 3 cases:
-
-        // 1. ptr is low fat and the new one will be low fat as well -> our
-        // malloc, copy, our free
-        // 2. ptr is low fat but the new one is not (size too big)   -> glibc
-        // malloc, copy, our free Note: copy and free are only done if the
-        // allocation succeeded (i.e. errno is 0)
-
-        // 3. ptr is not low fat -> glibc realloc (even if new size would fit
-        // into low fat ptr) Note for 3: if ptr isn't low fat, we can't use the
-        // low fat allocator for the new pointer in any case
-        //             because we don't know how many bytes too copy from ptr,
-        //             so glibc_realloc is the only way here
-
-        if (ptr == NULL)
-            res = malloc(size);
-        else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
-            if (size <= MAX_HEAP_ALLOC_SIZE)
-                res = lowfat_alloc(size); // case 1
-
-            if (res == NULL)
-                res = malloc_found(
-                    size); // case 2 (or lowfat_alloc wasn't successful)
-
-            if (res != NULL) {
-                size_t old_size = MIN_ALLOC_SIZE << __lowfat_ptr_index(ptr);
-                size_t copy_size = old_size < size ? old_size : size;
-                memcpy(res, ptr, copy_size);
-                internal_free(ptr);
-            }
-        } else
-            res = realloc_found(ptr, size); // case 3
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return realloc_found(ptr, size);
     }
-    return realloc_found(ptr, size);
+
+    hooks_active = 0;
+    void *res = NULL;
+
+    // if ptr is NULL, simply use malloc
+    // otherwise we have 3 cases:
+
+    // 1. ptr is low fat and the new one will be low fat as well -> our
+    // malloc, copy, our free
+    // 2. ptr is low fat but the new one is not (size too big)   -> glibc
+    // malloc, copy, our free Note: copy and free are only done if the
+    // allocation succeeded (i.e. errno is 0)
+
+    // 3. ptr is not low fat -> glibc realloc (even if new size would fit
+    // into low fat ptr) Note for 3: if ptr isn't low fat, we can't use the
+    // low fat allocator for the new pointer in any case
+    //             because we don't know how many bytes too copy from ptr,
+    //             so glibc_realloc is the only way here
+
+    if (ptr == NULL)
+        res = malloc(size);
+    else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
+        if (size <= MAX_HEAP_ALLOC_SIZE)
+            res = lowfat_alloc(size); // case 1
+
+        if (res == NULL)
+            res = malloc_found(
+                size); // case 2 (or lowfat_alloc wasn't successful)
+
+        if (res != NULL) {
+            size_t old_size = MIN_ALLOC_SIZE << __lowfat_ptr_index(ptr);
+            size_t copy_size = old_size < size ? old_size : size;
+            memcpy(res, ptr, copy_size);
+            internal_free(ptr);
+        }
+    } else
+        res = realloc_found(ptr, size); // case 3
+
+    hooks_active = 1;
+    return res;
 }
 
 void *aligned_alloc(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res;
-
-        if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
-            errno = EINVAL;
-            res = NULL;
-        } else if (size > MAX_HEAP_ALLOC_SIZE)
-            res = aligned_alloc_found(alignment, size);
-        else {
-            // since size must be a multiple of alignment here, we can simply
-            // use the normal allocation routine
-            res = lowfat_alloc(size);
-            if (res == NULL)
-                res = aligned_alloc_found(alignment, size);
-        }
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return aligned_alloc_found(alignment, size);
     }
-    return aligned_alloc_found(alignment, size);
+
+    hooks_active = 0;
+    void *res;
+
+    if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
+        errno = EINVAL;
+        res = NULL;
+    } else if (size > MAX_HEAP_ALLOC_SIZE)
+        res = aligned_alloc_found(alignment, size);
+    else {
+        // since size must be a multiple of alignment here, we can simply
+        // use the normal allocation routine
+        res = lowfat_alloc(size);
+        if (res == NULL)
+            res = aligned_alloc_found(alignment, size);
+    }
+
+    hooks_active = 1;
+    return res;
 }
 
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        int err_status = 0; // 0 for Success
-        void *res = NULL;
-
-        // check valid parameters
-        if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
-            err_status = EINVAL;
-        else if (size > MAX_HEAP_ALLOC_SIZE)
-            err_status = posix_memalign(memptr, alignment, size);
-        else {
-            res = lowfat_aligned_alloc(size, alignment);
-
-            if (res == NULL)
-                err_status = posix_memalign(memptr, alignment, size);
-            else
-                *memptr = res;
-        }
-
-        hooks_active = 1;
-        return err_status;
+    if (!hooks_active) {
+        return posix_memalign_found(memptr, alignment, size);
     }
-    return posix_memalign_found(memptr, alignment, size);
+
+    hooks_active = 0;
+    int err_status = 0; // 0 for Success
+    void *res = NULL;
+
+    // check valid parameters
+    if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
+        err_status = EINVAL;
+    else if (size > MAX_HEAP_ALLOC_SIZE)
+        err_status = posix_memalign(memptr, alignment, size);
+    else {
+        res = lowfat_aligned_alloc(size, alignment);
+
+        if (res == NULL)
+            err_status = posix_memalign(memptr, alignment, size);
+        else
+            *memptr = res;
+    }
+
+    hooks_active = 1;
+    return err_status;
 }
 
 void *memalign(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res;
-
-        if (!is_power_of_2(alignment)) {
-            errno = EINVAL;
-            res = NULL;
-        } else if (size > MAX_HEAP_ALLOC_SIZE)
-            res = memalign_found(alignment, size);
-        else {
-            res = lowfat_aligned_alloc(size, alignment);
-            if (res == NULL)
-                res = memalign_found(alignment, size);
-        }
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return memalign_found(alignment, size);
     }
-    return memalign_found(alignment, size);
+
+    hooks_active = 0;
+    void *res;
+
+    if (!is_power_of_2(alignment)) {
+        errno = EINVAL;
+        res = NULL;
+    } else if (size > MAX_HEAP_ALLOC_SIZE)
+        res = memalign_found(alignment, size);
+    else {
+        res = lowfat_aligned_alloc(size, alignment);
+        if (res == NULL)
+            res = memalign_found(alignment, size);
+    }
+
+    hooks_active = 1;
+    return res;
 }
 
 void *valloc(size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res;
-
-        if (size > MAX_HEAP_ALLOC_SIZE)
-            res = valloc_found(size);
-        else {
-            res = lowfat_aligned_alloc(size, page_size);
-            if (res == NULL)
-                res = valloc_found(size);
-        }
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return valloc_found(size);
     }
-    return valloc_found(size);
+
+    hooks_active = 0;
+    void *res;
+
+    if (size > MAX_HEAP_ALLOC_SIZE)
+        res = valloc_found(size);
+    else {
+        res = lowfat_aligned_alloc(size, page_size);
+        if (res == NULL)
+            res = valloc_found(size);
+    }
+
+    hooks_active = 1;
+    return res;
 }
 
 void *pvalloc(size_t size) {
     STAT_INC(NumAllocs);
-    if (hooks_active) {
-        hooks_active = 0;
-        void *res;
-
-        if (size > MAX_HEAP_ALLOC_SIZE)
-            res = pvalloc_found(size);
-        else {
-            uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
-            res = lowfat_alloc(rounded_size);
-            if (res == NULL)
-                res = pvalloc_found(size);
-        }
-
-        hooks_active = 1;
-        return res;
+    if (!hooks_active) {
+        return pvalloc_found(size);
     }
-    return pvalloc_found(size);
+
+    hooks_active = 0;
+    void *res;
+
+    if (size > MAX_HEAP_ALLOC_SIZE)
+        res = pvalloc_found(size);
+    else {
+        uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
+        res = lowfat_alloc(rounded_size);
+        if (res == NULL)
+            res = pvalloc_found(size);
+    }
+
+    hooks_active = 1;
+    return res;
 }
 
 void free(void *p) {
     STAT_INC(NumFrees);
-    if (hooks_active) {
-        hooks_active = 0;
-
-        if (p != NULL)
-            internal_free(p);
-
-        hooks_active = 1;
-        return;
+    if (!hooks_active) {
+        free_found(p);
     }
-    free_found(p);
+
+    hooks_active = 0;
+
+    if (p != NULL)
+        internal_free(p);
+
+    hooks_active = 1;
+    return;
 }
 
 /// A pointer to the environment variables, defined in unistd.h.
