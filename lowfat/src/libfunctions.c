@@ -434,6 +434,7 @@ void free(void *p) {
     STAT_INC(NumFrees);
     if (!hooks_active) {
         free_found(p);
+        return;
     }
 
     hooks_active = 0;
