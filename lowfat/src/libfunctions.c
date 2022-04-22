@@ -143,8 +143,10 @@ unsigned compute_size_index(size_t size) {
  */
 void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
-    if (size == 0)
+    if (size == 0) {
+        STAT_INC(NumSizeZeroAllocs);
         return NULL;
+    }
 
     STAT_INC(NumLowFatAllocs);
 
@@ -222,7 +224,9 @@ void internal_free(void *p) {
 
 void *malloc(size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumMalloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return malloc_found(size);
     }
 
@@ -238,7 +242,9 @@ void *malloc(size_t size) {
 
 void *calloc(size_t nmemb, size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumCalloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return calloc_found(nmemb, size);
     }
 
@@ -248,9 +254,10 @@ void *calloc(size_t nmemb, size_t size) {
     size_t total_size = nmemb * size;
 
     int overflow = size != 0 && total_size / size != nmemb;
-    if (overflow || total_size > MAX_HEAP_ALLOC_SIZE)
+    if (overflow) {
+        STAT_INC(NumOverflowingCallocs);
         res = calloc_found(nmemb, size);
-    else {
+    } else {
         res = lowfat_alloc(total_size);
         if (res != NULL)
             memset(res, 0, total_size);
@@ -264,7 +271,9 @@ void *calloc(size_t nmemb, size_t size) {
 
 void *realloc(void *ptr, size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumRealloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return realloc_found(ptr, size);
     }
 
@@ -289,8 +298,7 @@ void *realloc(void *ptr, size_t size) {
     if (ptr == NULL)
         res = malloc(size);
     else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
-        if (size <= MAX_HEAP_ALLOC_SIZE)
-            res = lowfat_alloc(size); // case 1
+        res = lowfat_alloc(size); // case 1
 
         if (res == NULL)
             res = malloc_found(
@@ -311,7 +319,9 @@ void *realloc(void *ptr, size_t size) {
 
 void *aligned_alloc(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumAlignedAlloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return aligned_alloc_found(alignment, size);
     }
 
@@ -319,11 +329,10 @@ void *aligned_alloc(size_t alignment, size_t size) {
     void *res;
 
     if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
+        STAT_INC(NumNonPowTwoAllocs);
         errno = EINVAL;
         res = NULL;
-    } else if (size > MAX_HEAP_ALLOC_SIZE)
-        res = aligned_alloc_found(alignment, size);
-    else {
+    } else {
         // since size must be a multiple of alignment here, we can simply
         // use the normal allocation routine
         res = lowfat_alloc(size);
@@ -337,7 +346,9 @@ void *aligned_alloc(size_t alignment, size_t size) {
 
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumPosixMemAlign);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return posix_memalign_found(memptr, alignment, size);
     }
 
@@ -346,11 +357,10 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     void *res = NULL;
 
     // check valid parameters
-    if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *)))
+    if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *))) {
+        STAT_INC(NumNonPowTwoAllocs);
         err_status = EINVAL;
-    else if (size > MAX_HEAP_ALLOC_SIZE)
-        err_status = posix_memalign(memptr, alignment, size);
-    else {
+    } else {
         res = lowfat_aligned_alloc(size, alignment);
 
         if (res == NULL)
@@ -365,7 +375,9 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
 
 void *memalign(size_t alignment, size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumMemAlign);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return memalign_found(alignment, size);
     }
 
@@ -373,11 +385,10 @@ void *memalign(size_t alignment, size_t size) {
     void *res;
 
     if (!is_power_of_2(alignment)) {
+        STAT_INC(NumNonPowTwoAllocs);
         errno = EINVAL;
         res = NULL;
-    } else if (size > MAX_HEAP_ALLOC_SIZE)
-        res = memalign_found(alignment, size);
-    else {
+    } else {
         res = lowfat_aligned_alloc(size, alignment);
         if (res == NULL)
             res = memalign_found(alignment, size);
@@ -389,20 +400,18 @@ void *memalign(size_t alignment, size_t size) {
 
 void *valloc(size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumValloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return valloc_found(size);
     }
 
     hooks_active = 0;
     void *res;
 
-    if (size > MAX_HEAP_ALLOC_SIZE)
+    res = lowfat_aligned_alloc(size, page_size);
+    if (res == NULL)
         res = valloc_found(size);
-    else {
-        res = lowfat_aligned_alloc(size, page_size);
-        if (res == NULL)
-            res = valloc_found(size);
-    }
 
     hooks_active = 1;
     return res;
@@ -410,21 +419,19 @@ void *valloc(size_t size) {
 
 void *pvalloc(size_t size) {
     STAT_INC(NumAllocs);
+    STAT_INC(NumPValloc);
     if (!hooks_active) {
+        STAT_INC(NumHookDisabled);
         return pvalloc_found(size);
     }
 
     hooks_active = 0;
     void *res;
 
-    if (size > MAX_HEAP_ALLOC_SIZE)
+    size_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
+    res = lowfat_alloc(rounded_size);
+    if (res == NULL)
         res = pvalloc_found(size);
-    else {
-        uint64_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
-        res = lowfat_alloc(rounded_size);
-        if (res == NULL)
-            res = pvalloc_found(size);
-    }
 
     hooks_active = 1;
     return res;

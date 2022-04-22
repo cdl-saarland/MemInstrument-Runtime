@@ -10,10 +10,24 @@ STAT_ACTION(NumLowFatAllocs, "# of registered malloc (-like) allocations with lo
 STAT_ACTION(NumFrees, "# of registered deallocations")
 STAT_ACTION(NumLowFatFrees, "# of registered low fat deallocations")
 STAT_ACTION(NumFreeListPops, "# of reused low fat addresses")
+STAT_ACTION(NumHookDisabled, "# of fall-back allocations due to inactive hooks")
+
+STAT_ACTION(NumValloc, "# of vallocs")
+STAT_ACTION(NumPValloc, "# of pvallocs")
+STAT_ACTION(NumCalloc, "# of callocs")
+STAT_ACTION(NumRealloc, "# of reallocs")
+STAT_ACTION(NumMalloc, "# of mallocs")
+STAT_ACTION(NumPosixMemAlign, "# of posix_memaligns")
+STAT_ACTION(NumMemAlign, "# of memaligns")
+STAT_ACTION(NumAlignedAlloc, "# of aligned_allocs")
 
 STAT_ACTION(NumFullRegionNonFatAllocs, "# of non fat pointers created because of fully used low fat regions")
 STAT_ACTION(NumTooLargeNonFatAllocs, "# of non fat pointers created because the allocation was too large")
 STAT_ACTION(NumNonAlignedFreeListAdds, "# of fresh space addresses added to free list because of alignment requirements")
+
+STAT_ACTION(NumSizeZeroAllocs, "# of allocations of size zero")
+STAT_ACTION(NumNonPowTwoAllocs, "# of aligned allocations that were not aligned to powers of two")
+STAT_ACTION(NumOverflowingCallocs, "# of callocs that overflow size_t")
 
 STAT_ACTION(NumGetLower, "# of queries for lower bounds")
 STAT_ACTION(NumGetUpper, "# of queries for upper bounds")
