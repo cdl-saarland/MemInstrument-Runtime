@@ -277,10 +277,12 @@ void *realloc(void *ptr, size_t size) {
         return realloc_found(ptr, size);
     }
 
-    hooks_active = 0;
-    void *res = NULL;
-
     // if ptr is NULL, simply use malloc
+    if (ptr == NULL) {
+        STAT_INC(NumNullRealloc);
+        return malloc(size);
+    }
+
     // otherwise we have 3 cases:
 
     // 1. ptr is low fat and the new one will be low fat as well -> our
@@ -288,16 +290,14 @@ void *realloc(void *ptr, size_t size) {
     // 2. ptr is low fat but the new one is not (size too big)   -> glibc
     // malloc, copy, our free Note: copy and free are only done if the
     // allocation succeeded (i.e. errno is 0)
-
     // 3. ptr is not low fat -> glibc realloc (even if new size would fit
-    // into low fat ptr) Note for 3: if ptr isn't low fat, we can't use the
-    // low fat allocator for the new pointer in any case
-    //             because we don't know how many bytes too copy from ptr,
-    //             so glibc_realloc is the only way here
-
-    if (ptr == NULL)
-        res = malloc(size);
-    else if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
+    // into low fat ptr)
+    // Note for 3: if ptr isn't low fat, we can't use the low fat allocator for
+    // the new pointer in any case because we don't know how many bytes to copy
+    // from ptr, so glibc_realloc is the only way here
+    hooks_active = 0;
+    void *res = NULL;
+    if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
         res = lowfat_alloc(size); // case 1
 
         if (res == NULL)
@@ -310,8 +310,9 @@ void *realloc(void *ptr, size_t size) {
             memcpy(res, ptr, copy_size);
             internal_free(ptr);
         }
-    } else
+    } else {
         res = realloc_found(ptr, size); // case 3
+    }
 
     hooks_active = 1;
     return res;

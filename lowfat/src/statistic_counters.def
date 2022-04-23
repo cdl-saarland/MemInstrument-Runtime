@@ -26,6 +26,7 @@ STAT_ACTION(NumTooLargeNonFatAllocs, "# of non fat pointers created because the 
 STAT_ACTION(NumNonAlignedFreeListAdds, "# of fresh space addresses added to free list because of alignment requirements")
 
 STAT_ACTION(NumSizeZeroAllocs, "# of allocations of size zero")
+STAT_ACTION(NumNullRealloc, "# of reallocs with a NULL argument, effectively being mallocs")
 STAT_ACTION(NumNonPowTwoAllocs, "# of aligned allocations that were not aligned to powers of two")
 STAT_ACTION(NumOverflowingCallocs, "# of callocs that overflow size_t")
 
