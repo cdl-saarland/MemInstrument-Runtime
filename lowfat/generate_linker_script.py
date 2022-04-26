@@ -460,6 +460,8 @@ def main():
 
     assert args.config.exists()
 
+    args.sizes.parent.mkdir(parents=True, exist_ok=True)
+
     generate_sizes_header_and_linker_script(
         args.config, args.sizes, args.scriptname, args.lto_scriptname, args.verbose)
 

@@ -4,7 +4,7 @@ Generates C++ header which contains information on the C-runtime config.
 """
 import os
 import argparse
-import pathlib
+from pathlib import Path
 
 from generate_available_wrapper import generate_header
 
@@ -84,8 +84,8 @@ def main():
     feature_file = "build/compile_commands.json"
 
     # Generate the directory where the auto-generated header is put
-    out_dir = os.path.join("..", "include", "meminstrument-rt")
-    pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
+    out_dir = Path("..", "include", "meminstrument-rt")
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     out_file_name = os.path.join(out_dir, "SBRTInfo.h")
 
