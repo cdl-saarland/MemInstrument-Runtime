@@ -66,7 +66,11 @@ extern char __mi_stats_enabled;
 #undef STAT_ACTION
 
 #define STAT_INC(var)                                                          \
-    { if (__mi_stats_enabled) { ++__##var; } }
+    {                                                                          \
+        if (__mi_stats_enabled) {                                              \
+            ++__##var;                                                         \
+        }                                                                      \
+    }
 
 #else
 
@@ -74,4 +78,3 @@ extern char __mi_stats_enabled;
     { ; }
 
 #endif
-

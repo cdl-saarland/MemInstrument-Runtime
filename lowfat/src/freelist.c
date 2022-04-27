@@ -1,7 +1,7 @@
 #include "freelist.h"
 
-#include "statistics.h"
 #include "LFSizes.h"
+#include "statistics.h"
 
 #include <stdlib.h>
 #include <sys/mman.h>
