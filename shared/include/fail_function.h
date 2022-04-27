@@ -54,4 +54,4 @@ void __mi_printf(const char *str, ...);
 // Constants for wide lower/upper bound
 #define WIDE_LOWER 0
 // 2^48 -1 (addressable address space on x86_64)
-#define WIDE_UPPER 281474976710655
+#define WIDE_UPPER 281474976710655ULL
