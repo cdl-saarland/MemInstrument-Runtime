@@ -41,6 +41,11 @@
 
 void __setup_statistics(const char *n);
 
+// Start and stop increments of stat counters. If compiling without
+// MIRT_STATISTICS, these are no-ops
+void __mi_enable_stats(void);
+void __mi_disable_stats(void);
+
 // Determine whether the given function name belongs to one of the llvm testing
 // tools.
 int __is_llvm_tooling_function(const char *name);
@@ -51,6 +56,8 @@ const char *__get_prog_name(void);
 
 #include <stddef.h>
 
+extern char __mi_stats_enabled;
+
 // Declare all statistics counters
 #define STAT_ACTION(var, text) extern size_t __##var;
 
@@ -59,7 +66,7 @@ const char *__get_prog_name(void);
 #undef STAT_ACTION
 
 #define STAT_INC(var)                                                          \
-    { ++__##var; }
+    { if (__mi_stats_enabled) { ++__##var; } }
 
 #else
 
@@ -67,3 +74,4 @@ const char *__get_prog_name(void);
     { ; }
 
 #endif
+

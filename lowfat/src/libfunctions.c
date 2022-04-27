@@ -555,6 +555,8 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // for program initialization we can't use the low fat allocator
     hooks_active = 0;
 
+    __mi_disable_stats();
+
     // get original functions from dynamic linker
     initDynamicFunctions();
 
@@ -613,6 +615,7 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // enable our malloc etc. replacements
     hooks_active = 1;
 
+    __mi_enable_stats();
     // call the actual main function
     return (*start_main_found)(main, argc, ubp_av, init, fini, rtld_fini,
                                stack_end);

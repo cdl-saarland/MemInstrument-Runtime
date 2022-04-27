@@ -16,7 +16,21 @@
 
 static const char *mi_prog_name = NULL;
 
+void __mi_enable_stats(void) {
 #ifdef MIRT_STATISTICS
+    __mi_stats_enabled = 1;
+#endif
+}
+
+void __mi_disable_stats(void) {
+#ifdef MIRT_STATISTICS
+    __mi_stats_enabled = 0;
+#endif
+}
+
+#ifdef MIRT_STATISTICS
+
+char __mi_stats_enabled = 1;
 
 static const char *mi_stats_file = NULL;
 
@@ -45,6 +59,9 @@ static struct __StatEntry {
 static size_t __NumStatEntries = __COUNTER__;
 
 static void __print_stats(void) {
+    // make sure that no more stat increments are generated
+    __mi_disable_stats();
+
     FILE *dest = stderr;
     if (mi_stats_file) {
         dest = fopen(mi_stats_file, "a");
