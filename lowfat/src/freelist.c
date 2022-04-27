@@ -1,5 +1,6 @@
 #include "freelist.h"
 
+#include "statistics.h"
 #include "LFSizes.h"
 
 #include <stdlib.h>
@@ -16,7 +17,14 @@ Element *free_list_tops[NUM_REGIONS];
 void free_list_push(unsigned index, void *addr) {
     Element *current_top = free_list_tops[index];
 
+    // Allocate a new element container for the free list.
+    // We disable increments of stat counters for this to not mess up our
+    // counts for non-low-fat mallocs.
+    // Note: These allocations might introduce overhead that could be reduced.
+    __mi_disable_stats();
     Element *new_top = malloc(sizeof(Element));
+    __mi_enable_stats();
+
     new_top->addr = addr;
     new_top->prev = current_top;
 
