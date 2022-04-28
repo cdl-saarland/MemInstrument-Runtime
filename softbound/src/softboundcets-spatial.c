@@ -22,11 +22,11 @@ __WEAK_INLINE void __softboundcets_spatial_call_dereference_check(
         }
 #endif
 
-        __mi_printf(
+        __mi_debug_printf(
             "Error in Call Dereference Check, base=%p, bound=%p, ptr=%p\n",
             base, bound, ptr);
 
-        __mi_fail();
+        __mi_fail_with_msg("Invalid function pointer dereference!\n");
     }
 }
 
@@ -64,10 +64,10 @@ __WEAK_INLINE void __softboundcets_spatial_dereference_check(
             return;
         }
 #endif
-        __mi_printf("Error in Dereference Check, base=%p, "
-                    "bound=%p, ptr=%p, size_of_type=%zx\n",
-                    base, bound, ptr, size_of_type);
-        __mi_fail();
+        __mi_debug_printf("Error in Dereference Check, base=%p, "
+                          "bound=%p, ptr=%p, size_of_type=%zx\n",
+                          base, bound, ptr, size_of_type);
+        __mi_fail_with_msg("Out-of-bounds pointer dereference!\n");
     }
 }
 
