@@ -14,8 +14,8 @@ uint64_t __lowfat_ptr_index(void *ptr) {
     return ((uint64_t)ptr >> REGION_SIZE_LOG) - 1;
 }
 
-uint64_t __lowfat_ptr_base(void *ptr, uint64_t index) {
-    return (uint64_t)ptr & (UINT64_MAX << (index + MIN_ALLOC_SIZE_LOG));
+uintptr_t __lowfat_ptr_base(void *ptr, uint64_t index) {
+    return (uintptr_t)ptr & (UINT64_MAX << (index + MIN_ALLOC_SIZE_LOG));
 }
 
 uint64_t __lowfat_ptr_size(uint64_t index) { return MIN_ALLOC_SIZE << index; }
@@ -63,16 +63,16 @@ void __lowfat_check_deref(void *witness, void *ptr, size_t size) {
     // optimized check: only need to compare base of ptr (+ size) and witness
     if (index < NUM_REGIONS) {
         STAT_INC(NumLowFatDerefChecks);
-        if ((((uintptr_t)ptr + size) ^ (uintptr_t)witness) >>
-                (index + MIN_ALLOC_SIZE_LOG) !=
-            0) {
+        uint64_t alloc_size = __lowfat_ptr_size(index);
+        uintptr_t alloc_base = __lowfat_ptr_base(witness, index);
+        if (alloc_size < size || (size_t)((uintptr_t)ptr - alloc_base) >
+                                     (size_t)(alloc_size - size)) {
             __mi_debug_printf(
                 "Error with\n\tPtr:\t%p, base %p, size %u, width %u\n", ptr,
                 __lowfat_get_lower_bound(ptr),
                 __lowfat_ptr_size(__lowfat_ptr_index(ptr)), size);
             __mi_debug_printf("\tWit:\t%p, base %p, size %u\n", witness,
-                              __lowfat_get_lower_bound(witness),
-                              __lowfat_ptr_size(index));
+                              alloc_base, alloc_size);
             __mi_fail_with_msg("Out-of-bounds pointer dereference!\n");
         }
     }
