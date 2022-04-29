@@ -26,7 +26,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 uint64_t __lowfat_ptr_index(void *ptr);
 
 // system-dependent, but often 4KB
-uint64_t page_size;
+uint64_t __lowfat_page_size;
 
 // pointers pointing to the next free memory space for each region
 static void *regions[NUM_REGIONS];
@@ -107,21 +107,21 @@ void initDynamicFunctions(void) {
 /* alignment must be a power of 2
  * returns 1 if value is a multiple of alignment, otherwise 0
  */
-int is_aligned(uint64_t value, uint64_t alignment) {
+int __lowfat_is_aligned(uint64_t value, uint64_t alignment) {
     return (value & (alignment - 1)) == 0;
 }
 
 /*
  * returns 1 if value is a power of 2, otherwise 0
  */
-int is_power_of_2(size_t value) {
+static int is_power_of_2(size_t value) {
     return value != 0 && (value & (value - 1)) == 0;
 }
 
 /*
  * returns the index of the low-fat region that is appropriate for size
  */
-unsigned compute_size_index(size_t size) {
+static unsigned compute_size_index(size_t size) {
     // get the index of the next higher power of 2 by counting leading zeros
     // Note: this only works, if there are no powers of 2 skipped
     int index = 64 - __builtin_clzll(size) - MIN_ALLOC_SIZE_LOG;
@@ -141,7 +141,7 @@ unsigned compute_size_index(size_t size) {
  * (or 0 if there is no requirement)
  * @return lowfat pointer if possible, NULL if not (e.g. because no space left)
  */
-void *lowfat_aligned_alloc(size_t size, size_t alignment) {
+static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
     if (size == 0) {
         STAT_INC(NumSizeZeroAllocs);
@@ -168,9 +168,9 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     // first check free list for corresponding region
     // if alignment is required this step is omitted as searching the whole free
     // list for a suitable address might be expensive
-    if (!alignment && !free_list_is_empty(index)) {
+    if (!alignment && !__lowfat_free_list_is_empty(index)) {
         STAT_INC(NumFreeListPops);
-        void *free_res = free_list_pop(index);
+        void *free_res = __lowfat_free_list_pop(index);
         pthread_mutex_unlock(&mutex);
         return free_res;
     }
@@ -188,10 +188,10 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
             return NULL;
         }
 
-        if (!alignment || is_aligned((uintptr_t)res, alignment)) {
+        if (!alignment || __lowfat_is_aligned((uintptr_t)res, alignment)) {
             // allow read/write on allocated memory (only required for page
             // aligned addresses)
-            if ((is_aligned((uintptr_t)res, page_size)))
+            if ((__lowfat_is_aligned((uintptr_t)res, __lowfat_page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
             regions[index] = res + allocation_size;
@@ -200,7 +200,7 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         }
 
         // space is not aligned, add it to the free list
-        free_list_push(index, res);
+        __lowfat_free_list_push(index, res);
         STAT_INC(NumNonAlignedFreeListAdds);
 
         // check next fresh space slot
@@ -208,15 +208,15 @@ void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     }
 }
 
-void *lowfat_alloc(size_t size) { return lowfat_aligned_alloc(size, 0); }
+static void *lowfat_alloc(size_t size) { return lowfat_aligned_alloc(size, 0); }
 
-void internal_free(void *p) {
+static void internal_free(void *p) {
     // add freed address to free list for corresponding region
     uint64_t index = __lowfat_ptr_index(p);
     if (index < NUM_REGIONS) {
         pthread_mutex_lock(&mutex);
         STAT_INC(NumLowFatFrees);
-        free_list_push(index, p);
+        __lowfat_free_list_push(index, p);
         pthread_mutex_unlock(&mutex);
     } else
         free_found(p);
@@ -329,7 +329,7 @@ void *aligned_alloc(size_t alignment, size_t size) {
     hooks_active = 0;
     void *res;
 
-    if (!is_power_of_2(alignment) || !is_aligned(size, alignment)) {
+    if (!is_power_of_2(alignment) || !__lowfat_is_aligned(size, alignment)) {
         STAT_INC(NumNonPowTwoAllocs);
         errno = EINVAL;
         res = NULL;
@@ -358,7 +358,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     void *res = NULL;
 
     // check valid parameters
-    if (!is_power_of_2(alignment) || !is_aligned(alignment, sizeof(void *))) {
+    if (!is_power_of_2(alignment) || !__lowfat_is_aligned(alignment, sizeof(void *))) {
         STAT_INC(NumNonPowTwoAllocs);
         err_status = EINVAL;
     } else {
@@ -410,7 +410,7 @@ void *valloc(size_t size) {
     hooks_active = 0;
     void *res;
 
-    res = lowfat_aligned_alloc(size, page_size);
+    res = lowfat_aligned_alloc(size, __lowfat_page_size);
     if (res == NULL)
         res = valloc_found(size);
 
@@ -429,7 +429,7 @@ void *pvalloc(size_t size) {
     hooks_active = 0;
     void *res;
 
-    size_t rounded_size = (size + page_size - 1) & ~(page_size - 1);
+    size_t rounded_size = (size + __lowfat_page_size - 1) & ~(__lowfat_page_size - 1);
     res = lowfat_alloc(rounded_size);
     if (res == NULL)
         res = pvalloc_found(size);
@@ -481,9 +481,9 @@ void *__lowfat_move_stack(void *stack_current) {
     }
 
     // Align to page size
-    unsigned long not_aligned = (uintptr_t)stack_begin % page_size;
+    unsigned long not_aligned = (uintptr_t)stack_begin % __lowfat_page_size;
     if (not_aligned) {
-        stack_begin = stack_begin + page_size - not_aligned;
+        stack_begin = stack_begin + __lowfat_page_size - not_aligned;
     }
     ptrdiff_t stack_size = stack_begin - (char *)stack_current;
 
@@ -566,7 +566,7 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
                                    stack_end);
     }
 
-    page_size = sysconf(_SC_PAGESIZE);
+    __lowfat_page_size = sysconf(_SC_PAGESIZE);
 
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
