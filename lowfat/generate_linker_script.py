@@ -17,7 +17,9 @@ REQUIRED_DEFINTIONS = ["HEAP_REGION_SIZE",
                        "MAX_HEAP_ALLOC_SIZE",
                        "MAX_STACK_ALLOC_SIZE",
                        "MAX_GLOBAL_ALLOC_SIZE",
-                       "STACK_SIZE"]
+                       "STACK_SIZE",
+                       "SIZES_ADDRESS",
+                       "MAGICS_ADDRESS"]
 
 
 LINKER_SCRIPT_EXTENSION_POINT = ".gnu.attributes"

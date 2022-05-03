@@ -11,13 +11,11 @@ extern uint64_t __lowfat_page_size;
 int __lowfat_is_aligned(uint64_t value, uint64_t alignment);
 uint64_t __lowfat_ptr_size(uint64_t index);
 
-
 // represents an element in a free list
 typedef struct Element {
     void *addr;
     struct Element *prev;
 } Element;
-
 
 // current top elements for every free list
 static Element *__lowfat_free_list_tops[NUM_REGIONS];

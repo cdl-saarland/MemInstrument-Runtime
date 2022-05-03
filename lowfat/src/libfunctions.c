@@ -4,6 +4,7 @@
 #include "statistics.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -23,7 +24,9 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  * framework to override standard c functions is taken from Fabian's
  * libfunctions.c in the splay approach
  */
+uint64_t __is_lowfat(void *ptr);
 uint64_t __lowfat_ptr_index(void *ptr);
+uint64_t __lowfat_ptr_size(uint64_t index);
 
 // system-dependent, but often 4KB
 uint64_t __lowfat_page_size;
@@ -124,13 +127,19 @@ static int is_power_of_2(size_t value) {
 static unsigned compute_size_index(size_t size) {
     // get the index of the next higher power of 2 by counting leading zeros
     // Note: this only works, if there are no powers of 2 skipped
-    int index = 64 - __builtin_clzll(size) - MIN_ALLOC_SIZE_LOG;
-    if (is_power_of_2(size))
-        index--; // corner case if size is already a power 2
-    return index < 0
-               ? 0
-               : (unsigned)
-                     index; // sizes 1, 2, 4 and 8 are rounded up to 16 bytes
+    int diff = (64 - __builtin_clzll(size));
+    int index = diff - MIN_ALLOC_SIZE_LOG;
+
+    // Handle all cases that map to the smallest allocation size
+    if (index <= 0) {
+        return 1;
+    }
+
+    if (!is_power_of_2(size)) {
+        index++;
+    }
+
+    return index;
 }
 
 /**
@@ -161,28 +170,29 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return NULL;
     }
 
-    unsigned index = compute_size_index(padded_size);
+    unsigned region_index = compute_size_index(padded_size);
+    unsigned zero_based_index = region_index - 1;
 
     pthread_mutex_lock(&mutex);
 
     // first check free list for corresponding region
     // if alignment is required this step is omitted as searching the whole free
     // list for a suitable address might be expensive
-    if (!alignment && !__lowfat_free_list_is_empty(index)) {
+    if (!alignment && !__lowfat_free_list_is_empty(zero_based_index)) {
         STAT_INC(NumFreeListPops);
-        void *free_res = __lowfat_free_list_pop(index);
+        void *free_res = __lowfat_free_list_pop(zero_based_index);
         pthread_mutex_unlock(&mutex);
         return free_res;
     }
 
-    size_t allocation_size = MIN_ALLOC_SIZE << index;
-    void *res = regions[index];
+    size_t allocation_size = __lowfat_ptr_size(region_index);
+    void *res = regions[zero_based_index];
 
     // for unaligned allocations this loop finishes in the first iteration
     while (1) {
 
         // check if there is still fresh space left in this region
-        if ((uintptr_t)res >= (index + 2) * REGION_SIZE) {
+        if ((uintptr_t)res >= (region_index + 1) * REGION_SIZE) {
             STAT_INC(NumFullRegionNonFatAllocs);
             pthread_mutex_unlock(&mutex);
             return NULL;
@@ -194,13 +204,13 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
             if ((__lowfat_is_aligned((uintptr_t)res, __lowfat_page_size)))
                 mprotect(res, allocation_size, PROT_READ | PROT_WRITE);
 
-            regions[index] = res + allocation_size;
+            regions[zero_based_index] = res + allocation_size;
             pthread_mutex_unlock(&mutex);
             return res;
         }
 
         // space is not aligned, add it to the free list
-        __lowfat_free_list_push(index, res);
+        __lowfat_free_list_push(zero_based_index, res);
         STAT_INC(NumNonAlignedFreeListAdds);
 
         // check next fresh space slot
@@ -212,11 +222,10 @@ static void *lowfat_alloc(size_t size) { return lowfat_aligned_alloc(size, 0); }
 
 static void internal_free(void *p) {
     // add freed address to free list for corresponding region
-    uint64_t index = __lowfat_ptr_index(p);
-    if (index < NUM_REGIONS) {
+    if (__is_lowfat(p)) {
         pthread_mutex_lock(&mutex);
         STAT_INC(NumLowFatFrees);
-        __lowfat_free_list_push(index, p);
+        __lowfat_free_list_push(__lowfat_ptr_index(p) - 1, p);
         pthread_mutex_unlock(&mutex);
     } else
         free_found(p);
@@ -297,7 +306,7 @@ void *realloc(void *ptr, size_t size) {
     // from ptr, so glibc_realloc is the only way here
     hooks_active = 0;
     void *res = NULL;
-    if (__lowfat_ptr_index(ptr) < NUM_REGIONS) {
+    if (__is_lowfat(ptr)) {
         res = lowfat_alloc(size); // case 1
 
         if (res == NULL)
@@ -305,7 +314,7 @@ void *realloc(void *ptr, size_t size) {
                 size); // case 2 (or lowfat_alloc wasn't successful)
 
         if (res != NULL) {
-            size_t old_size = MIN_ALLOC_SIZE << __lowfat_ptr_index(ptr);
+            size_t old_size = __lowfat_ptr_size(__lowfat_ptr_index(ptr));
             size_t copy_size = old_size < size ? old_size : size;
             memcpy(res, ptr, copy_size);
             internal_free(ptr);
@@ -358,7 +367,8 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     void *res = NULL;
 
     // check valid parameters
-    if (!is_power_of_2(alignment) || !__lowfat_is_aligned(alignment, sizeof(void *))) {
+    if (!is_power_of_2(alignment) ||
+        !__lowfat_is_aligned(alignment, sizeof(void *))) {
         STAT_INC(NumNonPowTwoAllocs);
         err_status = EINVAL;
     } else {
@@ -429,7 +439,8 @@ void *pvalloc(size_t size) {
     hooks_active = 0;
     void *res;
 
-    size_t rounded_size = (size + __lowfat_page_size - 1) & ~(__lowfat_page_size - 1);
+    size_t rounded_size =
+        (size + __lowfat_page_size - 1) & ~(__lowfat_page_size - 1);
     res = lowfat_alloc(rounded_size);
     if (res == NULL)
         res = pvalloc_found(size);
@@ -452,6 +463,174 @@ void free(void *p) {
 
     hooks_active = 1;
     return;
+}
+
+// Create a file descriptor to a file with the given name and size.
+static int __lowfat_create_file(char *name, size_t size) {
+
+    // Generate a full path containing the given name
+    char *start = "/dev/shm/lf.";
+    // Use the process/thread id to avoid conflicts with other instances running
+    // in parallel.
+    pid_t current_pid = getpid();
+    pid_t current_tid = gettid();
+    // snprintf with NULL+0 determines the length of the string result as if it
+    // would have been printed some output buffer.
+    int pid_length = snprintf(NULL, 0, "%d", current_pid);
+    int tid_length = snprintf(NULL, 0, "%d", current_tid);
+    char *ending = ".tmp";
+    // Create the full path: all parts, plus two dots and the NUL terminator
+    size_t full_length = strlen(start) + strlen(name) + 1 + pid_length + 1 +
+                         tid_length + strlen(ending) + 1;
+    char path[full_length];
+    snprintf(path, full_length, "%s%s.%d.%d%s", start, name, current_pid,
+             current_tid, ending);
+
+    // Create a file at path (O_CREAT), make sure it did not exist before
+    // (O_EXCL), and allow reading and writing it (O_RDWR).
+    int fd = open(path, O_CREAT | O_EXCL | O_RDWR, 0);
+    if (fd < 0) {
+        __mi_printf("[File creation] Failed to open \"%s\": %s\n", path,
+                    strerror(errno));
+        __mi_fail();
+    }
+    if (unlink(path) < 0) {
+        __mi_printf("[File creation] Failed to unlink \"%s\": %s\n", path,
+                    strerror(errno));
+        __mi_fail();
+    }
+    // Acquire the (write) file lease
+    if (fcntl(fd, F_SETLEASE, F_WRLCK) < 0) {
+        __mi_printf("[File creation] Failed to lease \"%s\": %s\n", path,
+                    strerror(errno));
+        __mi_fail();
+    }
+    // Use the given size as for the file
+    if (ftruncate(fd, size) < 0) {
+        __mi_printf("[File creation] Failed to truncate \"%s\": %s\n", path,
+                    strerror(errno));
+        __mi_fail();
+    }
+    return fd;
+}
+
+static void __lowfat_create_tables_for_sizes_and_magics() {
+
+    // First, reserve the virtual address space for all possible index values
+    size_t num_pages =
+        (MAXIMAL_ADDRESS / REGION_SIZE) / (__lowfat_page_size / sizeof(size_t));
+    size_t len = num_pages * __lowfat_page_size;
+    void *sizes_mapped =
+        mmap((void *)SIZES_ADDRESS, len, PROT_READ | PROT_WRITE,
+             MAP_NORESERVE | MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    if (sizes_mapped != (void *)SIZES_ADDRESS) {
+        __mi_printf("[Table creation] Could not mmap space for SIZES: %s\n",
+                    strerror(errno));
+        __mi_fail();
+    }
+
+    // Create a file which backs the mapping of the virtual addresses
+    int fd = __lowfat_create_file("sizes_and_magics", __lowfat_page_size);
+
+    // Skip the first page, as this is a non-fat region
+    int number_of_pages_required_for_sizes_table = 1;
+    void *current_page_address =
+        (uint8_t *)SIZES_ADDRESS +
+        __lowfat_page_size * number_of_pages_required_for_sizes_table;
+    // Compute where our mmaped memory ends
+    void *past_last_page = (uint8_t *)SIZES_ADDRESS + len;
+
+    int allow_write = 1;
+    while (current_page_address < past_last_page) {
+        int flags = PROT_READ;
+        if (allow_write) {
+            flags |= PROT_WRITE;
+        }
+        void *mapped = mmap(current_page_address, __lowfat_page_size, flags,
+                            MAP_NORESERVE | MAP_FIXED | MAP_SHARED, fd, 0);
+        if (mapped != current_page_address) {
+            __mi_printf(
+                "[Table creation] Could not alias space for SIZES: %s\n",
+                strerror(errno));
+            __mi_fail();
+        }
+        current_page_address += __lowfat_page_size;
+        allow_write = 0;
+    }
+    if (close(fd) < 0) {
+        __mi_printf("[Table creation] Failed to close fd for SIZES: %s\n",
+                    strerror(errno));
+        __mi_fail();
+    }
+
+    size_t *sizes_base_ptr = (size_t *)SIZES_ADDRESS;
+    // Initialize the sizes
+    // Start with region index zero; it should contain a wide upper bound as
+    size_t index = 0;
+    sizes_base_ptr[index] = SIZE_MAX;
+    index++;
+    // Store the sizes for every lowfat region
+    for (size_t j = 0; j < NUM_REGIONS; j++) {
+        // Compute the size on the fly.
+        // We have powers of two, so 2^(MIN_ALLOC_SIZE_LOG + j) computes the
+        // correct power.
+        sizes_base_ptr[index] = 1ULL << (MIN_ALLOC_SIZE_LOG + j);
+        index++;
+    }
+    // Fill the rest of the sizes table with SIZE_MAX values for non-lowfat
+    // allocations
+    while (((uintptr_t)(sizes_base_ptr + index) % __lowfat_page_size) > 0) {
+        sizes_base_ptr[index] = SIZE_MAX;
+        index++;
+    }
+    for (size_t j = 0; j < __lowfat_page_size / sizeof(size_t); j++) {
+        sizes_base_ptr[index] = SIZE_MAX;
+        index++;
+    }
+
+    // Protect the sizes from modifications
+    if (mprotect((void *)sizes_base_ptr, len, PROT_READ)) {
+        __mi_printf("[Table creation] Failed to protect SIZES: %s\n",
+                    strerror(errno));
+        __mi_fail();
+    }
+
+    // Generate the magics
+    void *mag_mapped =
+        mmap((void *)MAGICS_ADDRESS, len, PROT_READ | PROT_WRITE,
+             MAP_NORESERVE | MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    if (mag_mapped != (void *)MAGICS_ADDRESS) {
+        __mi_printf("[Table creation] Could not mmap space for MAGICS: %s\n",
+                    strerror(errno));
+        __mi_fail();
+    }
+
+    // Initialize them
+    uint64_t *magics_base_ptr = (uint64_t *)MAGICS_ADDRESS;
+
+    uint64_t idx = 0;
+    // Region zero is not lowfat, so store zero
+    magics_base_ptr[idx] = 0;
+    idx++;
+    // Store the masks for all valid regions
+    for (size_t j = 0; j < NUM_REGIONS; j++) {
+        magics_base_ptr[idx] = UINT64_MAX << (MIN_ALLOC_SIZE_LOG + j);
+        idx++;
+    }
+    // The rest is not lowfat, and should hence be zero
+    while (((uintptr_t)(magics_base_ptr + idx) % __lowfat_page_size) > 0) {
+        magics_base_ptr[idx] = 0;
+        idx++;
+    }
+    // As the mapped memory is MAP_ANONYMOUS, its default value is zero and we
+    // do not initialize the rest here.
+
+    // Protect the magics from modifications
+    if (mprotect((void *)magics_base_ptr, len, PROT_READ)) {
+        __mi_printf("[Table creation] Failed to protect MAGICS: %s\n",
+                    strerror(errno));
+        __mi_fail();
+    }
 }
 
 /// A pointer to the environment variables, defined in unistd.h.
@@ -571,6 +750,8 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
 
+    __lowfat_create_tables_for_sizes_and_magics();
+
     // Create heap regions for each size
     for (unsigned i = 0; i < NUM_REGIONS; i++) {
         uintptr_t region_address = (i + 1) * REGION_SIZE + HEAP_REGION_OFFSET;
@@ -591,11 +772,12 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     }
 
     // Create stack regions for each size
+    int fd = __lowfat_create_file("stack", STACK_REGION_SIZE);
     for (unsigned i = 0; i < NUM_REGIONS; i++) {
         uintptr_t region_address = (i + 1) * REGION_SIZE + STACK_REGION_OFFSET;
         stack_regions[i] = mmap(
             (void *)region_address, STACK_REGION_SIZE, PROT_READ | PROT_WRITE,
-            MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, -1, 0);
+            MAP_ANONYMOUS | MAP_SHARED | MAP_NORESERVE, fd, 0);
 
         // Make sure we mmaped the requested region
         if ((uintptr_t)stack_regions[i] != region_address) {
@@ -606,6 +788,11 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
         }
         __mi_debug_printf("Allocated stack region %p (num %d size %llu)\n",
                           (void *)region_address, i, STACK_REGION_SIZE);
+    }
+
+    if (close(fd) < 0) {
+        __mi_printf("[Stack aliasing] Closing failed");
+        __mi_fail();
     }
     __mi_debug_printf("Allocated the stack\n");
 

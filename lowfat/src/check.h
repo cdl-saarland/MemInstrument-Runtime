@@ -16,6 +16,9 @@ int64_t __lowfat_lookup_stack_offset(int index);
 void *__lowfat_compute_aligned(void *ptr, int index);
 void *__lowfat_get_mirror(void *ptr, int64_t offset);
 
+// Returns 1 if the pointer is lowfat, zero otherwise
+int __is_lowfat(void *ptr);
+
 /*** interface for LLVM ***/
 
 // lower/upper bound functions for Tina's tool PICO
