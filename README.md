@@ -10,6 +10,7 @@ The instrumentation mechanisms and their build process are designed for/tested u
 
 * [Clang](https://clang.llvm.org/)
 * [GNU Make](https://www.gnu.org/software/make/)
+* Individual mechanisms may require more dependencies, see their `README.md`
 
 All instrumentation mechanisms are built when executing
 
@@ -22,6 +23,19 @@ The generated libraries can be found in `lib`.
 You can also selectively build only some mechanisms by entering their directory and executing `make`.
 The Makefile supports a `make clean` target to clean up old builds.
 Some instrumentations offer more targets, see their `README.md` for more details.
+
+### Build with Link-Time Optimization (LTO)
+
+The libraries can be built LTO friendly.
+The [LLVMgold plugin](http://llvm.org/docs/GoldPlugin.html) is necessary to do so.
+Follow the instructions on "How to build it".
+The steps on "Build the LLVMgold plugin" will generate `LLVMgold.so`, which you should find in the `lib` directory of your LLVM build.
+You have to set the environment variable `LLVM_GOLD` to this library, and make will automatically build the additional library in `ltobuild`, which can be used with LTO.
+
+```
+export LLVM_GOLD=<PATH_TO>/LLVMgold.so
+make
+```
 
 ## Structure
 
@@ -63,6 +77,23 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 * `shared`
 
     The `shared` folder contains functionality that is shared between the mechanisms, such as error reporting and statistics functions.
+
+## Testing
+
+In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `MIRT_IGNORE_LLVM_TOOLING`.
+This avoids instrumenting the time measurement tools, which are built with the same compiler as the benchmarks.
+
+## Debugging
+
+If you encounter issues with this library and you are eager to debug it, you can build it with `MIRT_DEBUG`.
+Be aware that this can cause a lot of output.
+
+## Statistics
+
+Statistic tracking can be enabled with `MIRT_STATISTICS`.
+The results can be found in the `mi_stats.txt` file.
+
+Note that statistic tracking influences the program execution time and should therefore be disabled for performance runs.
 
 ## Contributions
 

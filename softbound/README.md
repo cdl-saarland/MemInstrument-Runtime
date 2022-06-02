@@ -3,10 +3,9 @@
 This repository is a fork from a modified version of the run-time of [SoftBound+CETS 3.9](https://github.com/santoshn/SoftBoundCETS-3.9).
 The C-sources are compiled to a stand-alone library for usage with SoftBound-instrumented programs.
 
-## Requirements
+## Additional Requirements
 
 * [Exuberant Ctags](http://ctags.sourceforge.net/) or [Universal Ctags](https://github.com/universal-ctags/ctags)
-* [GNU Make](https://www.gnu.org/software/make/) (untested with other build tools)
 
 ## Build instructions
 
@@ -18,19 +17,6 @@ make
 
 in this directory.
 The Makefile supports `make clean` to clean the build directory.
-
-### Build with Link-Time Optimization (LTO)
-
-The library can be built LTO friendly.
-The [LLVMgold plugin](http://llvm.org/docs/GoldPlugin.html) is necessary to do so.
-Follow the instructions on "How to build it".
-The steps on "Build the LLVMgold plugin" will generate `LLVMgold.so`, which you should find in the `lib` directory of your LLVM build.
-You have to set the environment variable `LLVM_GOLD` to this library, and make will automatically build the additional library `ltobuild/libsoftboundcets_rt.a`, which can be used with LTO.
-
-```
-export LLVM_GOLD=<PATH_TO>/LLVMgold.so
-make
-```
 
 ## Configurations
 
@@ -60,28 +46,15 @@ If you are ok with out-of-bounds pointers from which zero byte are read or writt
 
 Example which we encountered: `memcpy(dest, src, val)`, where `val` became `0` at some point and `src`/`dest` were out of bounds.
 
-### Testing
+### Testing, Debugging, Statistics
 
-In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `MIRT_IGNORE_LLVM_TOOLING`.
-This avoids instrumenting the time measurement tools, which are built with the same compiler as the benchmarks.
-
-### Debugging
-
-If you encounter issues with this library and you are eager to debug it, you can build it with `MIRT_DEBUG`.
-Be aware that this can cause a lot of output, especially on memory intense programs.
-
-### Statistics
+The runtime libraries use common functionality for testing, debugging, and statistic counters. Please refer to the top-level `README.md` for general information about them.
 
 The library can currently track three kinds of statistics:
 
 * The number of load+store dereference checks executed at run-time.
 * The number of memcpy+memset checks executed at run-time.
 * The number of external checks executed (this will be zero for the ordinary SoftBound instrumentation) executed at run-time.
-
-Statistic tracking can be enabled with `MIRT_STATISTICS`.
-The results can be found in the `mi_stats.txt` file.
-
-Note that statistic tracking influences the program execution time and should therefore be disabled for performance runs.
 
 ## Playing well with the instrumentation
 
