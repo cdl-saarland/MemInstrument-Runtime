@@ -71,11 +71,11 @@ build-dir:
 
 sizes-header-and-linker-script: | build-dir
 	@echo "===> Generate sizes header and linker script"
-	./generate_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --scriptname ${LINKER_SCRIPT}
+	./generate_sizes_header_and_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --scriptname ${LINKER_SCRIPT}
 
 sizes-header-and-lto-linker-script: | lto-build-dir
 	@echo "===> Generate sizes header and linker script"
-	./generate_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --lto-scriptname ${LTO_LINKER_SCRIPT}
+	./generate_sizes_header_and_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --lto-scriptname ${LTO_LINKER_SCRIPT}
 
 static: sizes-header-and-linker-script ${STAT_LIB}
 

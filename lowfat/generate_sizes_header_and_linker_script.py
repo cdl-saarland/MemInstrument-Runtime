@@ -248,7 +248,8 @@ def bytes_to_gib(bytes_value):
     return bytes_value / Decimal(1024*1024*1024)
 
 
-def get_section_definition(region, region_base, region_size, region_size_gib, is_read_only, use_assertion):
+def get_section_definition(region, region_base, region_size, region_size_gib,
+                           is_read_only, use_assertion):
     """
     Generate a string that describes the section with the given properties.
     """
@@ -359,7 +360,8 @@ def replace_call(name, line, verbose):
 
 def get_gold_compat_default_linker_script(verbose):
     """
-    Lookup the default linker script and replace parts that are not compatible to gold.
+    Lookup the default linker script and replace parts that are not compatible
+    to gold.
     """
     lines = get_default_linker_script_lines()
 
@@ -420,7 +422,9 @@ def generate_lto_linker_script(config_dict, linker_script_name, verbose):
         open_file.write(result_str)
 
 
-def generate_sizes_header_and_linker_script(config_file, sizes_path, script_path, lto_script_path, verbose):
+def generate_sizes_header_and_linker_script(config_file, sizes_path,
+                                            script_path, lto_script_path,
+                                            verbose):
     """
     Generate the header file for C/C++ with the configured sizes.
     Additionally generate a linker script for correctly placing global variables
