@@ -78,6 +78,17 @@ This gives a brief overview of the mechanisms, for more details please refer to 
 
     The `shared` folder contains functionality that is shared between the mechanisms, such as error reporting and statistics functions.
 
+## Configuration
+
+* `MIRT_REPORT_PTR_OVERFLOW`:
+While computing a runtime check, it might happen that a pointer overflow occurs.
+
+    A maliciously crafted pointer could be close the maximal available pointer value, and adding the access width to this value would result in an overflow and not trigger a memory safety violation.
+    A related problem is that the access width might be very large (e.g., for memcpy), and thereby trigger an overflow.
+    Usually, an access to such a large "pointer value" causes an error reported by the OS.
+
+    The checks of Low-Fat Pointer and SoftBoundCETS can be extended to check for this corner case with `MIRT_REPORT_PTR_OVERFLOW`. Note that this is costly in terms of runtime: Upon every memory access, an additional comparison is required.
+
 ## Testing
 
 In case you want to use the [llvm testing infrastructure](https://llvm.org/docs/lnt/quickstart.html), make sure to compile this library with `MIRT_IGNORE_LLVM_TOOLING`.

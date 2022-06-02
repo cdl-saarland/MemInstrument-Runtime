@@ -51,7 +51,10 @@ __WEAK_INLINE void __softboundcets_spatial_dereference_check(
     // If size is larger than our bound, the access width is certainly larger
     // than the allocation and therefore invalid. This also ensures that the
     // subtraction will result in a meaningful value.
-    if ((uintptr_t)size_of_type > (uintptr_t)bound ||
+    if (
+#ifdef MIRT_REPORT_PTR_OVERFLOW
+        (uintptr_t)size_of_type > (uintptr_t)bound ||
+#endif
         (uintptr_t)ptr < (uintptr_t)base ||
         (uintptr_t)ptr > ((uintptr_t)bound - (uintptr_t)size_of_type)) {
 #if __SOFTBOUNDCETS_NOERRORMISSINGBOUNDS

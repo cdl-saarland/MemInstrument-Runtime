@@ -78,9 +78,12 @@ void __lowfat_check_deref(void *witness_base, void *ptr, size_t size) {
 
     uint64_t index = __lowfat_ptr_index(witness_base);
     uint64_t alloc_size = __lowfat_ptr_size(index);
-    if ( // alloc_size < size ||
+    if (
+#ifdef MIRT_REPORT_PTR_OVERFLOW
+        alloc_size < size ||
+#endif
         (size_t)((uintptr_t)ptr - (uintptr_t)witness_base) >
-        (size_t)(alloc_size - size)) {
+            (size_t)(alloc_size - size)) {
         __mi_debug_printf(
             "Error with\n\tPtr:\t%p, base %p, size %u, width %u\n", ptr,
             __lowfat_get_lower_bound(ptr),
@@ -102,7 +105,10 @@ void __lowfat_check_deref_inner_witness(void *witness, void *ptr, size_t size) {
     uint64_t index = __lowfat_ptr_index(witness);
     uint64_t alloc_size = __lowfat_ptr_size(index);
     uintptr_t alloc_base = __lowfat_ptr_base(witness, index);
-    if ( // alloc_size < size ||
+    if (
+#ifdef MIRT_REPORT_PTR_OVERFLOW
+        alloc_size < size ||
+#endif
         (size_t)((uintptr_t)ptr - alloc_base) > (size_t)(alloc_size - size)) {
         __mi_debug_printf(
             "Error with\n\tPtr:\t%p, base %p, size %u, width %u\n", ptr,
