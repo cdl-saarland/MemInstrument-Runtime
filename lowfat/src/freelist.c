@@ -1,15 +1,13 @@
 #include "freelist.h"
 
 #include "LFSizes.h"
+#include "core.h"
 #include "statistics.h"
 
 #include <stdlib.h>
 #include <sys/mman.h>
 
 extern uint64_t __lowfat_page_size;
-
-int __lowfat_is_aligned(uint64_t value, uint64_t alignment);
-uint64_t __lowfat_ptr_size(uint64_t index);
 
 // represents an element in a free list
 typedef struct Element {

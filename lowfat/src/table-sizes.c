@@ -1,12 +1,15 @@
-#include "check.h"
+#include "core.h"
 
 #include "LFSizes.h"
 #include "fail_function.h"
+#include "lowfat-defines.h"
 #include "statistics.h"
 
-#include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
+
+#if MIRT_LF_TABLE
+
+//===------------------- Determine Base/Index/Size ------------------------===//
 
 uint64_t __lowfat_ptr_index(void *ptr) {
     return (uint64_t)ptr >> REGION_SIZE_LOG;
@@ -25,22 +28,26 @@ uint64_t __lowfat_ptr_size(uint64_t index) {
     return ((uint64_t *)SIZES_ADDRESS)[index];
 }
 
-// TODO think about making the stack functions computation based rather than
-// performing the lookup (as index/base/size)
-uint64_t __lowfat_lookup_stack_size(int index) { return STACK_SIZES[index]; }
+uint64_t __lowfat_index_for_size(size_t size) {
+    // We determine the index by counting leading zeros. A small size has many
+    // leading zeros, and hence a large clz value. We subtract this from 64 to
+    // get a small index for a large clz value. Additionally, we have to
+    // consider that all allocations which are smaller than the smallest
+    // allocation size are rounded up, and so also placed in region one. The
+    // succeeding region indices are thereby also shifted by this amount.
+    int diff = 64 - __builtin_clzll(size);
+    int index = diff - MIN_ALLOC_SIZE_LOG;
 
-int64_t __lowfat_lookup_stack_offset(int index) { return STACK_OFFSETS[index]; }
+    // Handle all cases that map to the smallest allocation size
+    if (index <= 0) {
+        return 1;
+    }
 
-void *__lowfat_compute_aligned(void *ptr, int index) {
-    void *alignedPtr = (void *)((uintptr_t)ptr & STACK_MASKS[index]);
-    __mi_debug_printf("Pointer %p aligned is %p\n", ptr, alignedPtr);
-    return alignedPtr;
-}
+    if (!__lowfat_is_power_of_2(size)) {
+        index++;
+    }
 
-void *__lowfat_get_mirror(void *ptr, int64_t offset) {
-    void *mirror = (void *)((uintptr_t)ptr + offset);
-    __mi_debug_printf("Mirror of %p is %p\n", ptr, mirror);
-    return mirror;
+    return index;
 }
 
 int __is_lowfat(void *ptr) {
@@ -50,22 +57,9 @@ int __is_lowfat(void *ptr) {
     return 0;
 }
 
-void *__lowfat_get_lower_bound(void *ptr) {
-    STAT_INC(NumGetLower)
-    return (void *)__lowfat_ptr_base_without_index(ptr);
-}
+uint64_t __lowfat_get_zero_based_index(uint64_t index) { return index - 1; }
 
-void *__lowfat_get_upper_bound(void *ptr) {
-    STAT_INC(NumGetUpper)
-    // TODO This could be faster in the non-fat case, maybe optimize it
-    uint64_t index = __lowfat_ptr_index(ptr);
-    uintptr_t base = __lowfat_ptr_base(ptr, index);
-    if (base) {
-        return (void *)(base + __lowfat_ptr_size(index));
-    }
-
-    return (void *)WIDE_UPPER;
-}
+//===----------------------------- Checks ---------------------------------===//
 
 void __lowfat_check_deref(void *witness_base, void *ptr, size_t size) {
     STAT_INC(NumDerefChecks);
@@ -141,3 +135,24 @@ void __lowfat_check_oob(void *witness, void *ptr) {
         __mi_fail_with_msg("Outflowing out-of-bounds pointer!\n");
     }
 }
+
+//===------------------------- Explicit Bounds ----------------------------===//
+
+void *__lowfat_get_lower_bound(void *ptr) {
+    STAT_INC(NumGetLower)
+    return (void *)__lowfat_ptr_base_without_index(ptr);
+}
+
+void *__lowfat_get_upper_bound(void *ptr) {
+    STAT_INC(NumGetUpper)
+    // TODO This could be faster in the non-fat case, maybe optimize it
+    uint64_t index = __lowfat_ptr_index(ptr);
+    uintptr_t base = __lowfat_ptr_base(ptr, index);
+    if (base) {
+        return (void *)(base + __lowfat_ptr_size(index));
+    }
+
+    return (void *)WIDE_UPPER;
+}
+
+#endif

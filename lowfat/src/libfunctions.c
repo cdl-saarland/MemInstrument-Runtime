@@ -1,6 +1,8 @@
 #include "LFSizes.h"
+#include "core.h"
 #include "fail_function.h"
 #include "freelist.h"
+#include "lowfat-defines.h"
 #include "statistics.h"
 
 #include <errno.h>
@@ -19,14 +21,6 @@
 
 // mutex for locking
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/*
- * framework to override standard c functions is taken from Fabian's
- * libfunctions.c in the splay approach
- */
-uint64_t __is_lowfat(void *ptr);
-uint64_t __lowfat_ptr_index(void *ptr);
-uint64_t __lowfat_ptr_size(uint64_t index);
 
 // system-dependent, but often 4KB
 uint64_t __lowfat_page_size;
@@ -107,41 +101,6 @@ void initDynamicFunctions(void) {
     }
 }
 
-/* alignment must be a power of 2
- * returns 1 if value is a multiple of alignment, otherwise 0
- */
-int __lowfat_is_aligned(uint64_t value, uint64_t alignment) {
-    return (value & (alignment - 1)) == 0;
-}
-
-/*
- * returns 1 if value is a power of 2, otherwise 0
- */
-static int is_power_of_2(size_t value) {
-    return value != 0 && (value & (value - 1)) == 0;
-}
-
-/*
- * returns the index of the low-fat region that is appropriate for size
- */
-static unsigned compute_size_index(size_t size) {
-    // get the index of the next higher power of 2 by counting leading zeros
-    // Note: this only works, if there are no powers of 2 skipped
-    int diff = (64 - __builtin_clzll(size));
-    int index = diff - MIN_ALLOC_SIZE_LOG;
-
-    // Handle all cases that map to the smallest allocation size
-    if (index <= 0) {
-        return 1;
-    }
-
-    if (!is_power_of_2(size)) {
-        index++;
-    }
-
-    return index;
-}
-
 /**
  * Lowfat allocator
  *
@@ -170,8 +129,8 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return NULL;
     }
 
-    unsigned region_index = compute_size_index(padded_size);
-    unsigned zero_based_index = region_index - 1;
+    unsigned region_index = __lowfat_index_for_size(padded_size);
+    unsigned zero_based_index = __lowfat_get_zero_based_index(region_index);
 
     pthread_mutex_lock(&mutex);
 
@@ -186,15 +145,20 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
     }
 
     size_t allocation_size = __lowfat_ptr_size(region_index);
+    __mi_debug_printf("Incoming size: %d\nSize to be allocated: %d\nRegion "
+                      "index: %d\nZero-based region index: %d\n",
+                      size, allocation_size, region_index, zero_based_index);
     void *res = regions[zero_based_index];
 
     // for unaligned allocations this loop finishes in the first iteration
     while (1) {
 
         // check if there is still fresh space left in this region
-        if ((uintptr_t)res >= (region_index + 1) * REGION_SIZE) {
+        if ((uintptr_t)res >= (zero_based_index + 2) * REGION_SIZE) {
             STAT_INC(NumFullRegionNonFatAllocs);
             pthread_mutex_unlock(&mutex);
+            __mi_debug_printf("Region %d is full, using fall-back allocator\n",
+                              region_index);
             return NULL;
         }
 
@@ -206,6 +170,7 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
 
             regions[zero_based_index] = res + allocation_size;
             pthread_mutex_unlock(&mutex);
+            __mi_debug_printf("Allocated address: %p\n", res);
             return res;
         }
 
@@ -225,7 +190,8 @@ static void internal_free(void *p) {
     if (__is_lowfat(p)) {
         pthread_mutex_lock(&mutex);
         STAT_INC(NumLowFatFrees);
-        __lowfat_free_list_push(__lowfat_ptr_index(p) - 1, p);
+        __lowfat_free_list_push(
+            __lowfat_get_zero_based_index(__lowfat_ptr_index(p)), p);
         pthread_mutex_unlock(&mutex);
     } else
         free_found(p);
@@ -338,7 +304,8 @@ void *aligned_alloc(size_t alignment, size_t size) {
     hooks_active = 0;
     void *res;
 
-    if (!is_power_of_2(alignment) || !__lowfat_is_aligned(size, alignment)) {
+    if (!__lowfat_is_power_of_2(alignment) ||
+        !__lowfat_is_aligned(size, alignment)) {
         STAT_INC(NumNonPowTwoAllocs);
         errno = EINVAL;
         res = NULL;
@@ -346,8 +313,9 @@ void *aligned_alloc(size_t alignment, size_t size) {
         // since size must be a multiple of alignment here, we can simply
         // use the normal allocation routine
         res = lowfat_alloc(size);
-        if (res == NULL)
+        if (res == NULL) {
             res = aligned_alloc_found(alignment, size);
+        }
     }
 
     hooks_active = 1;
@@ -367,17 +335,18 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
     void *res = NULL;
 
     // check valid parameters
-    if (!is_power_of_2(alignment) ||
+    if (!__lowfat_is_power_of_2(alignment) ||
         !__lowfat_is_aligned(alignment, sizeof(void *))) {
         STAT_INC(NumNonPowTwoAllocs);
         err_status = EINVAL;
     } else {
         res = lowfat_aligned_alloc(size, alignment);
 
-        if (res == NULL)
+        if (res == NULL) {
             err_status = posix_memalign(memptr, alignment, size);
-        else
+        } else {
             *memptr = res;
+        }
     }
 
     hooks_active = 1;
@@ -395,14 +364,15 @@ void *memalign(size_t alignment, size_t size) {
     hooks_active = 0;
     void *res;
 
-    if (!is_power_of_2(alignment)) {
+    if (!__lowfat_is_power_of_2(alignment)) {
         STAT_INC(NumNonPowTwoAllocs);
         errno = EINVAL;
         res = NULL;
     } else {
         res = lowfat_aligned_alloc(size, alignment);
-        if (res == NULL)
+        if (res == NULL) {
             res = memalign_found(alignment, size);
+        }
     }
 
     hooks_active = 1;
@@ -421,8 +391,9 @@ void *valloc(size_t size) {
     void *res;
 
     res = lowfat_aligned_alloc(size, __lowfat_page_size);
-    if (res == NULL)
+    if (res == NULL) {
         res = valloc_found(size);
+    }
 
     hooks_active = 1;
     return res;
@@ -442,8 +413,9 @@ void *pvalloc(size_t size) {
     size_t rounded_size =
         (size + __lowfat_page_size - 1) & ~(__lowfat_page_size - 1);
     res = lowfat_alloc(rounded_size);
-    if (res == NULL)
+    if (res == NULL) {
         res = pvalloc_found(size);
+    }
 
     hooks_active = 1;
     return res;
@@ -458,8 +430,9 @@ void free(void *p) {
 
     hooks_active = 0;
 
-    if (p != NULL)
+    if (p != NULL) {
         internal_free(p);
+    }
 
     hooks_active = 1;
     return;
@@ -513,6 +486,8 @@ static int __lowfat_create_file(char *name, size_t size) {
     }
     return fd;
 }
+
+#if MIRT_LF_TABLE
 
 static void __lowfat_create_tables_for_sizes_and_magics() {
 
@@ -633,6 +608,8 @@ static void __lowfat_create_tables_for_sizes_and_magics() {
     }
 }
 
+#endif
+
 /// A pointer to the environment variables, defined in unistd.h.
 extern char **environ;
 
@@ -750,7 +727,9 @@ int __libc_start_main(int *(main)(int, char **, char **), int argc,
     // set up statistics counters etc.
     __setup_statistics(ubp_av[0]);
 
+#if MIRT_LF_TABLE
     __lowfat_create_tables_for_sizes_and_magics();
+#endif
 
     // Create heap regions for each size
     for (unsigned i = 0; i < NUM_REGIONS; i++) {

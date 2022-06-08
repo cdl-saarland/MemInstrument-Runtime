@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "check.h"
+#include "core.h"
 
 // Test: Access on OOB element
 int test_basic_check(void) {

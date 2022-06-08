@@ -6,6 +6,18 @@ This is a run-time implementation of the Low-Fat Pointers approach proposed by D
 
 This implementation only supports power-of-two allocation sizes. The smallest/largest allocation size is configurable, as well as the region sizes for heap/stack/globals.
 
+### Look-up table vs. recomputing sizes
+
+This implementation provides two ways on how to compute the size and base for a given pointer.
+
+1) Based on tables (`MIRT_LF_TABLE`): This is proposed in the original publication, and mmaps the `SIZES` and `MAGICS` arrays to fixed memory locations on program startup. The computation of base/size involves memory accesses to these tables.
+
+2) Computation based (`MIRT_LF_COMPUTED_SIZE`): Instead of looking up the base/size in tables, the information is recomputed from the address (this is possible due to the powers-of-two restriction).
+
+The advantage of the first configuration is, that non-low-fat pointers map to wide bounds in the tables, and can hence be used equal to low-fat pointers. This is not the case for 2., as the result of the computation is meaningless for non-fat pointers. Hence, the second option requires a slightly modified low-fat check, which introduces an additional code path.
+
+In our evaluations option 2. turned out to incur a higher runtime overhead than 1., hence 1. is the default setting.
+
 ### Config file options
 
 The configuration file for Low-Fat Pointers is `lf_config.json`.
