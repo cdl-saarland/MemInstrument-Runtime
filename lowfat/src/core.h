@@ -1,9 +1,9 @@
 #pragma once
 
+#include "lowfat-defines.h"
+
 #include <stddef.h>
 #include <stdint.h>
-
-#include "lowfat-defines.h"
 
 //===----------------------------------------------------------------------===//
 //                         Determine Base/Index/Size

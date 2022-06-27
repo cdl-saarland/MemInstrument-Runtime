@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -488,6 +489,16 @@ static int __lowfat_create_file(char *name, size_t size) {
 }
 
 #if MIRT_LF_TABLE
+
+static_assert(
+    NUM_REGIONS - 1 + MIN_ALLOC_SIZE_LOG <
+        sizeof(unsigned long long) * CHAR_BIT,
+    "The LowFat table will be filled with powers of two, computed by a shift. "
+    "This check ensures that the given configuration will not result in an "
+    "invalid shift. If this assertion is triggered, you will likely have "
+    "selected a huge amount of regions (allowing very large allocation sizes, "
+    "in the order of EiB), or a very large smallest allocation size. Use a "
+    "smaller MIN_ALLOC_SIZE or MAX_(HEAP/STACK/GLOBAL)_ALLOC_SIZE.");
 
 static void __lowfat_create_tables_for_sizes_and_magics() {
 
