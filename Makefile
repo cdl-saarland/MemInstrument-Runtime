@@ -1,10 +1,10 @@
-.PHONY: all clean splay lowfat sleep rt_stat softbound
+.PHONY: all clean splay lowfat sleep rt-stat softbound
 
-all: splay lowfat sleep rt_stat softbound
+all: splay lowfat sleep rt-stat softbound
 
-clean: splay_clean lowfat_clean sleep_clean rt_stat_clean softbound_clean
+clean: splay-clean lowfat-clean sleep-clean rt-stat-clean softbound-clean
 
-format: splay_format lowfat_format sleep_format rt_stat_format softbound_format shared_format
+format: splay-format lowfat-format sleep-format rt-stat-format softbound-format shared-format
 
 splay:
 	$(MAKE) -C splay
@@ -15,41 +15,41 @@ lowfat:
 sleep:
 	$(MAKE) -C sleep
 
-rt_stat:
+rt-stat:
 	$(MAKE) -C rt_stat
 
 softbound:
 	$(MAKE) -C softbound
 
-splay_clean:
+splay-clean:
 	$(MAKE) clean -C splay
 
-lowfat_clean:
+lowfat-clean:
 	$(MAKE) clean -C lowfat
 
-sleep_clean:
+sleep-clean:
 	$(MAKE) clean -C sleep
 
-rt_stat_clean:
+rt-stat-clean:
 	$(MAKE) clean -C rt_stat
 
-softbound_clean:
+softbound-clean:
 	$(MAKE) clean -C softbound
 
-splay_format:
+splay-format:
 	$(MAKE) format -C splay
 
-lowfat_format:
+lowfat-format:
 	$(MAKE) format -C lowfat
 
-sleep_format:
+sleep-format:
 	$(MAKE) format -C sleep
 
-rt_stat_format:
+rt-stat-format:
 	$(MAKE) format -C rt_stat
 
-softbound_format:
+softbound-format:
 	$(MAKE) format -C softbound
 
-shared_format:
+shared-format:
 	$(MAKE) format -C shared
