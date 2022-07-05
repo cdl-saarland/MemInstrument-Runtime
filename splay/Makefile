@@ -38,7 +38,8 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(SHARED_SRC:.c
 
 DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
-ifneq ($(LLVM_GOLD),)
+# Automatically build the lto compatible library if gold is available
+ifdef LLVM_GOLD
 all: lto-static
 endif
 
@@ -105,7 +106,12 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SRC)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SRC),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(var:.c=.lto.o)};)
 
-lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
+gold-available:
+ifndef LLVM_GOLD
+	$(error Cannot find the shared gold library. Set LLVM_GOLD to build the lto libs)
+endif
+
+lto-static: gold-available lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) ${LTO_LIB} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 

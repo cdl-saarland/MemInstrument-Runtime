@@ -2,6 +2,8 @@
 
 all: splay lowfat sleep rt-stat softbound
 
+lto: splay-lto lowfat-lto softbound-lto
+
 clean: splay-clean lowfat-clean sleep-clean rt-stat-clean softbound-clean
 
 format: splay-format lowfat-format sleep-format rt-stat-format softbound-format shared-format
@@ -20,6 +22,15 @@ rt-stat:
 
 softbound:
 	$(MAKE) -C softbound
+
+splay-lto:
+	$(MAKE) lto-static -C splay
+
+lowfat-lto:
+	$(MAKE) lto-static -C lowfat
+
+softbound-lto:
+	$(MAKE) lto-static -C softbound
 
 splay-clean:
 	$(MAKE) clean -C splay

@@ -34,13 +34,8 @@ all: static dynamic exports
 
 exports: cxx-header
 
-# If LLVM_GOLD is set, also build a library for use with LTO
-#
-# Note that the name of the library is hardcoded in the compiler. Thus, we call
-# it the same, but put it in the lto/ subdirectory. To use it, pass
-# -L/path/to/softboundcets-lib/lto to the compiler, and use -flto during
-# compilation and linking
-ifneq ($(LLVM_GOLD),)
+# Automatically build the lto compatible library if gold is available
+ifdef LLVM_GOLD
 all: lto-static
 endif
 
@@ -64,7 +59,10 @@ ${BUILD_DIR}/compile_commands.json: $(COMPDB_ENTRIES)
 	@echo "]" >> $@
 	@rm $@.tmp
 
-gen-compile-commands: ${BUILD_DIR}/compile_commands.json
+build-dir:
+	@mkdir -p ${BUILD_DIR}
+
+gen-compile-commands: build-dir ${BUILD_DIR}/compile_commands.json
 	@for f in $(COMPDB_ENTRIES); do rm $$f; done
 	@echo "'compile_commands.json' sucessfully generated"
 
@@ -77,7 +75,6 @@ cxx-header: gen-compile-commands
 # Compile without LTO static or dynamic
 $(OBJECTS): $(SOURCES)
 	@echo "===> CC"
-	@mkdir -p ${BUILD_DIR}
 	$(foreach var,$(SOURCES),$(CLANG) $(ALL_CFLAGS) -c $(var) -o ${subst $(SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
 $(SHARED_OBJECTS): $(SHARED_SOURCES)
@@ -85,7 +82,7 @@ $(SHARED_OBJECTS): $(SHARED_SOURCES)
 	@mkdir -p ${BUILD_DIR}
 	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(ALL_CFLAGS) -c $(var) -o ${subst $(SHARED_SRC_DIR),$(BUILD_DIR),$(var:.c=.o)};)
 
-static: $(OBJECTS) $(SHARED_OBJECTS) exports
+static: build-dir $(OBJECTS) $(SHARED_OBJECTS) exports
 	@echo "===> MAKE STATIC"
 	ar $(ARFLAGS) ${BUILD_DIR}/${STAT_LIB_NAME} $(OBJECTS) $(SHARED_OBJECTS)
 
@@ -106,7 +103,12 @@ ${LTO_SHARED_OBJECTS}: $(SHARED_SOURCES)
 	@echo "===> CC LTO Shared"
 	$(foreach var,$(SHARED_SOURCES),$(CLANG) $(ALL_CFLAGS) -flto -c $(var) -o ${subst $(SHARED_SRC_DIR),$(LTO_DIR),$(var:.c=.lto.o)};)
 
-lto-static: lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
+gold-available:
+ifndef LLVM_GOLD
+	$(error Cannot find the shared gold library. Set LLVM_GOLD to build the lto libs)
+endif
+
+lto-static: gold-available lto-build-dir ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS} exports
 	@echo "===> MAKE LTO STATIC"
 	ar --plugin=$(LLVM_GOLD) $(ARFLAGS) $(LTO_DIR)/${STAT_LIB_NAME} ${LTO_OBJECTS} ${LTO_SHARED_OBJECTS}
 
