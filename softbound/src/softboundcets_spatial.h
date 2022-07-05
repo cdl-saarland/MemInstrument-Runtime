@@ -1,7 +1,7 @@
 #ifndef SOFTBOUNDCETS_SPATIAL_H
 #define SOFTBOUNDCETS_SPATIAL_H
 
-#include "softboundcets-defines.h"
+#include "softboundcets_defines.h"
 
 // All functions in this header are there to support spatial memory safety.
 // If the runtime is not configured to ensure spatial safety, these functions

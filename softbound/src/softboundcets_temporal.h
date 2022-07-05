@@ -1,7 +1,7 @@
 #ifndef SOFTBOUNDCETS_TEMPORAL_H
 #define SOFTBOUNDCETS_TEMPORAL_H
 
-#include "softboundcets-defines.h"
+#include "softboundcets_defines.h"
 
 // All functions in this header are there to support temporal memory safety.
 // If the runtime is not configured to ensure temporal safety, these functions

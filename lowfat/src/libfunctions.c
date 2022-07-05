@@ -2,7 +2,7 @@
 #include "core.h"
 #include "fail_function.h"
 #include "freelist.h"
-#include "lowfat-defines.h"
+#include "lowfat_defines.h"
 #include "statistics.h"
 
 #include <errno.h>

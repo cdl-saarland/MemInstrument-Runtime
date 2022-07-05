@@ -173,7 +173,7 @@ def main():
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
-    list_of_source_files = [script_dir / "src" / "softboundcets-wrappers.c"]
+    list_of_source_files = [script_dir / "src" / "softboundcets_wrappers.c"]
 
     # Generate the directory where the auto-generated header is put
     out_dir = script_dir / ".." / "include" / "meminstrument-rt"

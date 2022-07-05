@@ -1,7 +1,7 @@
 #ifndef SOFTBOUNDCETS_COMMON_H
 #define SOFTBOUNDCETS_COMMON_H
 
-#include "softboundcets-defines.h"
+#include "softboundcets_defines.h"
 
 // 2^23 entries each will be 8 bytes each
 static const size_t __SOFTBOUNDCETS_TRIE_PRIMARY_TABLE_ENTRIES =

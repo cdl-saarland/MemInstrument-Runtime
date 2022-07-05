@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lowfat-defines.h"
+#include "lowfat_defines.h"
 
 #include <stddef.h>
 #include <stdint.h>

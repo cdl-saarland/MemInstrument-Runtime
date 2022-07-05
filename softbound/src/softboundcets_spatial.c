@@ -1,4 +1,4 @@
-#include "softboundcets-spatial.h"
+#include "softboundcets_spatial.h"
 
 #include "fail_function.h"
 

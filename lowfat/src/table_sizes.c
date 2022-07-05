@@ -2,7 +2,7 @@
 
 #include "LFSizes.h"
 #include "fail_function.h"
-#include "lowfat-defines.h"
+#include "lowfat_defines.h"
 #include "statistics.h"
 
 #include <stdio.h>

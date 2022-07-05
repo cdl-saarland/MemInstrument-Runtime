@@ -1,7 +1,7 @@
-#include "softboundcets-common.h"
-#include "softboundcets-defines.h"
-#include "softboundcets-spatial.h"
-#include "softboundcets-temporal.h"
+#include "softboundcets_common.h"
+#include "softboundcets_defines.h"
+#include "softboundcets_spatial.h"
+#include "softboundcets_temporal.h"
 
 #include "fail_function.h"
 #include "statistics.h"
