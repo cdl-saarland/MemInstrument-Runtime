@@ -53,6 +53,8 @@ endif
 
 all: static dynamic
 
+exports: sizes-header-and-linker-script
+
 -include $(DEP)
 
 test: test-dynamic test-static | build-dir
