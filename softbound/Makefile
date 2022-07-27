@@ -32,12 +32,12 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_DIR),$(SHARED_SOURCES:.c=.
 
 all: static dynamic exports
 
-exports: cxx-header
-
 # Automatically build the lto compatible library if gold is available
 ifdef LLVM_GOLD
 all: lto-static
 endif
+
+exports: cxx-header
 
 # Write a compile_commands.json file
 # This code is a modified version of https://gist.github.com/JayKickliter/f4e1945abe1d3bbbe3263640a3669e3c
@@ -120,3 +120,5 @@ format:
 clean:
 	@echo "===> CLEAN"
 	rm -rf ${BUILD_DIR}/ $(LTO_DIR)/
+
+.PHONY: all exports build-dir gen-compile-commands cxx-header static dynamic lto-build-dir gold-available lto-static format clean
