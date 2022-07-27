@@ -62,7 +62,6 @@ test: test-dynamic test-static | build-dir
 test-dynamic: dynamic ${BUILD_DIR}/test_dyn
 	@echo "===> TEST DYNAMIC"
 	LD_LIBRARY_PATH=${BUILD_DIR} ${BUILD_DIR}/test_dyn
-	# LD_LIBRARY_PATH=${BUILD_DIR} LD_PRELOAD=${DYN_LIB} ${BUILD_DIR}/test_dyn
 
 test-static: ${BUILD_DIR}/test_stat
 	@echo "===> TEST STATIC"
@@ -77,7 +76,7 @@ sizes-header-and-linker-script: | build-dir
 	./generate_sizes_header_and_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --scriptname ${LINKER_SCRIPT}
 
 sizes-header-and-lto-linker-script: | lto-build-dir
-	@echo "===> Generate sizes header and linker script"
+	@echo "===> Generate sizes header and lto linker script"
 	./generate_sizes_header_and_linker_script.py --config ${LF_CONF} --sizes ${SIZES} --lto-scriptname ${LTO_LINKER_SCRIPT}
 
 static: sizes-header-and-linker-script ${STAT_LIB}
