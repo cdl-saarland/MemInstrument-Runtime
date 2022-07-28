@@ -30,7 +30,6 @@ CFLAGS += -DMIRT_IGNORE_LLVM_TOOLING
 CFLAGS += -Wall -Wextra -O3
 # Mandatory flags which should not be overwritable
 ALL_CFLAGS := $(CFLAGS) -D_GNU_SOURCE -I${SRC_DIR} -I${SHARED_INCLUDE_DIR} -I${GENERATED_HEADERS}
-SHAREDFLAGS = -shared
 LDFLAGS += -ldl
 
 SRC=$(sort $(wildcard $(SRC_DIR)/*.c))
@@ -44,24 +43,18 @@ LTO_SHARED_OBJECTS := $(subst $(SHARED_SRC_DIR),$(LTO_BUILD_DIR),$(SHARED_SRC:.c
 
 DEP=$(OBJ:%.o=%.d) $(SHARED_OBJ:%.o=%.d)
 
+all: static
+
 # Automatically build the lto compatible library if gold is available
 ifdef LLVM_GOLD
 all: lto-static
 endif
 
-.PHONY: all clean
-
-all: static dynamic
-
 exports: sizes-header-and-linker-script
 
 -include $(DEP)
 
-test: test-dynamic test-static | build-dir
-
-test-dynamic: dynamic ${BUILD_DIR}/test_dyn
-	@echo "===> TEST DYNAMIC"
-	LD_LIBRARY_PATH=${BUILD_DIR} ${BUILD_DIR}/test_dyn
+test: test-static | build-dir
 
 test-static: ${BUILD_DIR}/test_stat
 	@echo "===> TEST STATIC"
@@ -81,27 +74,17 @@ sizes-header-and-lto-linker-script: | lto-build-dir
 
 static: sizes-header-and-linker-script ${STAT_LIB}
 
-dynamic: sizes-header-and-linker-script ${DYN_LIB}
-
 ${STAT_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
 	@echo "===> AR $@"
 	$(Q)ar -rcs $@ $+
 
-${DYN_LIB}: ${OBJ} ${SHARED_OBJ} | build-dir
-	@echo "===> LD $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ ${ALL_CFLAGS} ${SHAREDFLAGS} ${LDFLAGS} $+
-
 ${BUILD_DIR}/shared.%.o : ${SHARED_SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
+	$(Q)$(CLANG) -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/%.o : ${SRC_DIR}/%.c | build-dir
 	@echo "===> CC $@"
-	$(Q)$(CLANG) -fPIC -MMD -o $@ -c ${ALL_CFLAGS} $<
-
-${BUILD_DIR}/test_dyn: ${TEST_DIR}/test.c dynamic
-	@echo "===> CC/LD $@"
-	$(Q)$(CLANG) -MMD -o $@ ${ALL_CFLAGS} ${LDFLAGS} -L${BUILD_DIR} -l${LIB_NAME} $<
+	$(Q)$(CLANG) -MMD -o $@ -c ${ALL_CFLAGS} $<
 
 ${BUILD_DIR}/test_stat: ${TEST_DIR}/test.c static
 	@echo "===> CC/LD $@"
@@ -138,3 +121,5 @@ format:
 	@echo "===> CLANG-FORMAT"
 	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.c))
 	$(Q)$(CLANG_FORMAT) -i $(sort $(wildcard $(SRC_DIR)/*.h))
+
+.PHONY: all exports test test-static build-dir sizes-header-and-linker-script sizes-header-and-lto-linker-script static lto-build-dir gold-available lto-static clean format
