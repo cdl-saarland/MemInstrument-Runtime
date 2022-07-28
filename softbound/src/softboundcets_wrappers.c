@@ -1886,8 +1886,9 @@ __WEAK_INLINE void *softboundcets_memcpy(void *dest, const void *src,
     void *ret_ptr = memcpy(dest, src, n);
     if (n > 0) {
         __softboundcets_copy_metadata(dest, src, n);
-        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     }
+    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
+
     return ret_ptr;
 }
 
@@ -1902,8 +1903,8 @@ __WEAK_INLINE void *softboundcets_mempcpy(void *dest, const void *src,
     void *ret_ptr = mempcpy(dest, src, n);
     if (n > 0) {
         __softboundcets_copy_metadata(dest, src, n);
-        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     }
+    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     return ret_ptr;
 }
 
@@ -1918,8 +1919,8 @@ __WEAK_INLINE void *softboundcets_memmove(void *dest, const void *src,
     void *ret_ptr = memmove(dest, src, n);
     if (n > 0) {
         __softboundcets_copy_metadata(dest, src, n);
-        __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     }
+    __softboundcets_propagate_metadata_shadow_stack_from(1, 0);
     return ret_ptr;
 }
 
