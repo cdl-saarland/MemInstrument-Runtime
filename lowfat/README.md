@@ -1,6 +1,6 @@
-# Low Fat Pointers
+# Low-Fat Pointers
 
-This is a run-time implementation of the Low-Fat Pointers approach proposed by Duck & Yap. Philip Gebel contributed the heap protection (Publication 1.), and Tina Jung extended it with the stack and global variable protection (Publications 2.+3.).
+This is an implementation of run-time part of the Low-Fat Pointers approach proposed by Duck & Yap. Philip Gebel contributed the heap protection (Publication 1.), and Tina Jung extended it with the stack and global variable protection (Publications 2.+3.).
 
 ## Configurations
 
@@ -35,6 +35,14 @@ The configuration file for Low-Fat Pointers is `lf_config.json`.
 6) `MAXIMAL_ADDRESS` defines the largest valid value for a pointer.
 
 Usually, 1-3 are the only options you might want to reconfigure.
+
+### Debugging low-fat instrumented binaries
+
+In case you want to debug an instrumented binary, do not use `valgrind`.
+Low-Fat Pointer mess a lot with memory allocations, and require the low-fat regions to start at specific addresses, which `valgrind` does not respect.
+Hence, the execution will fail with a message saying the requested memory regions could not be acquired.
+
+Using `gdb` should work just fine.
 
 ### Technical comment
 
