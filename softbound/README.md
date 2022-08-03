@@ -71,3 +71,8 @@ In order to avoid configuring the C++ part and the C run-time differently, one c
 * Nagarakatte, S., Martin, M. M., & Zdancewic, S. (2015). Everything you want to know about pointer-based checking. In 1st Summit on Advances in Programming Languages (SNAPL 2015). Schloss Dagstuhl-Leibniz-Zentrum fuer Informatik.
 
 * Nagarakatte, S. G. (2012). Practical low-overhead enforcement of memory safety for C programs. University of Pennsylvania.
+
+### Original authors' implementation
+
+* LLVM 3.4-based SoftBoundCETS: https://github.com/santoshn/softboundcets-34
+* (experimental) LLVM 3.9-based SoftBoundCETS: https://github.com/santoshn/SoftBoundCETS-3.9

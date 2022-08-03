@@ -57,3 +57,7 @@ It additionally defines a C header file, used by the Low-Fat run-time and the C+
 2) Duck, G. J., Yap, R. H., & Cavallaro, L. (2017, February). Stack Bounds Protection with Low Fat Pointers. In NDSS (Vol. 17, pp. 1-15).
 
 3) Duck, G. J., & Yap, R. H. (2018). An extended low fat allocator API and applications. arXiv preprint arXiv:1804.04812.
+
+### Original authors' implementation
+
+* LLVM 4-based Low-Fat Pointers: https://github.com/GJDuck/LowFat
