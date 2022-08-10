@@ -34,14 +34,17 @@ int __is_lowfat(void *ptr) __INTERNAL_FUNCTIONS_ATTRIBUTES;
 //                              Stack Related
 //===----------------------------------------------------------------------===//
 
-// TODO add documentation
+// Look up the size of the allocation with the given LowFat index.
 uint64_t __lowfat_lookup_stack_size(int index) __INTERNAL_FUNCTIONS_ATTRIBUTES;
 
+// Look up the offset for the given LowFat index.
 int64_t __lowfat_lookup_stack_offset(int index) __INTERNAL_FUNCTIONS_ATTRIBUTES;
 
+// Determine the proper alignment to place ptr on the stack.
 void *__lowfat_compute_aligned(void *ptr,
                                int index) __INTERNAL_FUNCTIONS_ATTRIBUTES;
 
+// Compute the mirrored pointer for a stack allocation.
 void *__lowfat_get_mirror(void *ptr,
                           int64_t offset) __INTERNAL_FUNCTIONS_ATTRIBUTES;
 
