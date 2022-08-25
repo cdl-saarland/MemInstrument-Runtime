@@ -117,8 +117,6 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         return NULL;
     }
 
-    STAT_INC(NumLowFatAllocs);
-
     // a pointer is allowed to point to the address right after an array, so we
     // pad the size by 1 to avoid false positives for OOB detection
     size_t padded_size = size + 1;
@@ -142,6 +140,7 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
         STAT_INC(NumFreeListPops);
         void *free_res = __lowfat_free_list_pop(zero_based_index);
         pthread_mutex_unlock(&mutex);
+        STAT_INC(NumLowFatAllocs);
         return free_res;
     }
 
@@ -172,6 +171,7 @@ static void *lowfat_aligned_alloc(size_t size, size_t alignment) {
             regions[zero_based_index] = res + allocation_size;
             pthread_mutex_unlock(&mutex);
             __mi_debug_printf("Allocated address: %p\n", res);
+            STAT_INC(NumLowFatAllocs);
             return res;
         }
 
