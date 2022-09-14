@@ -2,6 +2,10 @@
 
 This is an implementation of run-time part of the Low-Fat Pointers approach proposed by Duck & Yap. Philip Gebel contributed the heap protection (Publication 1.), and Tina Jung extended it with the stack and global variable protection (Publications 2.+3.).
 
+## Additional Requirements
+
+* [GNU LD](https://www.gnu.org/software/binutils/)
+
 ## Configurations
 
 This implementation only supports power-of-two allocation sizes. The smallest/largest allocation size is configurable, as well as the region sizes for heap/stack/globals.
