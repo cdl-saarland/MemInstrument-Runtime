@@ -168,8 +168,8 @@ def get_offsets(min_size, max_size, number_of_regions, region_size):
     """
     Compute the offsets array. Min/Max size are given in bytes.
     """
-    def func(x): return compute_offset(
-        decimal_log_2(x), number_of_regions, region_size)
+    def func(size_pow): return compute_offset(
+        decimal_log_2(size_pow), number_of_regions, region_size)
     return get_values_for_index(min_size, max_size, func)
 
 
@@ -312,6 +312,21 @@ def generate_linker_script(config_dict, linker_script_name, verbose):
         section_str = get_sections_str(config_dict, True)
         open_file.write(section_str)
         open_file.write(f"}}\nINSERT AFTER {LINKER_SCRIPT_EXTENSION_POINT};\n")
+
+
+def ensure_gnu_ld_is_used():
+    """
+    Check that `ld` is GNU ld. We need GNU ld as gold and lld won't give us
+    their default linker script with a simple command line argument.
+    """
+    ld_version = subprocess.run("ld --version", check=True, encoding='utf-8',
+                                shell=True, capture_output=True)
+
+    if not ld_version.stdout.startswith("GNU ld"):
+        print(f"It seems `ld` is not GNU ld:\n\n{ld_version.stdout}\n")
+        print("Gold and lld won't give us their default linker script with a "
+              "simple command line argument. Please use GNU ld instead.")
+        sys.exit(1)
 
 
 def get_default_linker_script_lines():
@@ -464,7 +479,11 @@ def main():
                         action='store_true', help='Verbose output')
     args = parser.parse_args()
 
-    assert args.config.exists()
+    if not args.config.exists():
+        print(f"Config file '{args.config}' is required and does not exist.")
+        sys.exit(1)
+
+    ensure_gnu_ld_is_used()
 
     args.sizes.parent.mkdir(parents=True, exist_ok=True)
 
