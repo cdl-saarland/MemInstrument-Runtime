@@ -1,14 +1,14 @@
-.PHONY: all clean splay lowfat sleep rt-stat softbound
+.PHONY: all clean splay lowfat sleep rt-stat softbound example
 
-all: splay lowfat sleep rt-stat softbound
+all: splay lowfat sleep rt-stat softbound example
 
 lto: splay-lto lowfat-lto softbound-lto
 
 exports: lowfat-exports softbound-exports
 
-clean: splay-clean lowfat-clean sleep-clean rt-stat-clean softbound-clean
+clean: splay-clean lowfat-clean sleep-clean rt-stat-clean softbound-clean example-clean
 
-format: splay-format lowfat-format sleep-format rt-stat-format softbound-format shared-format
+format: splay-format lowfat-format sleep-format rt-stat-format softbound-format shared-format example-format
 
 splay:
 	$(MAKE) -C splay
@@ -24,6 +24,9 @@ rt-stat:
 
 softbound:
 	$(MAKE) -C softbound
+
+example:
+	$(MAKE) -C example
 
 splay-lto:
 	$(MAKE) lto-static -C splay
@@ -55,6 +58,9 @@ rt-stat-clean:
 softbound-clean:
 	$(MAKE) clean -C softbound
 
+example-clean:
+	$(MAKE) clean -C example
+
 splay-format:
 	$(MAKE) format -C splay
 
@@ -72,3 +78,6 @@ softbound-format:
 
 shared-format:
 	$(MAKE) format -C shared
+
+example-format:
+	$(MAKE) format -C example
